@@ -5,8 +5,8 @@ import { ProductCard } from "@/components/ui/product-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { AddToCartButton } from "@/components/cart/add-to-cart-button";
-import { MOCK_PRODUCTS } from "@/lib/mock-data";
-import type { Product } from "@/types";
+
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Deals & Offers",
@@ -23,9 +23,7 @@ const dealCategories = [
 ];
 
 function DealsContent() {
-  const dealProducts = MOCK_PRODUCTS.filter(
-    (p) => p.originalPrice && p.originalPrice > p.price
-  ).slice(0, 12);
+  const dealProducts: any[] = [];
 
   return (
     <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">

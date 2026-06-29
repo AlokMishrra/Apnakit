@@ -5,7 +5,6 @@ import { Store, Filter, ChevronDown } from "lucide-react";
 import { ProductCard } from "@/components/ui/product-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MOCK_PRODUCTS } from "@/lib/mock-data";
 
 interface BrandPageProps {
   params: Promise<{ slug: string }>;
@@ -74,9 +73,7 @@ async function getBrand(slug: string) {
 }
 
 function getBrandProducts(slug: string) {
-  return MOCK_PRODUCTS.filter(
-    (p) => p.brand?.slug === slug || Math.random() > 0.5
-  ).slice(0, 12);
+  return [] as any[];
 }
 
 async function BrandContent({ slug }: { slug: string }) {
