@@ -7,7 +7,7 @@ RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 COPY backend/package.json backend/package-lock.json* ./
 COPY backend/prisma ./prisma/
 
-RUN npm ci
+RUN npm ci && npm install ws
 
 RUN npx prisma generate
 
