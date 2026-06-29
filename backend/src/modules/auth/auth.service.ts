@@ -584,7 +584,7 @@ export class AuthService {
     }
     const callbackUrl =
       this.configService.get<string>('GOOGLE_REDIRECT_CALLBACK_URL') ||
-      `${this.configService.get<string>('PUBLIC_BACKEND_URL') || 'https://apnakit-backend.onrender.com'}/api/v1/auth/google/callback`;
+      `${this.configService.get<string>('PUBLIC_BACKEND_URL') || 'http://localhost:3000'}/api/v1/auth/google/callback`;
     const params = new URLSearchParams({
       client_id: clientId,
       redirect_uri: callbackUrl,
@@ -619,7 +619,7 @@ export class AuthService {
     }
     const callbackUrl =
       this.configService.get<string>('GOOGLE_REDIRECT_CALLBACK_URL') ||
-      `${this.configService.get<string>('PUBLIC_BACKEND_URL') || 'https://apnakit-backend.onrender.com'}/api/v1/auth/google/callback`;
+      `${this.configService.get<string>('PUBLIC_BACKEND_URL') || 'http://localhost:3000'}/api/v1/auth/google/callback`;
 
     // 1) Exchange the code for tokens
     const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
@@ -724,7 +724,8 @@ export class AuthService {
     //    path / server logs.
     const frontendBase =
       this.configService.get<string>('PUBLIC_FRONTEND_URL') ||
-      'https://www.apnakit.in';
+      this.configService.get<string>('PUBLIC_BACKEND_URL') ||
+      'http://localhost:3000';
     const frontendCallback = new URL('/google-callback', frontendBase);
     frontendCallback.hash = `access_token=${encodeURIComponent(
       tokens.accessToken,
