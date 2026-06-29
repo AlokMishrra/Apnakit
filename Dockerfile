@@ -2,11 +2,10 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Copy backend files
 COPY backend/package.json backend/package-lock.json* ./
 COPY backend/prisma ./prisma/
 
-RUN npm ci --omit=dev
+RUN npm ci
 
 RUN npx prisma generate
 
@@ -14,7 +13,9 @@ COPY backend/tsconfig.json ./
 COPY backend/src ./src/
 COPY backend/templates ./templates/
 
-RUN npx tsc
+RUN ./node_modules/.bin/tsc
+
+RUN npm prune --omit=dev
 
 RUN mkdir -p uploads
 
