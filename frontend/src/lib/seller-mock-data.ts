@@ -1,0 +1,387 @@
+export const sellerProfile = {
+  id: "SEL-001",
+  name: "Rajesh Kumar",
+  email: "rajesh.kumar@nishustore.in",
+  phone: "+91 98765 43210",
+  businessName: "Kumar Electronics Hub",
+  businessType: "Private Limited",
+  gstNumber: "27AABCU9603R1ZM",
+  panNumber: "AABCU9603R",
+  rating: 4.6,
+  totalSales: 1247850,
+  totalOrders: 3245,
+  pendingOrders: 47,
+  totalProducts: 186,
+  activeProducts: 164,
+  lowStockProducts: 12,
+  commissionRate: 5,
+  status: "active" as const,
+  joinedDate: "2024-03-15",
+  avatar: null,
+};
+
+export const sellerStats = {
+  totalSales: 1247850,
+  monthlySales: 185420,
+  todaySales: 8750,
+  totalOrders: 3245,
+  monthlyOrders: 487,
+  todayOrders: 23,
+  pendingOrders: 47,
+  processingOrders: 32,
+  shippedOrders: 156,
+  deliveredOrders: 2890,
+  cancelledOrders: 120,
+  totalProducts: 186,
+  activeProducts: 164,
+  lowStockProducts: 12,
+  outOfStockProducts: 8,
+  averageRating: 4.6,
+  totalReviews: 2156,
+  returnRate: 2.3,
+  cancelRate: 1.8,
+};
+
+export const salesChartData = Array.from({ length: 30 }, (_, i) => {
+  const date = new Date();
+  date.setDate(date.getDate() - (29 - i));
+  return {
+    date: date.toISOString().split("T")[0],
+    sales: Math.floor(Math.random() * 15000) + 3000,
+    orders: Math.floor(Math.random() * 40) + 8,
+  };
+});
+
+export const recentOrders = [
+  {
+    id: "ORD-7X9K2M",
+    customer: "Amit Sharma",
+    items: [
+      { name: "Samsung Galaxy S24 Ultra", quantity: 1, price: 129999 },
+      { name: "Samsung Clear Case", quantity: 1, price: 1499 },
+    ],
+    total: 131498,
+    status: "new" as const,
+    date: "2025-06-22T10:30:00Z",
+    paymentMethod: "UPI",
+  },
+  {
+    id: "ORD-8K3L5N",
+    customer: "Priya Patel",
+    items: [
+      { name: "Sony WH-1000XM5 Headphones", quantity: 1, price: 24990 },
+    ],
+    total: 24990,
+    status: "processing" as const,
+    date: "2025-06-22T09:15:00Z",
+    paymentMethod: "Credit Card",
+  },
+  {
+    id: "ORD-9M4P6R",
+    customer: "Vikram Singh",
+    items: [
+      { name: "Apple iPad Air M2", quantity: 1, price: 59900 },
+      { name: "Apple Pencil Pro", quantity: 1, price: 12900 },
+    ],
+    total: 72800,
+    status: "shipped" as const,
+    date: "2025-06-21T16:45:00Z",
+    paymentMethod: "EMI",
+  },
+  {
+    id: "ORD-5T8W1Y",
+    customer: "Neha Gupta",
+    items: [
+      { name: "Boat Airdopes 141", quantity: 2, price: 1299 },
+    ],
+    total: 2598,
+    status: "delivered" as const,
+    date: "2025-06-21T11:20:00Z",
+    paymentMethod: "Debit Card",
+  },
+  {
+    id: "ORD-6U2X4Z",
+    customer: "Arjun Reddy",
+    items: [
+      { name: "OnePlus 12 5G", quantity: 1, price: 64999 },
+      { name: "OnePlus Buds Pro 2", quantity: 1, price: 9999 },
+    ],
+    total: 74998,
+    status: "new" as const,
+    date: "2025-06-22T08:00:00Z",
+    paymentMethod: "Net Banking",
+  },
+  {
+    id: "ORD-3Q7R9T",
+    customer: "Sneha Joshi",
+    items: [
+      { name: "JBL Flip 6 Speaker", quantity: 1, price: 8999 },
+    ],
+    total: 8999,
+    status: "processing" as const,
+    date: "2025-06-22T07:30:00Z",
+    paymentMethod: "Wallet",
+  },
+];
+
+export const allOrders = [
+  ...recentOrders,
+  {
+    id: "ORD-1A3C5E",
+    customer: "Karan Malhotra",
+    items: [
+      { name: "HP Pavilion Laptop 15", quantity: 1, price: 54999 },
+    ],
+    total: 54999,
+    status: "delivered" as const,
+    date: "2025-06-20T14:10:00Z",
+    paymentMethod: "Credit Card",
+  },
+  {
+    id: "ORD-2B4D6F",
+    customer: "Riya Kapoor",
+    items: [
+      { name: "Noise ColorFit Pro 5", quantity: 1, price: 3499 },
+      { name: "Noise Wireless Charger", quantity: 1, price: 999 },
+    ],
+    total: 4498,
+    status: "cancelled" as const,
+    date: "2025-06-20T09:25:00Z",
+    paymentMethod: "UPI",
+  },
+];
+
+export const sellerProducts = [
+  {
+    id: "PRD-001",
+    name: "Samsung Galaxy S24 Ultra",
+    sku: "SAM-S24U-256",
+    category: "Smartphones",
+    price: 129999,
+    stock: 45,
+    status: "active" as const,
+    sales: 234,
+    image: "/images/products/samsung-s24.jpg",
+    rating: 4.7,
+    variants: 3,
+  },
+  {
+    id: "PRD-002",
+    name: "Sony WH-1000XM5 Headphones",
+    sku: "SONY-WH1000",
+    category: "Audio",
+    price: 24990,
+    stock: 78,
+    status: "active" as const,
+    sales: 567,
+    image: "/images/products/sony-xm5.jpg",
+    rating: 4.8,
+    variants: 2,
+  },
+  {
+    id: "PRD-003",
+    name: "Apple iPad Air M2",
+    sku: "APL-IPAD-M2",
+    category: "Tablets",
+    price: 59900,
+    stock: 23,
+    status: "active" as const,
+    sales: 189,
+    image: "/images/products/ipad-air.jpg",
+    rating: 4.9,
+    variants: 4,
+  },
+  {
+    id: "PRD-004",
+    name: "Boat Airdopes 141",
+    sku: "BOAT-A141",
+    category: "Audio",
+    price: 1299,
+    stock: 5,
+    status: "active" as const,
+    sales: 1245,
+    image: "/images/products/boat-141.jpg",
+    rating: 4.3,
+    variants: 5,
+  },
+  {
+    id: "PRD-005",
+    name: "OnePlus 12 5G",
+    sku: "OP-12-5G",
+    category: "Smartphones",
+    price: 64999,
+    stock: 0,
+    status: "out_of_stock" as const,
+    sales: 312,
+    image: "/images/products/oneplus-12.jpg",
+    rating: 4.6,
+    variants: 3,
+  },
+  {
+    id: "PRD-006",
+    name: "JBL Flip 6 Speaker",
+    sku: "JBL-FLIP6",
+    category: "Audio",
+    price: 8999,
+    stock: 12,
+    status: "active" as const,
+    sales: 456,
+    image: "/images/products/jbl-flip6.jpg",
+    rating: 4.5,
+    variants: 6,
+  },
+  {
+    id: "PRD-007",
+    name: "HP Pavilion Laptop 15",
+    sku: "HP-PAV-15",
+    category: "Laptops",
+    price: 54999,
+    stock: 8,
+    status: "low_stock" as const,
+    sales: 98,
+    image: "/images/products/hp-pavilion.jpg",
+    rating: 4.4,
+    variants: 2,
+  },
+  {
+    id: "PRD-008",
+    name: "Noise ColorFit Pro 5",
+    sku: "NOISE-CFP5",
+    category: "Wearables",
+    price: 3499,
+    stock: 156,
+    status: "active" as const,
+    sales: 876,
+    image: "/images/products/noise-pro5.jpg",
+    rating: 4.2,
+    variants: 4,
+  },
+  {
+    id: "PRD-009",
+    name: "Apple Pencil Pro",
+    sku: "APL-PENCIL-P",
+    category: "Accessories",
+    price: 12900,
+    stock: 67,
+    status: "active" as const,
+    sales: 234,
+    image: "/images/products/apple-pencil.jpg",
+    rating: 4.8,
+    variants: 1,
+  },
+  {
+    id: "PRD-010",
+    name: "Samsung Clear Case S24",
+    sku: "SAM-CASE-S24",
+    category: "Accessories",
+    price: 1499,
+    stock: 3,
+    status: "low_stock" as const,
+    sales: 567,
+    image: "/images/products/samsung-case.jpg",
+    rating: 4.1,
+    variants: 2,
+  },
+];
+
+export const topSellingProducts = [
+  { name: "Boat Airdopes 141", sales: 1245, revenue: 1617555 },
+  { name: "Noise ColorFit Pro 5", sales: 876, revenue: 3065024 },
+  { name: "Sony WH-1000XM5", sales: 567, revenue: 14169330 },
+  { name: "Samsung Clear Case", sales: 567, revenue: 850133 },
+  { name: "JBL Flip 6", sales: 456, revenue: 4103544 },
+];
+
+export const orderStatusDistribution = [
+  { status: "New", count: 47, color: "#3b82f6" },
+  { status: "Processing", count: 32, color: "#f59e0b" },
+  { status: "Shipped", count: 156, color: "#8b5cf6" },
+  { status: "Delivered", count: 2890, color: "#10b981" },
+  { status: "Cancelled", count: 120, color: "#ef4444" },
+];
+
+export const customerDemographics = [
+  { state: "Maharashtra", orders: 687, percentage: 21.2 },
+  { state: "Delhi NCR", orders: 523, percentage: 16.1 },
+  { state: "Karnataka", orders: 412, percentage: 12.7 },
+  { state: "Tamil Nadu", orders: 356, percentage: 11.0 },
+  { state: "Uttar Pradesh", orders: 301, percentage: 9.3 },
+  { state: "Gujarat", orders: 234, percentage: 7.2 },
+  { state: "West Bengal", orders: 198, percentage: 6.1 },
+  { state: "Others", orders: 534, percentage: 16.4 },
+];
+
+export const ratingBreakdown = [
+  { stars: 5, count: 1245, percentage: 57.7 },
+  { stars: 4, count: 534, percentage: 24.8 },
+  { stars: 3, count: 234, percentage: 10.8 },
+  { stars: 2, count: 89, percentage: 4.1 },
+  { stars: 1, count: 54, percentage: 2.6 },
+];
+
+export const notifications = [
+  {
+    id: "1",
+    type: "order" as const,
+    message: "New order #ORD-7X9K2M received from Amit Sharma",
+    time: "5 minutes ago",
+    read: false,
+  },
+  {
+    id: "2",
+    type: "payment" as const,
+    message: "Payment of ₹1,31,498 received for order #ORD-7X9K2M",
+    time: "10 minutes ago",
+    read: false,
+  },
+  {
+    id: "3",
+    type: "stock" as const,
+    message: "Low stock alert: Boat Airdopes 141 (5 units remaining)",
+    time: "1 hour ago",
+    read: false,
+  },
+  {
+    id: "4",
+    type: "review" as const,
+    message: "New 5-star review on Sony WH-1000XM5 Headphones",
+    time: "2 hours ago",
+    read: true,
+  },
+  {
+    id: "5",
+    type: "order" as const,
+    message: "Order #ORD-9M4P6R has been shipped",
+    time: "3 hours ago",
+    read: true,
+  },
+];
+
+export const lowStockProducts = [
+  { name: "Boat Airdopes 141", stock: 5, sku: "BOAT-A141" },
+  { name: "Samsung Clear Case S24", stock: 3, sku: "SAM-CASE-S24" },
+  { name: "HP Pavilion Laptop 15", stock: 8, sku: "HP-PAV-15" },
+  { name: "OnePlus 12 5G", stock: 0, sku: "OP-12-5G" },
+];
+
+export const categories = [
+  "Smartphones",
+  "Laptops",
+  "Tablets",
+  "Audio",
+  "Wearables",
+  "Accessories",
+  "Cameras",
+  "Gaming",
+  "Home Appliances",
+  "Computers",
+];
+
+export const performanceMetrics = {
+  responseTime: "2.3 hours",
+  shippingSpeed: "1.2 days",
+  cancellationRate: "1.8%",
+  returnRate: "2.3%",
+  onTimeDelivery: "96.5%",
+  customerSatisfaction: "4.6/5",
+};
