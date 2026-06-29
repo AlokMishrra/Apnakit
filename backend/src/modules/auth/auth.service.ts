@@ -92,7 +92,17 @@ export class AuthService {
     const url = this.configService.get('SUPABASE_URL');
     const key = this.configService.get('SUPABASE_SERVICE_KEY');
     if (url && key) {
-      this.supabase = createClient(url, key);
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        const ws = require('ws');
+        this.supabase = createClient(url, key, {
+          realtime: { transport: ws },
+        });
+      } catch {
+        this.supabase = createClient(url, key, {
+          realtime: { events: [] } as any,
+        });
+      }
       this.logger.log('Supabase client initialized for OTP');
     } else {
       this.logger.warn('Supabase not configured — OTP will use fallback');
