@@ -228,7 +228,7 @@ export class UploadService {
       const publicHost =
         this.configService.get('PUBLIC_BACKEND_URL') ||
         this.configService.get('API_BASE_URL') ||
-        `http://localhost:${process.env.PORT || 3000}`;
+        'https://apnakit-backend.onrender.com';
       const url = `${publicHost.replace(/\/$/, '')}/uploads/${folder}/${fileName}`;
 
       return {
