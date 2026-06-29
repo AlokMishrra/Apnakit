@@ -168,7 +168,7 @@ export default function OrderDetailPage() {
                 <span className="text-sm font-bold text-blue-700">
                   {order.customer
                     .split(" ")
-                    .map((n) => n[0])
+                    .map((n: string) => n[0])
                     .join("")}
                 </span>
               </div>
