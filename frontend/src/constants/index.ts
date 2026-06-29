@@ -41,21 +41,17 @@ export const TOP_BAR_LINKS = {
 export const FOOTER_LINKS = {
   about: [
     { label: "About Us", href: "/about" },
-    { label: "Careers", href: "/careers" },
-    { label: "Press", href: "/press" },
-    { label: "ApnaKit Science", href: "/science" },
+    { label: "Help Center", href: "/help" },
   ],
   customerPolicy: [
-    { label: "Return Policy", href: "/return-policy" },
+    { label: "Return Policy", href: "/about" },
     { label: "Terms of Use", href: "/terms" },
-    { label: "Security", href: "/security" },
     { label: "Privacy", href: "/privacy" },
     { label: "Sitemap", href: "/sitemap" },
   ],
   quickLinks: [
-    { label: "Coupons", href: "/coupons" },
-    { label: "Gift Cards", href: "/gift-cards" },
-    { label: "Gift Wrapping", href: "/gift-wrapping" },
+    { label: "Contact Us", href: "/contact" },
+    { label: "Track Order", href: "/track-order" },
     { label: "Help Center", href: "/help" },
   ],
 };

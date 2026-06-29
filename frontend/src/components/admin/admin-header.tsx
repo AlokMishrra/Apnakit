@@ -68,7 +68,7 @@ export function AdminHeader({
     try {
       const token = localStorage.getItem("accessToken");
       if (token) {
-        await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api/v1"}/auth/logout`, {
+        await fetch(`${process.env.NEXT_PUBLIC_API_URL || "/api/v1"}/auth/logout`, {
           method: "POST",
           headers: {
             Authorization: `Bearer ${token}`,

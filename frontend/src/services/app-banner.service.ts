@@ -1,5 +1,27 @@
 import apiClient from "@/lib/api-client";
 
+function normalizeUrl(url: string | null): string | null {
+  if (!url) return null;
+  if (/^https?:\/\/localhost:\d+/.test(url)) {
+    return url.replace(/^https?:\/\/localhost:\d+/, "");
+  }
+  return url;
+}
+
+function normalizeConfig(c: AppBannerConfig | null): AppBannerConfig | null {
+  if (!c) return null;
+  return {
+    ...c,
+    iconImage: normalizeUrl(c.iconImage),
+    apkFileUrl: normalizeUrl(c.apkFileUrl),
+    ipaFileUrl: normalizeUrl(c.ipaFileUrl),
+    windowsAppUrl: normalizeUrl(c.windowsAppUrl),
+    macAppUrl: normalizeUrl(c.macAppUrl),
+    playStoreUrl: normalizeUrl(c.playStoreUrl),
+    appStoreUrl: normalizeUrl(c.appStoreUrl),
+  };
+}
+
 export interface AppBannerConfig {
   id: string;
   isActive: boolean;
@@ -51,7 +73,7 @@ export const appBannerService = {
   async getPublic(): Promise<AppBannerConfig | null> {
     const res = await apiClient.get<WrappedResponse<ConfigPayload>>("/app-banner");
     const payload = unwrap(res);
-    return payload?.config ?? null;
+    return normalizeConfig(payload?.config ?? null);
   },
 
   async getAdmin(): Promise<AppBannerConfig> {

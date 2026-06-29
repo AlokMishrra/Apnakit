@@ -41,8 +41,26 @@ const processQueue = (error: unknown, token: string | null = null) => {
   failedQueue = [];
 };
 
+function normalizeUrls(obj: any): any {
+  if (typeof obj === "string") {
+    return obj.replace(/^https?:\/\/localhost:\d+/, "");
+  }
+  if (Array.isArray(obj)) return obj.map(normalizeUrls);
+  if (obj && typeof obj === "object") {
+    const out: Record<string, any> = {};
+    for (const [k, v] of Object.entries(obj)) {
+      out[k] = normalizeUrls(v);
+    }
+    return out;
+  }
+  return obj;
+}
+
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    if (response.data) response.data = normalizeUrls(response.data);
+    return response;
+  },
   async (error: AxiosError) => {
     const originalRequest = error.config as InternalAxiosRequestConfig & {
       _retry?: boolean;

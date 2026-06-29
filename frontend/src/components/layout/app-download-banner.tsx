@@ -26,6 +26,20 @@ function formatBytes(n: number | null | undefined): string {
   return `${(n / (1024 * 1024 * 1024)).toFixed(2)} GB`;
 }
 
+function IconWithFallback({ src }: { src: string }) {
+  const [error, setError] = React.useState(false);
+  if (error) return <Sparkles className="h-5 w-5" />;
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={src}
+      alt="App icon"
+      className="h-full w-full object-cover"
+      onError={() => setError(true)}
+    />
+  );
+}
+
 export function AppDownloadBanner() {
   const [open, setOpen] = React.useState(false);
   const [config, setConfig] = React.useState<AppBannerConfig | null>(null);
@@ -202,12 +216,7 @@ export function AppDownloadBanner() {
             }}
           >
             {config.iconImage ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={config.iconImage}
-                alt="App icon"
-                className="h-full w-full object-cover"
-              />
+              <IconWithFallback src={config.iconImage} />
             ) : (
               <Sparkles className="h-5 w-5" />
             )}

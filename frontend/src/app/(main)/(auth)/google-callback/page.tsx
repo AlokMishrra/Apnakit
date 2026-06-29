@@ -71,7 +71,7 @@ export default function GoogleCallbackPage() {
 
     // Fetch user profile using the access token
     fetch(
-      `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api/v1"}/auth/me`,
+      `${process.env.NEXT_PUBLIC_API_URL || "/api/v1"}/auth/me`,
       {
         headers: { Authorization: `Bearer ${accessToken}` },
       }

@@ -4,7 +4,7 @@ import withPWAInit from "@ducanh2912/next-pwa";
 const withPWA = withPWAInit({
   dest: "public",
   register: true,
-  disable: process.env.NODE_ENV === "development",
+  disable: true,
 });
 
 const backendUrl = process.env.BACKEND_URL || 'http://localhost:3000';

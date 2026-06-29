@@ -130,7 +130,6 @@ export function TruecallerButton({
     };
   }, []);
 
-  if (platform !== "android") return null;
   if (!TRUECALLER_PARTNER_KEY) return null;
 
   return (
