@@ -324,11 +324,6 @@ export default function CategoryPage() {
                   <span className="font-medium text-foreground group-hover:text-indigo-700">
                     {sub.name}
                   </span>
-                  {sub._count?.products !== undefined && (
-                    <Badge variant="secondary" className="text-xs">
-                      {sub._count.products}
-                    </Badge>
-                  )}
                 </Link>
               ))}
             </div>

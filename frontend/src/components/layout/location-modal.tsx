@@ -638,13 +638,13 @@ export function LocationModal({
                 <div className="flex items-start gap-2 text-emerald-900">
                   <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-emerald-600" />
                   <div className="flex-1">
-                    <p className="font-medium">We deliver to {banner.city}</p>
+                    <p className="font-medium">Find and select your nearest location</p>
                     <p className="text-emerald-700">
                       {banner.cities && banner.cities.length > 1
-                        ? `Select your area from ${banner.cities.length} locations:`
+                        ? `We deliver to ${banner.city} — ${banner.cities.length} areas available:`
                         : banner.days
                           ? `Delivery in ${banner.days} day${banner.days > 1 ? "s" : ""}`
-                          : ""}
+                          : `We deliver to ${banner.city}`}
                     </p>
                   </div>
                 </div>
