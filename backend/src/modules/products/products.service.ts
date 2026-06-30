@@ -16,10 +16,16 @@ import {
 } from '../../common/helpers/pagination.helper';
 import { generateSlug } from '../../common/helpers/slug.helper';
 import { Prisma, ProductStatus } from '@prisma/client';
+import { UploadService } from '../upload/upload.service';
 
 @Injectable()
 export class ProductsService {
   private readonly logger = new Logger(ProductsService.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly uploadService: UploadService,
+  ) {}
 
   private readonly productInclude = {
     brand: true,
@@ -49,8 +55,6 @@ export class ProductsService {
       take: 10,
     },
   };
-
-  constructor(private readonly prisma: PrismaService) {}
 
   async findAll(query: FilterProductDto): Promise<PaginatedResult<any>> {
     const { page, limit, skip } = getPaginationParams({
@@ -703,12 +707,12 @@ export class ProductsService {
     }
 
     const imageRecords = await Promise.all(
-      files.map((file, index) => {
-        const url = this.saveFileToLocal(file);
+      files.map(async (file, index) => {
+        const result = await this.uploadService.uploadImage(file, 'products');
         return this.prisma.productImage.create({
           data: {
             productId,
-            url,
+            url: result.url,
             alt: file.originalname,
             sortOrder: index,
             isPrimary: index === 0,
@@ -860,18 +864,5 @@ export class ProductsService {
     const region = process.env.S3_REGION || 'ap-south-1';
     const key = `products/${Date.now()}-${file.originalname}`;
     return `https://${bucket}.s3.${region}.amazonaws.com/${key}`;
-  }
-
-  private saveFileToLocal(file: Express.Multer.File): string {
-    const fs = require('fs');
-    const path = require('path');
-    const uploadDir = path.join(process.cwd(), 'uploads', 'products');
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    const filename = `${Date.now()}-${file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
-    const filePath = path.join(uploadDir, filename);
-    fs.writeFileSync(filePath, file.buffer);
-    return `/uploads/products/${filename}`;
   }
 }
