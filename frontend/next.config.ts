@@ -1,11 +1,4 @@
 import type { NextConfig } from "next";
-import withPWAInit from "@ducanh2912/next-pwa";
-
-const withPWA = withPWAInit({
-  dest: "public",
-  register: true,
-  disable: true,
-});
 
 const backendUrl = process.env.BACKEND_URL || 'http://localhost:3000';
 
@@ -77,4 +70,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default withPWA(nextConfig);
+export default nextConfig;
