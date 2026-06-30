@@ -70,7 +70,7 @@ function HeroVideo({
       preload="auto"
       muted={isMuted}
       onEnded={loop ? undefined : onEnded}
-      className="h-full w-full object-contain"
+      className="max-h-full max-w-full object-contain"
       onError={(e) => {
         const video = e.currentTarget as HTMLVideoElement;
         const parent = video.parentElement;
@@ -197,11 +197,10 @@ export function HeroBanner() {
         onMouseEnter={() => setIsPaused(true)}
         onMouseLeave={() => setIsPaused(false)}
       >
-        {/* Mobile: 16:9 (full width looks good on narrow screens).
-            Desktop: fixed height with video/object-contain centered, no cropping. */}
-        <div className="relative w-full aspect-video sm:aspect-[16/9] lg:aspect-auto lg:h-[400px] flex items-center justify-center">
+        {/* Mobile: 16:9. Desktop: fixed 400px height. Video fills with object-contain. */}
+        <div className="relative w-full aspect-video sm:aspect-[16/9] lg:aspect-auto lg:h-[400px]">
           <div
-            className="flex h-full transition-transform duration-500 ease-in-out"
+            className="absolute inset-0 flex transition-transform duration-500 ease-in-out"
             style={{ transform: `translateX(-${currentSlide * 100}%)` }}
           >
             {banners.map((banner, index) => {
@@ -215,7 +214,7 @@ export function HeroBanner() {
                 <div
                   key={banner.id}
                   className={cn(
-                    "relative h-full min-w-full text-white",
+                    "relative h-full w-full flex-shrink-0 text-white flex items-center justify-center",
                     !banner.image && `bg-gradient-to-r ${gradient}`
                   )}
                 >
@@ -237,10 +236,11 @@ export function HeroBanner() {
                             src={banner.image}
                             alt={banner.title}
                             className="max-h-full max-w-full object-contain"
-                            onError={(e) => {
-                              const img = e.target as HTMLImageElement;
-                              const parent = img.parentElement;
-                              if (parent) parent.style.display = "none";
+      style={{ maxHeight: "100%", maxWidth: "100%" }}
+      onError={(e) => {
+        const video = e.currentTarget as HTMLVideoElement;
+        const parent = video.parentElement;
+        if (parent) parent.style.display = "none";
                             }}
                           />
                         </div>
