@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../config/database.config';
 import { ConfigService } from '@nestjs/config';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import * as fs from 'fs';
 import * as path from 'path';
 import { promisify } from 'util';
@@ -21,13 +22,48 @@ export class UploadService {
   private s3: any = null;
   private bucketName: string;
   private s3Initialized = false;
+  private supabase: SupabaseClient | null = null;
+  private supabaseBucket: string;
+  private supabaseInitialized = false;
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
   ) {
     this.bucketName = this.configService.get('AWS_S3_BUCKET', 'nishumart-uploads');
+    this.supabaseBucket = this.configService.get('SUPABASE_STORAGE_BUCKET', 'apnakit-uploads');
     this.useS3 = false;
+  }
+
+  private initSupabase(): SupabaseClient | null {
+    if (this.supabaseInitialized) return this.supabase;
+    this.supabaseInitialized = true;
+
+    const supabaseUrl = this.configService.get('SUPABASE_URL');
+    const supabaseKey =
+      this.configService.get('SUPABASE_SERVICE_KEY') ||
+      this.configService.get('SUPABASE_ANON_KEY');
+
+    if (
+      !supabaseUrl ||
+      !supabaseKey ||
+      supabaseUrl.startsWith('your-') ||
+      supabaseKey.startsWith('your-')
+    ) {
+      this.logger.log('Supabase credentials not configured.');
+      this.supabase = null;
+      return null;
+    }
+
+    try {
+      this.supabase = createClient(supabaseUrl, supabaseKey);
+      this.logger.log(`Supabase storage initialized (bucket: ${this.supabaseBucket})`);
+      return this.supabase;
+    } catch (err) {
+      this.logger.warn('Failed to initialize Supabase client.', err as any);
+      this.supabase = null;
+      return null;
+    }
   }
 
   private async initS3() {
@@ -46,7 +82,7 @@ export class UploadService {
       accessKeyId.startsWith('your-') ||
       secretAccessKey.startsWith('your-')
     ) {
-      this.logger.log('AWS credentials not configured. Using local file storage.');
+      this.logger.log('AWS credentials not configured.');
       this.useS3 = false;
       return;
     }
@@ -61,9 +97,75 @@ export class UploadService {
       this.useS3 = true;
       this.logger.log('Using AWS S3 for file storage');
     } catch (err) {
-      this.logger.warn('Failed to initialize AWS S3. Falling back to local storage.');
+      this.logger.warn('Failed to initialize AWS S3.');
       this.useS3 = false;
     }
+  }
+
+  /**
+   * Shared upload logic — tries Supabase Storage first, then S3, then local disk.
+   * This ensures uploaded files persist across Render redeploys.
+   */
+  private async uploadFile(file: Express.Multer.File, folder: string) {
+    // 1) Supabase Storage (preferred — persistent, free tier available)
+    const supabase = this.initSupabase();
+    if (supabase) {
+      try {
+        return await this.uploadToSupabase(supabase, file, folder);
+      } catch (err) {
+        this.logger.error('Supabase upload failed, falling back to S3 or local', err as any);
+      }
+    }
+
+    // 2) AWS S3
+    await this.initS3();
+    if (this.useS3 && this.s3) {
+      try {
+        return await this.uploadToS3(file, folder);
+      } catch (err) {
+        this.logger.error('S3 upload failed, falling back to local', err as any);
+      }
+    }
+
+    // 3) Local disk (ephemeral on Render free tier — files are lost on redeploy)
+    return this.uploadToLocal(file, folder);
+  }
+
+  private async uploadToSupabase(
+    supabase: SupabaseClient,
+    file: Express.Multer.File,
+    folder: string,
+  ) {
+    const ext = path.extname(file.originalname) || this.getExtFromMime(file.mimetype);
+    const baseName = path.basename(file.originalname, ext).replace(/[^a-zA-Z0-9-_]/g, '-');
+    const fileName = `${Date.now()}-${baseName}${ext}`;
+    const filePath = `${folder}/${fileName}`;
+
+    const { error } = await supabase.storage
+      .from(this.supabaseBucket)
+      .upload(filePath, file.buffer, {
+        contentType: file.mimetype,
+        cacheControl: '31536000',
+        upsert: false,
+      });
+
+    if (error) {
+      throw error;
+    }
+
+    const { data: publicUrlData } = supabase.storage
+      .from(this.supabaseBucket)
+      .getPublicUrl(filePath);
+
+    const url = publicUrlData.publicUrl;
+    this.logger.log(`File uploaded to Supabase: ${filePath} -> ${url}`);
+
+    return {
+      url,
+      key: filePath,
+      size: file.size,
+      mimetype: file.mimetype,
+    };
   }
 
   async uploadImage(file: Express.Multer.File, folder = 'uploads') {
@@ -81,12 +183,7 @@ export class UploadService {
       throw new BadRequestException('File size exceeds 5MB limit');
     }
 
-    await this.initS3();
-
-    if (this.useS3 && this.s3) {
-      return this.uploadToS3(file, folder);
-    }
-    return this.uploadToLocal(file, folder);
+    return this.uploadFile(file, folder);
   }
 
   async uploadVideo(file: Express.Multer.File, folder = 'uploads') {
@@ -104,12 +201,7 @@ export class UploadService {
       throw new BadRequestException('Video size exceeds 50MB limit');
     }
 
-    await this.initS3();
-
-    if (this.useS3 && this.s3) {
-      return this.uploadToS3(file, folder);
-    }
-    return this.uploadToLocal(file, folder);
+    return this.uploadFile(file, folder);
   }
 
   async uploadAppIcon(file: Express.Multer.File, folder = 'apps/icons') {
@@ -124,11 +216,7 @@ export class UploadService {
     if (file.size > maxSize) {
       throw new BadRequestException('Icon size exceeds 2MB limit');
     }
-    await this.initS3();
-    if (this.useS3 && this.s3) {
-      return this.uploadToS3(file, folder);
-    }
-    return this.uploadToLocal(file, folder);
+    return this.uploadFile(file, folder);
   }
 
   async uploadApk(file: Express.Multer.File, folder = 'apps/android') {
@@ -151,11 +239,7 @@ export class UploadService {
     if (file.size > maxSize) {
       throw new BadRequestException('APK size exceeds 200MB limit');
     }
-    await this.initS3();
-    if (this.useS3 && this.s3) {
-      return this.uploadToS3(file, folder);
-    }
-    return this.uploadToLocal(file, folder);
+    return this.uploadFile(file, folder);
   }
 
   async uploadIpa(file: Express.Multer.File, folder = 'apps/ios') {
@@ -178,11 +262,7 @@ export class UploadService {
     if (file.size > maxSize) {
       throw new BadRequestException('IPA size exceeds 300MB limit');
     }
-    await this.initS3();
-    if (this.useS3 && this.s3) {
-      return this.uploadToS3(file, folder);
-    }
-    return this.uploadToLocal(file, folder);
+    return this.uploadFile(file, folder);
   }
 
   private async uploadToS3(file: Express.Multer.File, folder: string) {
@@ -274,8 +354,23 @@ export class UploadService {
       throw new BadRequestException('No key provided');
     }
 
-    await this.initS3();
+    // 1) Supabase Storage
+    const supabase = this.initSupabase();
+    if (supabase) {
+      try {
+        const { error } = await supabase.storage.from(this.supabaseBucket).remove([key]);
+        if (!error) {
+          this.logger.log(`File deleted from Supabase: ${key}`);
+          return { message: 'File deleted successfully' };
+        }
+        this.logger.warn(`Supabase delete returned error: ${error.message}`);
+      } catch (err) {
+        this.logger.error('Supabase delete failed', err as any);
+      }
+    }
 
+    // 2) AWS S3
+    await this.initS3();
     if (this.useS3 && this.s3) {
       try {
         await this.s3
@@ -289,7 +384,7 @@ export class UploadService {
       }
     }
 
-    // Local delete
+    // 3) Local delete
     try {
       const filePath = path.join(process.cwd(), 'uploads', key);
       if (fs.existsSync(filePath)) {
