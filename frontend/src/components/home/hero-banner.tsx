@@ -53,16 +53,27 @@ function HeroVideo({
   loop,
   setRef,
   onEnded,
+  onReady,
 }: {
   src: string;
   isMuted: boolean;
   loop: boolean;
   setRef: (el: HTMLVideoElement | null) => void;
   onEnded: () => void;
+  onReady?: () => void;
 }) {
+  const [ready, setReady] = useState(false);
   return (
     <video
-      ref={setRef}
+      ref={(el) => {
+        setRef(el);
+        if (el) {
+          el.onloadeddata = () => {
+            setReady(true);
+            onReady?.();
+          };
+        }
+      }}
       src={src}
       autoPlay
       loop={loop}
@@ -70,10 +81,39 @@ function HeroVideo({
       preload="auto"
       muted={isMuted}
       onEnded={loop ? undefined : onEnded}
-      className="max-h-full max-w-full object-contain"
+      className={cn(
+        "h-full w-full object-cover transition-opacity duration-300",
+        ready ? "opacity-100" : "opacity-0"
+      )}
       onError={(e) => {
         const video = e.currentTarget as HTMLVideoElement;
         const parent = video.parentElement;
+        if (parent) parent.style.display = "none";
+      }}
+    />
+  );
+}
+
+function HeroImage({
+  src,
+  alt,
+}: {
+  src: string;
+  alt: string;
+}) {
+  const [ready, setReady] = useState(false);
+  return (
+    <img
+      src={src}
+      alt={alt}
+      className={cn(
+        "max-h-full max-w-full object-contain transition-opacity duration-300",
+        ready ? "opacity-100" : "opacity-0"
+      )}
+      onLoad={() => setReady(true)}
+      onError={(e) => {
+        const target = e.currentTarget as HTMLImageElement;
+        const parent = target.parentElement;
         if (parent) parent.style.display = "none";
       }}
     />
@@ -193,11 +233,10 @@ export function HeroBanner() {
   return (
     <div className="w-full px-3 sm:px-4 lg:px-6">
       <div
-        className="relative mx-auto max-w-7xl overflow-hidden rounded-2xl shadow-lg sm:rounded-3xl sm:shadow-xl bg-black"
+        className="relative mx-auto max-w-7xl overflow-hidden rounded-2xl shadow-lg sm:rounded-3xl sm:shadow-xl"
         onMouseEnter={() => setIsPaused(true)}
         onMouseLeave={() => setIsPaused(false)}
       >
-        {/* Mobile: 16:9. Desktop: fixed 400px height. Video fills with object-contain. */}
         <div className="relative w-full aspect-video sm:aspect-[16/9] lg:aspect-auto lg:h-[400px]">
           <div
             className="absolute inset-0 flex transition-transform duration-500 ease-in-out"
@@ -215,38 +254,33 @@ export function HeroBanner() {
                   key={banner.id}
                   className={cn(
                     "relative h-full w-full flex-shrink-0 text-white flex items-center justify-center",
-                    !banner.image && `bg-gradient-to-r ${gradient}`
+                    `bg-gradient-to-r ${gradient}`
                   )}
                 >
                   {banner.image && (
-                    <div className="absolute inset-0 flex items-center justify-center">
+                    <>
                       {isVideo ? (
-                        <HeroVideo
-                          src={banner.image}
-                          isMuted={isMuted}
-                          loop={shouldLoop}
-                          setRef={(el) => {
-                            videoRefs.current[banner.id] = el;
-                          }}
-                          onEnded={nextSlide}
-                        />
-                      ) : (
-                        <div className="relative h-full w-full flex items-center justify-center">
-                          <img
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <HeroVideo
                             src={banner.image}
-                            alt={banner.title}
-                            className="max-h-full max-w-full object-contain"
-      style={{ maxHeight: "100%", maxWidth: "100%" }}
-      onError={(e) => {
-        const video = e.currentTarget as HTMLVideoElement;
-        const parent = video.parentElement;
-        if (parent) parent.style.display = "none";
+                            isMuted={isMuted}
+                            loop={shouldLoop}
+                            setRef={(el) => {
+                              videoRefs.current[banner.id] = el;
                             }}
+                            onEnded={nextSlide}
                           />
                         </div>
+                      ) : (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <HeroImage
+                            src={banner.image}
+                            alt={banner.title}
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/30 to-transparent" />
+                        </div>
                       )}
-                      <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/30 to-transparent" />
-                    </div>
+                    </>
                   )}
 
                   {isVideo && banner.image && index === currentSlide && (
