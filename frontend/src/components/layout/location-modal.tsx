@@ -191,6 +191,9 @@ export function LocationModal({
   const [pincodeCities, setPincodeCities] = React.useState<
     { city: string; state: string; country: string }[]
   >([]);
+  const [selectedPincodeCity, setSelectedPincodeCity] = React.useState<
+    { city: string; state: string; country: string; pincode?: string } | null
+  >(null);
   const searchInputRef = React.useRef<HTMLInputElement>(null);
 
   // Detected location (after GPS): user must confirm before saving
@@ -464,14 +467,6 @@ export function LocationModal({
     setChecking(true);
     const res = await isPincodeServiceable(pin);
     setChecking(false);
-    setLocation({
-      city: res.city || `PIN ${pin}`,
-      state: res.state,
-      pincode: pin,
-      country: res.country || "India",
-      source: "manual",
-    });
-    markPrompted();
     if (res.serviceable) {
       setBanner({
         type: "success",
@@ -494,8 +489,23 @@ export function LocationModal({
               country: res.country || "India",
             }))
         );
+        // If only one city, auto-select it
+        if (cities.length === 1) {
+          setSelectedPincodeCity({
+            city: cities[0].name,
+            state: res.state || "",
+            country: res.country || "India",
+            pincode: pin,
+          });
+        }
       } else if (res.city) {
         setPincodeCities([{ city: res.city, state: res.state || "", country: res.country || "India" }]);
+        setSelectedPincodeCity({
+          city: res.city,
+          state: res.state || "",
+          country: res.country || "India",
+          pincode: pin,
+        });
       }
     } else {
       setBanner({
@@ -506,10 +516,18 @@ export function LocationModal({
           "We're working on delivering to this pincode. Stay tuned — it will be available very soon!",
       });
     }
-    onOpenChange(false);
-    setTimeout(() => {
-      if (typeof window !== "undefined") window.location.reload();
-    }, 600);
+  };
+
+  // Apply with the selected pincode city — called from the Apply button
+  const handleApplySelectedCity = () => {
+    if (!selectedPincodeCity) return;
+    handleSelect({
+      city: selectedPincodeCity.city,
+      state: selectedPincodeCity.state,
+      country: selectedPincodeCity.country || "India",
+      pincode: selectedPincodeCity.pincode,
+      source: "manual",
+    });
   };
 
   return (
@@ -591,14 +609,35 @@ export function LocationModal({
                 onChange={(e) => {
                   const v = e.target.value.replace(/\D/g, "").slice(0, 6);
                   setPincodeInput(v);
+                  setSelectedPincodeCity(null);
                   triggerPincodeCheck(v);
                 }}
                 placeholder="Enter 6-digit pincode"
                 className="h-11 flex-1 rounded-lg border-border text-sm shadow-none"
               />
               <Button
-                onClick={handlePincodeApply}
-                disabled={pincodeInput.length !== 6 || checking}
+                onClick={() => {
+                  // If a city is selected, apply it
+                  if (selectedPincodeCity) {
+                    handleApplySelectedCity();
+                    return;
+                  }
+                  // If single city was auto-selected (no separate click needed), just check
+                  if (banner.type === "success" && banner.cities && banner.cities.length <= 1) {
+                    handleApplySelectedCity();
+                    return;
+                  }
+                  // Otherwise, run the pincode check
+                  handlePincodeApply();
+                }}
+                disabled={
+                  checking ||
+                  (pincodeInput.length !== 6) ||
+                  (banner.type === "success" &&
+                    banner.cities &&
+                    banner.cities.length > 1 &&
+                    !selectedPincodeCity)
+                }
                 size="default"
                 className={cn(
                   "h-11 px-4 transition-all",
@@ -610,6 +649,11 @@ export function LocationModal({
               >
                 {checking ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
+                ) : banner.type === "success" && !selectedPincodeCity && banner.cities && banner.cities.length > 1 ? (
+                  <>
+                    <MapPin className="mr-1.5 h-4 w-4" />
+                    Select a city
+                  </>
                 ) : banner.type === "success" ? (
                   <>
                     <Check className="mr-1.5 h-4 w-4" />
@@ -652,30 +696,41 @@ export function LocationModal({
                   <ul className="mt-2 divide-y divide-emerald-200 overflow-hidden rounded-md border border-emerald-200 bg-white">
                     {banner.cities
                       .filter((c) => c.isActive !== false)
-                      .map((c) => (
-                        <li key={c.name}>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              handleSelect({
-                                city: c.name,
-                                state: banner.state,
-                                country: "India",
-                                pincode: banner.pincode,
-                                source: "manual",
-                              });
-                            }}
-                            className="flex w-full items-center gap-2 px-2.5 py-2 text-left text-xs text-emerald-900 transition-colors hover:bg-emerald-50 active:bg-emerald-100"
-                          >
-                            <MapPin className="h-3.5 w-3.5 flex-shrink-0 text-emerald-600" />
-                            <span className="font-medium">{c.name}</span>
-                            {banner.state && (
-                              <span className="text-emerald-700/70">· {banner.state}</span>
-                            )}
-                            <ChevronRight className="ml-auto h-3.5 w-3.5 flex-shrink-0 text-emerald-600/50" />
-                          </button>
-                        </li>
-                      ))}
+                      .map((c) => {
+                        const isSelected = selectedPincodeCity?.city === c.name;
+                        return (
+                          <li key={c.name}>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedPincodeCity({
+                                  city: c.name,
+                                  state: banner.state || "",
+                                  country: "India",
+                                  pincode: banner.pincode,
+                                });
+                              }}
+                              className={cn(
+                                "flex w-full items-center gap-2 px-2.5 py-2 text-left text-xs text-emerald-900 transition-colors active:bg-emerald-100",
+                                isSelected
+                                  ? "bg-emerald-100 font-semibold"
+                                  : "hover:bg-emerald-50"
+                              )}
+                            >
+                              {isSelected ? (
+                                <CheckCircle2 className="h-3.5 w-3.5 flex-shrink-0 text-emerald-700" />
+                              ) : (
+                                <MapPin className="h-3.5 w-3.5 flex-shrink-0 text-emerald-600" />
+                              )}
+                              <span className="font-medium">{c.name}</span>
+                              {banner.state && (
+                                <span className="text-emerald-700/70">· {banner.state}</span>
+                              )}
+                              <ChevronRight className="ml-auto h-3.5 w-3.5 flex-shrink-0 text-emerald-600/50" />
+                            </button>
+                          </li>
+                        );
+                      })}
                   </ul>
                 )}
               </div>
