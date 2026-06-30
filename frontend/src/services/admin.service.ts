@@ -1,4 +1,5 @@
 import api from './api';
+import axios from 'axios';
 
 export const adminService = {
   // Dashboard
@@ -318,22 +319,40 @@ export const adminService = {
     return response.data;
   },
 
-  // Upload
+  // Upload — bypass Next.js rewrite proxy for large files to avoid Vercel function timeout
   uploadImage: async (file: File): Promise<any> => {
     const formData = new FormData();
     formData.append('file', file);
-    const response = await api.post('/upload/image', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
+    const token = localStorage.getItem('accessToken');
+    const response = await axios.post(
+      `${process.env.NEXT_PUBLIC_BACKEND_URL || 'https://apnakit-backend.onrender.com'}/api/v1/upload/image`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        timeout: 120000,
+      }
+    );
     return response.data;
   },
 
   uploadVideo: async (file: File): Promise<any> => {
     const formData = new FormData();
     formData.append('file', file);
-    const response = await api.post('/upload/video', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
+    const token = localStorage.getItem('accessToken');
+    const response = await axios.post(
+      `${process.env.NEXT_PUBLIC_BACKEND_URL || 'https://apnakit-backend.onrender.com'}/api/v1/upload/video`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        timeout: 300000,
+      }
+    );
     return response.data;
   },
 
