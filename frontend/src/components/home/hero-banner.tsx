@@ -70,7 +70,7 @@ function HeroVideo({
       preload="auto"
       muted={isMuted}
       onEnded={loop ? undefined : onEnded}
-      className="h-full w-full object-cover"
+      className="h-full w-full object-contain"
       onError={(e) => {
         const video = e.currentTarget as HTMLVideoElement;
         const parent = video.parentElement;
