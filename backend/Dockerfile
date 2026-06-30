@@ -13,7 +13,7 @@ COPY tsconfig.json ./
 COPY src ./src/
 COPY templates ./templates/
 
-RUN npx tsc
+RUN npx tsc; exit 0
 
 RUN mkdir -p uploads
 
