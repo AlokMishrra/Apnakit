@@ -131,6 +131,7 @@ export function TruecallerButton({
   }, []);
 
   if (!TRUECALLER_PARTNER_KEY) return null;
+  if (platform !== "android") return null;
 
   return (
     <div className={className}>
