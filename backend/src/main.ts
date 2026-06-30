@@ -1,5 +1,5 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
+import { ValidationPipe, RequestMethod } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import helmet from 'helmet';
 import * as compression from 'compression';
@@ -33,7 +33,12 @@ async function bootstrap() {
     credentials: true,
   });
 
-  app.setGlobalPrefix('api/v1');
+  app.setGlobalPrefix('api/v1', {
+    exclude: [
+      { path: 'truecaller/callback', method: RequestMethod.POST },
+      { path: 'truecaller/callback', method: RequestMethod.GET },
+    ],
+  });
 
   // Static files for uploaded images — explicitly set CORS headers so the
   // frontend (different port) can load them
