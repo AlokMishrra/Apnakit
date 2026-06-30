@@ -233,7 +233,7 @@ export class DeliveryService {
     const mapped = orders.map((order) => {
       const addr = order.shippingAddress;
       const addressStr = addr
-        ? [addr.street, addr.city, addr.state, addr.pincode].filter(Boolean).join(', ')
+        ? [addr.addressLine1, addr.city, addr.state, addr.pincode].filter(Boolean).join(', ')
         : 'No address';
       const customerName = order.user
         ? `${order.user.firstName || ''} ${order.user.lastName || ''}`.trim() || 'Customer'
