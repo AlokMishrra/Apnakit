@@ -470,9 +470,17 @@ export class ProductsService {
     } else {
       const adminUser = await this.prisma.user.findUnique({ where: { id: userId } });
       if (adminUser?.role === 'ADMIN') {
-        const defaultSeller = await this.prisma.seller.findFirst();
+        let defaultSeller = await this.prisma.seller.findFirst();
         if (!defaultSeller) {
-          throw new BadRequestException('No seller profile found. Please create a seller first.');
+          defaultSeller = await this.prisma.seller.create({
+            data: {
+              userId,
+              businessName: 'ApnaKit Store',
+              businessType: 'INDIVIDUAL',
+              isVerified: true,
+              isActive: true,
+            },
+          });
         }
         sellerId = defaultSeller.id;
       } else {
