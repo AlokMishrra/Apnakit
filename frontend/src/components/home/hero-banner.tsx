@@ -193,13 +193,13 @@ export function HeroBanner() {
   return (
     <div className="w-full px-3 sm:px-4 lg:px-6">
       <div
-        className="relative mx-auto max-w-7xl overflow-hidden rounded-2xl shadow-lg sm:rounded-3xl sm:shadow-xl"
+        className="relative mx-auto max-w-7xl overflow-hidden rounded-2xl shadow-lg sm:rounded-3xl sm:shadow-xl bg-black"
         onMouseEnter={() => setIsPaused(true)}
         onMouseLeave={() => setIsPaused(false)}
       >
         {/* Mobile: 16:9 (full width looks good on narrow screens).
-            Desktop: capped at ~400px tall so it doesn't dominate the viewport. */}
-        <div className="relative w-full aspect-video sm:aspect-[5/2] lg:max-h-[420px]">
+            Desktop: fixed height with video/object-contain centered, no cropping. */}
+        <div className="relative w-full aspect-video sm:aspect-[16/9] lg:aspect-auto lg:h-[400px] flex items-center justify-center">
           <div
             className="flex h-full transition-transform duration-500 ease-in-out"
             style={{ transform: `translateX(-${currentSlide * 100}%)` }}
@@ -220,7 +220,7 @@ export function HeroBanner() {
                   )}
                 >
                   {banner.image && (
-                    <div className="absolute inset-0">
+                    <div className="absolute inset-0 flex items-center justify-center">
                       {isVideo ? (
                         <HeroVideo
                           src={banner.image}
@@ -232,11 +232,11 @@ export function HeroBanner() {
                           onEnded={nextSlide}
                         />
                       ) : (
-                        <div className="relative h-full w-full">
+                        <div className="relative h-full w-full flex items-center justify-center">
                           <img
                             src={banner.image}
                             alt={banner.title}
-                            className="h-full w-full object-contain"
+                            className="max-h-full max-w-full object-contain"
                             onError={(e) => {
                               const img = e.target as HTMLImageElement;
                               const parent = img.parentElement;
