@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { X, Download, Share2 } from "lucide-react";
+import { X, Download, Share2, Smartphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface BeforeInstallPromptEvent extends Event {
@@ -10,38 +10,57 @@ interface BeforeInstallPromptEvent extends Event {
 }
 
 const DISMISS_KEY = "pwa_install_dismissed";
-const DISMISS_DAYS = 7;
+const DISMISS_DAYS = 3;
 
 export function PwaInstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [show, setShow] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
+  const [installed, setInstalled] = useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    // Check if already dismissed recently
+    // Already installed?
+    if (window.matchMedia("(display-mode: standalone)").matches) {
+      setInstalled(true);
+      return;
+    }
+    if ((navigator as any).standalone === true) {
+      setInstalled(true);
+      return;
+    }
+
+    // Dismissed recently?
     const dismissed = localStorage.getItem(DISMISS_KEY);
     if (dismissed) {
       const daysSince = (Date.now() - Number(dismissed)) / (1000 * 60 * 60 * 24);
       if (daysSince < DISMISS_DAYS) return;
     }
 
-    // Check if already installed (standalone mode)
-    if (window.matchMedia("(display-mode: standalone)").matches) return;
-
-    // Detect iOS (which doesn't fire beforeinstallprompt)
+    // Detect iOS
     const ua = navigator.userAgent;
     const iOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
     setIsIOS(iOS);
 
+    // Listen for install completion
+    const installedHandler = () => {
+      setInstalled(true);
+      setShow(false);
+      localStorage.removeItem(DISMISS_KEY);
+    };
+    window.addEventListener("appinstalled", installedHandler);
+
     if (iOS) {
-      // Show iOS prompt after a short delay
-      const timer = setTimeout(() => setShow(true), 3000);
-      return () => clearTimeout(timer);
+      // iOS: show the persistent banner after a short delay
+      const timer = setTimeout(() => setShow(true), 2000);
+      return () => {
+        clearTimeout(timer);
+        window.removeEventListener("appinstalled", installedHandler);
+      };
     }
 
-    // Listen for beforeinstallprompt (Android/Chrome)
+    // Android/Chrome: listen for beforeinstallprompt
     const handler = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
@@ -49,7 +68,10 @@ export function PwaInstallPrompt() {
     };
     window.addEventListener("beforeinstallprompt", handler);
 
-    return () => window.removeEventListener("beforeinstallprompt", handler);
+    return () => {
+      window.removeEventListener("beforeinstallprompt", handler);
+      window.removeEventListener("appinstalled", installedHandler);
+    };
   }, []);
 
   const handleInstall = async () => {
@@ -57,6 +79,7 @@ export function PwaInstallPrompt() {
     await deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
     if (outcome === "accepted") {
+      setInstalled(true);
       setShow(false);
     }
     setDeferredPrompt(null);
@@ -67,41 +90,41 @@ export function PwaInstallPrompt() {
     setShow(false);
   };
 
-  if (!show) return null;
+  if (installed || !show) return null;
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-50 p-3 sm:p-4">
-      <div className="relative mx-auto flex max-w-md items-start gap-3 rounded-xl border bg-white p-4 shadow-2xl">
-        <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-indigo-100">
-          <Download className="h-5 w-5 text-indigo-600" />
+    <div className="fixed inset-x-0 bottom-0 z-50 border-t border-gray-200 bg-white shadow-[0_-2px_10px_rgba(0,0,0,0.08)]">
+      <div className="mx-auto flex max-w-2xl items-center gap-3 p-3">
+        <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600">
+          <Smartphone className="h-5 w-5 text-white" />
         </div>
-        <div className="flex-1 pr-6">
-          <p className="text-sm font-semibold text-foreground">Install ApnaKit App</p>
-          <p className="mt-0.5 text-xs text-muted-foreground">
-            {isIOS
-              ? "Tap the Share button, then select \"Add to Home Screen\""
-              : "Install for faster access and a better shopping experience"}
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-semibold text-foreground">
+            Install ApnaKit App
           </p>
-          {!isIOS && deferredPrompt && (
-            <Button
-              onClick={handleInstall}
-              size="sm"
-              className="mt-2 h-8 text-xs"
-            >
-              <Download className="mr-1 h-3 w-3" />
-              Install App
-            </Button>
-          )}
-          {isIOS && (
-            <div className="mt-2 flex items-center gap-1 text-xs text-indigo-600">
-              <Share2 className="h-3.5 w-3.5" />
-              <span>Then tap &quot;Add to Home Screen&quot;</span>
-            </div>
-          )}
+          <p className="truncate text-xs text-muted-foreground">
+            {isIOS
+              ? 'Tap the Share button, then "Add to Home Screen"'
+              : "Faster access • Works offline • No downloads"}
+          </p>
         </div>
+        {isIOS ? (
+          <div className="flex flex-shrink-0 items-center gap-1 text-indigo-600">
+            <Share2 className="h-5 w-5" />
+          </div>
+        ) : (
+          <Button
+            onClick={handleInstall}
+            size="sm"
+            className="h-8 flex-shrink-0 rounded-full px-4 text-xs font-semibold"
+          >
+            <Download className="mr-1 h-3.5 w-3.5" />
+            Install
+          </Button>
+        )}
         <button
           onClick={handleDismiss}
-          className="absolute right-2 top-2 rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+          className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-gray-100 hover:text-foreground"
           aria-label="Dismiss"
         >
           <X className="h-4 w-4" />
