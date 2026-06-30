@@ -4,6 +4,7 @@ import { PassportModule } from '@nestjs/passport';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
+import { TruecallerCallbackController } from './truecaller-callback.controller';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { GoogleStrategy } from './strategies/google.strategy';
 import { NotificationsModule } from '../notifications/notifications.module';
@@ -23,7 +24,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
     }),
     NotificationsModule,
   ],
-  controllers: [AuthController],
+  controllers: [AuthController, TruecallerCallbackController],
   providers: [AuthService, JwtStrategy, GoogleStrategy],
   exports: [AuthService, JwtModule],
 })
