@@ -4,6 +4,12 @@ import { Public } from '../../common/decorators/roles.decorator';
 @Controller()
 export class HealthController {
   @Public()
+  @Get()
+  root() {
+    return { status: 'ok', timestamp: new Date().toISOString() };
+  }
+
+  @Public()
   @Get('health')
   check() {
     return { status: 'ok', timestamp: new Date().toISOString() };
