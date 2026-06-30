@@ -52,13 +52,13 @@ export default function NewCouponPage() {
       await adminService.createCoupon({
         code: form.code,
         description: form.description,
-        type: form.type,
+        type: form.type.toUpperCase(),
         value: Number(form.value),
-        minOrder: Number(form.minOrder) || 0,
-        maxDiscount: form.maxDiscount ? Number(form.maxDiscount) : null,
+        minimumOrder: Number(form.minOrder) || 0,
+        maximumDiscount: form.maxDiscount ? Number(form.maxDiscount) : null,
         usageLimit: form.usageLimit ? Number(form.usageLimit) : null,
-        startDate: form.startDate,
-        endDate: form.endDate,
+        startsAt: form.startDate,
+        expiresAt: form.endDate,
         isActive: form.isActive,
         applicableCategories: form.applicableCategories,
       });

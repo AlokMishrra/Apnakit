@@ -123,6 +123,26 @@ export class PaymentsService {
       return updated;
     });
 
+    if (payment.order.status === 'PENDING' as any) {
+      try {
+        const { OrdersService } = await import('../orders/orders.service');
+        // We can't inject here, so do it inline
+        await this.prisma.order.update({
+          where: { id: payment.orderId },
+          data: { status: 'CONFIRMED' as any },
+        });
+        await this.prisma.orderStatusHistory.create({
+          data: {
+            orderId: payment.orderId,
+            status: 'CONFIRMED' as any,
+            notes: 'Payment verified — auto-confirmed',
+          },
+        });
+      } catch (e) {
+        this.logger.warn('Failed to auto-confirm order after payment', e as any);
+      }
+    }
+
     return {
       paymentId: updatedPayment.id,
       status: updatedPayment.status,

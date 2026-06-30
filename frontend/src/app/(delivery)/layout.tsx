@@ -12,9 +12,14 @@ import {
   Menu,
   X,
   Truck,
+  LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { deliveryService } from "@/services/delivery.service";
+import { logout } from "@/store/slices/authSlice";
+import { clearAuthCookies } from "@/lib/utils";
+import { useDispatch } from "react-redux";
+import { useRouter } from "next/navigation";
 
 const navItems = [
   { href: "/delivery/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -30,9 +35,17 @@ export default function DeliveryLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const dispatch = useDispatch();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isOnline, setIsOnline] = useState(true);
   const [profile, setProfile] = useState<any>(null);
+
+  const handleLogout = () => {
+    dispatch(logout());
+    clearAuthCookies();
+    router.push("/login");
+  };
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -118,7 +131,7 @@ export default function DeliveryLayout({
             })}
           </nav>
 
-          {/* Partner info */}
+          {/* Partner info + Logout */}
           <div className="border-t p-4">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 text-sm font-bold text-emerald-700">
@@ -135,6 +148,13 @@ export default function DeliveryLayout({
                 )}
               </div>
             </div>
+            <button
+              onClick={handleLogout}
+              className="mt-3 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-red-600 transition-colors hover:bg-red-50"
+            >
+              <LogOut className="h-4 w-4" />
+              Logout
+            </button>
           </div>
         </div>
       </aside>
@@ -172,15 +192,17 @@ export default function DeliveryLayout({
               </span>
               <button
                 onClick={() => setIsOnline(!isOnline)}
+                role="switch"
+                aria-checked={isOnline}
                 className={cn(
-                  "relative h-7 w-12 rounded-full transition-colors",
+                  "relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer items-center rounded-full transition-colors",
                   isOnline ? "bg-emerald-500" : "bg-gray-300"
                 )}
               >
                 <span
                   className={cn(
-                    "absolute top-0.5 h-6 w-6 rounded-full bg-white shadow-sm transition-transform",
-                    isOnline ? "translate-x-5" : "translate-x-0.5"
+                    "pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow-lg ring-0 transition-transform",
+                    isOnline ? "translate-x-[22px]" : "translate-x-[2px]"
                   )}
                 />
               </button>

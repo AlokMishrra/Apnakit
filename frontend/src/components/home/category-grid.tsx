@@ -34,6 +34,7 @@ interface Category {
   slug: string;
   icon?: string;
   image?: string;
+  isComingSoon?: boolean;
   _count?: { products?: number };
 }
 
@@ -183,24 +184,55 @@ export function CategoryGrid() {
         >
           {categories.map((category) => {
             const config = getConfigForCategory(category.slug);
-            return (
-              <Link
-                key={category.id}
-                href={`/category/${category.slug}`}
-                className="group flex flex-col items-center gap-2.5 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5 min-w-[90px] sm:min-w-0 flex-shrink-0 scroll-snap-align-start"
+            const isComingSoon = category.isComingSoon;
+            const content = (
+              <div
+                className={cn(
+                  "group flex flex-col items-center gap-2.5 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm transition-all min-w-[90px] sm:min-w-0 flex-shrink-0 scroll-snap-align-start relative overflow-hidden",
+                  isComingSoon
+                    ? "cursor-not-allowed opacity-70"
+                    : "hover:shadow-md hover:-translate-y-0.5"
+                )}
               >
+                {isComingSoon && (
+                  <div className="absolute top-0 right-0 z-10 rounded-bl-lg bg-emerald-600 px-1 py-px sm:px-2 sm:py-0.5">
+                    <span className="text-[8px] sm:text-[10px] font-bold text-white uppercase tracking-wider">Coming Soon</span>
+                  </div>
+                )}
                 <div
                   className={cn(
-                    "flex h-14 w-14 items-center justify-center rounded-full transition-transform group-hover:scale-110",
+                    "flex h-14 w-14 items-center justify-center rounded-full transition-transform",
                     config.bg,
-                    config.color
+                    config.color,
+                    !isComingSoon && "group-hover:scale-110"
                   )}
                 >
                   {config.icon}
                 </div>
-                <span className="text-center text-xs font-medium text-gray-700 group-hover:text-indigo-600 leading-tight whitespace-nowrap">
+                <span className={cn(
+                  "text-center text-xs font-medium leading-tight whitespace-nowrap",
+                  isComingSoon ? "text-gray-400" : "text-gray-700 group-hover:text-indigo-600"
+                )}>
                   {category.name}
                 </span>
+              </div>
+            );
+
+            if (isComingSoon) {
+              return (
+                <div key={category.id} title="Coming Soon">
+                  {content}
+                </div>
+              );
+            }
+
+            return (
+              <Link
+                key={category.id}
+                href={`/category/${category.slug}`}
+                className="scroll-snap-align-start"
+              >
+                {content}
               </Link>
             );
           })}

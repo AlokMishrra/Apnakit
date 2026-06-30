@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { Heart, Share2, ShoppingCart, Zap, Truck, Shield, RotateCcw, Check, Loader2 } from "lucide-react";
+import { Heart, Share2, ShoppingCart, Zap, Check, Loader2 } from "lucide-react";
 import { cn, calculateDiscount } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -24,12 +24,6 @@ function ProductInfo({ product, className }: ProductInfoProps) {
   const [selectedVariant, setSelectedVariant] = React.useState<Record<string, string>>({});
   const [quantity, setQuantity] = React.useState(1);
   const [isWishlisted, setIsWishlisted] = React.useState(false);
-  const [pincode, setPincode] = React.useState("");
-  const [deliveryInfo, setDeliveryInfo] = React.useState<{
-    available: boolean;
-    date: string;
-    charge: string;
-  } | null>(null);
   const [showShareMenu, setShowShareMenu] = React.useState(false);
   const [addingToCart, setAddingToCart] = React.useState(false);
 
@@ -113,19 +107,6 @@ function ProductInfo({ product, className }: ProductInfoProps) {
   };
 
   const discount = calculateDiscount(product.price, product.originalPrice);
-
-  const handleCheckDelivery = () => {
-    if (pincode.length === 6) {
-      const days = Math.floor(Math.random() * 3) + 2;
-      const date = new Date();
-      date.setDate(date.getDate() + days);
-      setDeliveryInfo({
-        available: true,
-        date: date.toLocaleDateString("en-IN", { weekday: "short", month: "short", day: "numeric" }),
-        charge: parseInt(pincode) % 3 === 0 ? "FREE" : "₹49",
-      });
-    }
-  };
 
   const handleShare = async () => {
     if (navigator.share) {
@@ -299,65 +280,6 @@ function ProductInfo({ product, className }: ProductInfoProps) {
           <Zap className="mr-2 h-5 w-5" />
           Buy Now
         </Button>
-      </div>
-
-      <Separator />
-
-      {/* Delivery Check */}
-      <div className="space-y-3">
-        <p className="text-sm font-medium text-foreground">Delivery Options</p>
-        <div className="flex gap-2">
-          <input
-            type="text"
-            placeholder="Enter pincode"
-            value={pincode}
-            onChange={(e) => setPincode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-            className="flex h-10 w-full max-w-[200px] rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
-          />
-          <Button variant="outline" size="sm" onClick={handleCheckDelivery} disabled={pincode.length !== 6}>
-            Check
-          </Button>
-        </div>
-        {deliveryInfo && (
-          <div className="space-y-2 text-sm">
-            <div className="flex items-center gap-2">
-              <Truck className="h-4 w-4 text-emerald-600" />
-              <span>
-                Delivery by <span className="font-medium">{deliveryInfo.date}</span>
-                {deliveryInfo.charge === "FREE" ? (
-                  <span className="ml-2 text-emerald-600 font-medium">FREE</span>
-                ) : (
-                  <span className="ml-2 text-muted-foreground">{deliveryInfo.charge}</span>
-                )}
-              </span>
-            </div>
-          </div>
-        )}
-      </div>
-
-      <Separator />
-
-      {/* Highlights */}
-      <div className="space-y-3">
-        <p className="text-sm font-medium text-foreground">Highlights</p>
-        <ul className="grid grid-cols-1 gap-2 text-sm text-muted-foreground sm:grid-cols-2">
-          <li className="flex items-center gap-2">
-            <Shield className="h-4 w-4 shrink-0 text-primary" />
-            1 Year Warranty
-          </li>
-          <li className="flex items-center gap-2">
-            <RotateCcw className="h-4 w-4 shrink-0 text-primary" />
-            7 Days Replacement
-          </li>
-          <li className="flex items-center gap-2">
-            <Truck className="h-4 w-4 shrink-0 text-primary" />
-            Free Delivery
-          </li>
-          <li className="flex items-center gap-2">
-            <Check className="h-4 w-4 shrink-0 text-primary" />
-            Genuine Product
-          </li>
-        </ul>
       </div>
     </div>
   );

@@ -69,6 +69,7 @@ interface CategoryInfo {
   slug: string;
   image?: string;
   description?: string;
+  isComingSoon?: boolean;
   children?: SubCategory[];
 }
 
@@ -297,6 +298,13 @@ export default function CategoryPage() {
           <p className="mb-4 sm:mb-6 text-sm text-muted-foreground max-w-2xl">
             {category.description}
           </p>
+        )}
+
+        {category?.isComingSoon && (
+          <div className="mb-6 rounded-xl border-2 border-dashed border-emerald-300 bg-emerald-50 p-6 text-center">
+            <p className="text-lg font-bold text-emerald-700">Coming Soon</p>
+            <p className="mt-1 text-sm text-emerald-600">This category is coming soon. Stay tuned!</p>
+          </div>
         )}
 
         {/* Subcategories */}

@@ -67,6 +67,55 @@ export class DeliveryController {
     });
   }
 
+  @Get('available-orders')
+  @UseGuards(RolesGuard)
+  @Roles(Role.DELIVERY, Role.ADMIN)
+  @ApiOperation({ summary: 'Get unassigned confirmed orders available for pickup' })
+  async getAvailableOrders(
+    @CurrentUser() user: CurrentUserData,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ) {
+    return this.deliveryService.getAvailableOrders({ page, limit });
+  }
+
+  @Get('assignments/:id')
+  @UseGuards(RolesGuard)
+  @Roles(Role.DELIVERY, Role.ADMIN)
+  @ApiOperation({ summary: 'Get single delivery assignment details' })
+  async getAssignmentById(
+    @CurrentUser() user: CurrentUserData,
+    @Param('id') id: string,
+  ) {
+    const partnerId = await this.deliveryService.resolvePartnerId(user.id);
+    return this.deliveryService.getAssignmentById(id, partnerId);
+  }
+
+  @Post('assignments/:id/reject')
+  @UseGuards(RolesGuard)
+  @Roles(Role.DELIVERY, Role.ADMIN)
+  @ApiOperation({ summary: 'Reject a delivery assignment' })
+  async rejectAssignment(
+    @CurrentUser() user: CurrentUserData,
+    @Param('id') id: string,
+    @Body('reason') reason?: string,
+  ) {
+    const partnerId = await this.deliveryService.resolvePartnerId(user.id);
+    return this.deliveryService.rejectAssignment(id, partnerId, reason);
+  }
+
+  @Post('accept-order/:orderId')
+  @UseGuards(RolesGuard)
+  @Roles(Role.DELIVERY, Role.ADMIN)
+  @ApiOperation({ summary: 'Accept an unassigned order for delivery' })
+  async acceptOrder(
+    @CurrentUser() user: CurrentUserData,
+    @Param('orderId') orderId: string,
+  ) {
+    const partnerId = await this.deliveryService.resolvePartnerId(user.id);
+    return this.deliveryService.assignDeliveryPartner({ orderId, deliveryPartnerId: partnerId });
+  }
+
   @Patch('assignments/:id/status')
   @UseGuards(RolesGuard)
   @Roles(Role.DELIVERY, Role.ADMIN)

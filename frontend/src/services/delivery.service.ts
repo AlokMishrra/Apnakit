@@ -15,8 +15,36 @@ export const deliveryService = {
     return response.data;
   },
 
+  getAssignment: async (id: string): Promise<any> => {
+    const response = await api.get(`/delivery/assignments/${id}`);
+    return response.data;
+  },
+
   updateAssignmentStatus: async (id: string, data: any): Promise<any> => {
     const response = await api.patch(`/delivery/assignments/${id}/status`, data);
+    return response.data;
+  },
+
+  rejectAssignment: async (id: string, reason?: string): Promise<any> => {
+    const response = await api.post(`/delivery/assignments/${id}/reject`, { reason });
+    return response.data;
+  },
+
+  acceptOrder: async (orderId: string): Promise<any> => {
+    const response = await api.post(`/delivery/accept-order/${orderId}`);
+    return response.data;
+  },
+
+  getAvailableOrders: async (params?: Record<string, any>): Promise<any> => {
+    const searchParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+          searchParams.append(key, String(value));
+        }
+      });
+    }
+    const response = await api.get(`/delivery/available-orders?${searchParams.toString()}`);
     return response.data;
   },
 

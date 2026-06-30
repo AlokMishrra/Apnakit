@@ -82,7 +82,9 @@ export default function CartPage() {
   const taxAmount = Math.round(subtotal * taxRate);
 
   let couponDiscount = 0;
-  if (appliedCoupon) {
+  if (cart?.discount && Number(cart.discount) > 0) {
+    couponDiscount = Number(cart.discount);
+  } else if (appliedCoupon) {
     couponDiscount =
       appliedCoupon.type === "percent"
         ? Math.round((subtotal * appliedCoupon.discount) / 100)
@@ -154,23 +156,26 @@ export default function CartPage() {
       const res = await cartService.applyCoupon(couponCode.trim().toUpperCase());
       const data = (res as any)?.data?.data || (res as any)?.data || res;
       setCart(data);
-      const coupon = data?.coupon || appliedCoupon;
+      const coupon = data?.coupon;
+      const cartDiscount = Number(data?.discount) || 0;
       if (coupon) {
         setAppliedCoupon({
           code: coupon.code || couponCode.trim().toUpperCase(),
-          discount: coupon.discountPercent
-            ? Number(coupon.discountPercent)
-            : coupon.discountAmount
-            ? Number(coupon.discountAmount)
-            : 10,
-          type: coupon.discountType === "FIXED" || coupon.discountType === "fixed" ? "fixed" : "percent",
+          discount: coupon.type === "PERCENTAGE"
+            ? Number(coupon.value)
+            : coupon.type === "FIXED"
+            ? Number(coupon.value)
+            : 0,
+          type: coupon.type === "FIXED" ? "fixed" : "percent",
+          discountAmount: cartDiscount,
         });
-        toast.success("Coupon applied! 🎉", {
-          description: `Code ${coupon.code || couponCode.toUpperCase()} applied to your cart`,
+        toast.success("Coupon applied!", {
+          description: `${coupon.code} applied — you save ${formatCurrency(cartDiscount)}`,
         });
       }
     } catch (err: any) {
-      toast.error("Invalid coupon code", { description: err.message });
+      const msg = err?.response?.data?.message || err?.message || "Invalid coupon code";
+      toast.error("Coupon failed", { description: Array.isArray(msg) ? msg[0] : msg });
     } finally {
       setIsApplyingCoupon(false);
     }
@@ -530,35 +535,6 @@ export default function CartPage() {
                 </CardContent>
               </Card>
 
-              <Card className="border-indigo-100 bg-indigo-50/30">
-                <CardContent className="p-4">
-                  <div className="space-y-3">
-                    <div className="flex items-start gap-3">
-                      <Truck className="mt-0.5 h-4 w-4 flex-shrink-0 text-indigo-600" />
-                      <div>
-                        <p className="text-xs font-medium text-foreground">Free Delivery</p>
-                        <p className="text-xs text-muted-foreground">
-                          On orders above {formatCurrency(FREE_DELIVERY_THRESHOLD)}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-3">
-                      <ShieldCheck className="mt-0.5 h-4 w-4 flex-shrink-0 text-indigo-600" />
-                      <div>
-                        <p className="text-xs font-medium text-foreground">Secure Payment</p>
-                        <p className="text-xs text-muted-foreground">100% secure checkout</p>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-3">
-                      <Clock className="mt-0.5 h-4 w-4 flex-shrink-0 text-indigo-600" />
-                      <div>
-                        <p className="text-xs font-medium text-foreground">Easy Returns</p>
-                        <p className="text-xs text-muted-foreground">7-day return policy</p>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
             </div>
           </div>
         </div>

@@ -695,20 +695,6 @@ export default function CheckoutPage() {
                       </p>
                     )}
                   </div>
-                  <div className="mt-4 space-y-2">
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <Truck className="h-3.5 w-3.5" />
-                      <span>{shippingCharge === 0 ? "Free delivery" : `Delivery: ${formatCurrency(shippingCharge)}`}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <ShieldCheck className="h-3.5 w-3.5" />
-                      <span>100% secure payment</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <Package className="h-3.5 w-3.5" />
-                      <span>7-day easy returns</span>
-                    </div>
-                  </div>
                 </CardContent>
               </Card>
             </div>

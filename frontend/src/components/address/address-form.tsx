@@ -91,6 +91,11 @@ export function AddressForm({
     checkPincode(cleaned);
   };
 
+  const handleSelectCity = (city: { name: string; state: string }) => {
+    set("city", city.name);
+    if (city.state) set("state", city.state);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (
@@ -167,7 +172,7 @@ export function AddressForm({
               <Check className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-emerald-600" />
             )}
           </div>
-          <ServiceabilityBanner state={pinState} />
+          <ServiceabilityBanner state={pinState} onSelectCity={handleSelectCity} />
         </div>
 
         <div>

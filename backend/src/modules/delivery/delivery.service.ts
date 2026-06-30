@@ -163,7 +163,7 @@ export class DeliveryService {
     };
 
     if (query.status) {
-      where.status = query.status as any;
+      where.status = query.status.toUpperCase().replace('-', '_') as any;
     }
 
     const [assignments, total] = await Promise.all([
@@ -193,7 +193,196 @@ export class DeliveryService {
       this.prisma.deliveryAssignment.count({ where }),
     ]);
 
-    return paginatedResponse(assignments, total, page, limit);
+    const mapped = assignments.map((a) => this.mapAssignment(a));
+
+    return paginatedResponse(mapped, total, page, limit);
+  }
+
+  async getAvailableOrders(query: { page?: number; limit?: number }) {
+    const { page, limit, skip } = getPaginationParams(query);
+
+    const [orders, total] = await Promise.all([
+      this.prisma.order.findMany({
+        where: {
+          status: 'CONFIRMED' as any,
+          deliveryAssignment: null,
+        },
+        include: {
+          items: {
+            include: {
+              product: { select: { id: true, name: true } },
+            },
+          },
+          shippingAddress: true,
+          user: {
+            select: { id: true, firstName: true, lastName: true, phone: true },
+          },
+        },
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.order.count({
+        where: {
+          status: 'CONFIRMED' as any,
+          deliveryAssignment: null,
+        },
+      }),
+    ]);
+
+    const mapped = orders.map((order) => {
+      const addr = order.shippingAddress;
+      const addressStr = addr
+        ? [addr.street, addr.city, addr.state, addr.pincode].filter(Boolean).join(', ')
+        : 'No address';
+      const customerName = order.user
+        ? `${order.user.firstName || ''} ${order.user.lastName || ''}`.trim() || 'Customer'
+        : 'Customer';
+
+      return {
+        id: order.id,
+        orderId: order.id,
+        orderNumber: order.orderNumber,
+        status: 'AVAILABLE',
+        customer: customerName,
+        phone: order.user?.phone || '',
+        address: addressStr,
+        items: order.items,
+        itemCount: order.items.length,
+        total: Number(order.total),
+        shippingCost: Number(order.shippingCost || 0),
+        createdAt: order.createdAt,
+      };
+    });
+
+    return paginatedResponse(mapped, total, page, limit);
+  }
+
+  async getAssignmentById(assignmentId: string, partnerId: string) {
+    const assignment = await this.prisma.deliveryAssignment.findFirst({
+      where: {
+        id: assignmentId,
+        deliveryPartnerId: partnerId,
+      },
+      include: {
+        order: {
+          include: {
+            items: {
+              include: {
+                product: {
+                  select: { id: true, name: true, images: { where: { isPrimary: true }, take: 1 } },
+                },
+              },
+            },
+            shippingAddress: true,
+            user: {
+              select: { id: true, firstName: true, lastName: true, phone: true },
+            },
+            statusHistory: {
+              orderBy: { createdAt: 'desc' },
+              take: 10,
+            },
+          },
+        },
+      },
+    });
+
+    if (!assignment) {
+      throw new NotFoundException('Delivery assignment not found');
+    }
+
+    return this.mapAssignmentDetail(assignment);
+  }
+
+  async rejectAssignment(assignmentId: string, partnerId: string, reason?: string) {
+    const assignment = await this.prisma.deliveryAssignment.findFirst({
+      where: {
+        id: assignmentId,
+        deliveryPartnerId: partnerId,
+        status: 'ASSIGNED' as any,
+      },
+    });
+
+    if (!assignment) {
+      throw new NotFoundException('Assignment not found or not in ASSIGNED status');
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.deliveryAssignment.delete({ where: { id: assignmentId } });
+
+      await tx.order.update({
+        where: { id: assignment.orderId },
+        data: { status: OrderStatus.CONFIRMED },
+      });
+
+      await tx.orderStatusHistory.create({
+        data: {
+          orderId: assignment.orderId,
+          status: OrderStatus.CONFIRMED,
+          notes: `Delivery rejected by partner. ${reason || ''}`.trim(),
+        },
+      });
+    });
+
+    this.logger.log(`Assignment ${assignmentId} rejected by partner ${partnerId}`);
+
+    return { success: true, message: 'Assignment rejected' };
+  }
+
+  private mapAssignment(a: any) {
+    const order = a.order;
+    const addr = order?.shippingAddress;
+    const addressStr = addr
+      ? [addr.street, addr.city, addr.state, addr.pincode].filter(Boolean).join(', ')
+      : 'No address';
+    const customerName = order?.user
+      ? `${order.user.firstName || ''} ${order.user.lastName || ''}`.trim() || 'Customer'
+      : 'Customer';
+
+    return {
+      id: a.id,
+      orderId: a.orderId,
+      status: a.status,
+      assignedAt: a.assignedAt,
+      pickedUpAt: a.pickedUpAt,
+      deliveredAt: a.deliveredAt,
+      customer: customerName,
+      phone: order?.user?.phone || '',
+      address: addressStr,
+      items: order?.items || [],
+      itemCount: order?.items?.length || 0,
+      total: Number(order?.total || 0),
+      shippingCost: Number(order?.shippingCost || 0),
+      orderNumber: order?.orderNumber || '',
+    };
+  }
+
+  private mapAssignmentDetail(a: any) {
+    const base = this.mapAssignment(a);
+    const order = a.order;
+
+    const timeline = [];
+    if (order?.statusHistory) {
+      for (const h of order.statusHistory) {
+        timeline.push({
+          status: h.status,
+          event: h.notes || `Status: ${h.status}`,
+          time: h.createdAt?.toISOString() || '',
+        });
+      }
+    }
+    if (a.pickedUpAt) {
+      timeline.unshift({ status: 'PICKED_UP', event: 'Picked up', time: a.pickedUpAt.toISOString() });
+    }
+    if (a.deliveredAt) {
+      timeline.unshift({ status: 'DELIVERED', event: 'Delivered', time: a.deliveredAt.toISOString() });
+    }
+
+    return {
+      ...base,
+      timeline,
+      shippingCost: Number(order?.shippingCost || 0),
+    };
   }
 
   async updateDeliveryStatus(
@@ -292,34 +481,37 @@ export class DeliveryService {
     query: { period?: 'today' | 'week' | 'month' | 'year' },
   ) {
     const now = new Date();
-    let startDate: Date;
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const weekStart = new Date(now);
+    weekStart.setDate(now.getDate() - 7);
+    const monthStart = new Date(now);
+    monthStart.setMonth(now.getMonth() - 1);
+    const allTimeStart = new Date(2020, 0, 1);
 
+    let startDate: Date;
     switch (query.period) {
       case 'today':
-        startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        startDate = todayStart;
         break;
       case 'week':
-        startDate = new Date(now);
-        startDate.setDate(now.getDate() - 7);
+        startDate = weekStart;
         break;
       case 'month':
-        startDate = new Date(now);
-        startDate.setMonth(now.getMonth() - 1);
+        startDate = monthStart;
         break;
       case 'year':
         startDate = new Date(now);
         startDate.setFullYear(now.getFullYear() - 1);
         break;
       default:
-        startDate = new Date(now);
-        startDate.setDate(now.getDate() - 30);
+        startDate = weekStart;
     }
 
-    const deliveries = await this.prisma.deliveryAssignment.findMany({
+    const allDeliveries = await this.prisma.deliveryAssignment.findMany({
       where: {
         deliveryPartnerId: partnerId,
         status: 'DELIVERED' as any,
-        deliveredAt: { gte: startDate },
+        deliveredAt: { gte: allTimeStart },
       },
       include: {
         order: {
@@ -329,28 +521,65 @@ export class DeliveryService {
       orderBy: { deliveredAt: 'desc' },
     });
 
-    const totalEarnings = deliveries.reduce(
-      (sum, d) => sum + Number(d.order?.total || 0) * 0.05,
-      0,
+    const filteredDeliveries = allDeliveries.filter(
+      (d) => d.deliveredAt && d.deliveredAt >= startDate,
     );
 
-    const earningsByDay = deliveries.reduce((acc, d) => {
+    const calcEarnings = (deliveries: any[]) =>
+      deliveries.reduce(
+        (sum, d) => sum + Number(d.order?.total || 0) * 0.05,
+        0,
+      );
+
+    const todayEarnings = calcEarnings(
+      allDeliveries.filter((d) => d.deliveredAt && d.deliveredAt >= todayStart),
+    );
+    const weekEarnings = calcEarnings(
+      allDeliveries.filter((d) => d.deliveredAt && d.deliveredAt >= weekStart),
+    );
+    const monthEarnings = calcEarnings(
+      allDeliveries.filter((d) => d.deliveredAt && d.deliveredAt >= monthStart),
+    );
+    const allTimeEarnings = calcEarnings(allDeliveries);
+
+    const earningsByDay = filteredDeliveries.reduce((acc, d) => {
       const date = d.deliveredAt?.toISOString().split('T')[0] || 'unknown';
       const earning = Number(d.order?.total || 0) * 0.05;
       acc[date] = (acc[date] || 0) + earning;
       return acc;
     }, {} as Record<string, number>);
 
+    const daily = Object.entries(earningsByDay).map(([date, amount]) => {
+      const d = new Date(date);
+      const dayName = d.toLocaleDateString('en-US', { weekday: 'short' });
+      return { day: dayName, date, amount };
+    }).slice(-7);
+
+    const transactions = filteredDeliveries.map((d) => ({
+      id: d.id,
+      type: 'delivery_fee' as const,
+      description: `Order #${d.order?.orderNumber || d.order?.id?.slice(-6) || 'N/A'}`,
+      time: d.deliveredAt?.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) || '',
+      orderId: d.order?.orderNumber || '',
+      amount: Number(d.order?.total || 0) * 0.05,
+    }));
+
     return {
       summary: {
-        totalDeliveries: deliveries.length,
-        totalEarnings,
+        today: todayEarnings,
+        week: weekEarnings,
+        month: monthEarnings,
+        allTime: allTimeEarnings,
+        totalDeliveries: filteredDeliveries.length,
         averageEarning:
-          deliveries.length > 0 ? totalEarnings / deliveries.length : 0,
-        period: query.period || 'last30days',
+          filteredDeliveries.length > 0
+            ? calcEarnings(filteredDeliveries) / filteredDeliveries.length
+            : 0,
+        period: query.period || 'week',
       },
-      earningsByDay,
-      deliveries,
+      daily,
+      transactions,
+      paymentHistory: [],
     };
   }
 
@@ -540,29 +769,58 @@ export class DeliveryService {
   }
 
   async getPartnerStats(partnerId: string) {
-    const partner = await this.prisma.deliveryPartner.findUnique({
-      where: { id: partnerId },
-      include: {
-        user: {
-          select: { firstName: true, lastName: true, phone: true },
+    let partner;
+    try {
+      partner = await this.prisma.deliveryPartner.findUnique({
+        where: { id: partnerId },
+        include: {
+          user: {
+            select: { firstName: true, lastName: true, phone: true },
+          },
         },
-      },
-    });
+      });
+    } catch (e) {
+      this.logger.warn(`Failed to find partner ${partnerId}: ${e}`);
+    }
 
     if (!partner) {
-      throw new NotFoundException('Delivery partner not found');
+      return {
+        partner: { id: partnerId, name: 'Delivery Partner', isAvailable: false, rating: 0 },
+        assigned: 0,
+        pickedUp: 0,
+        delivered: 0,
+        todayDelivered: 0,
+        active: 0,
+        pending: 0,
+        earnings: 0,
+        todayEarnings: 0,
+        totalDeliveries: 0,
+        averageRating: 0,
+        isAvailable: false,
+      };
     }
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const [totalDeliveries, todayDeliveries, activeDeliveries] =
-      await Promise.all([
+    let assignedCount = 0;
+    let pickedUpCount = 0;
+    let deliveredCount = 0;
+    let todayDeliveredCount = 0;
+    let activeCount = 0;
+    let todayEarnings = 0;
+    let totalEarnings = 0;
+
+    try {
+      const results = await Promise.all([
         this.prisma.deliveryAssignment.count({
-          where: {
-            deliveryPartnerId: partnerId,
-            status: 'DELIVERED' as any,
-          },
+          where: { deliveryPartnerId: partnerId, status: 'ASSIGNED' as any },
+        }),
+        this.prisma.deliveryAssignment.count({
+          where: { deliveryPartnerId: partnerId, status: 'PICKED_UP' as any },
+        }),
+        this.prisma.deliveryAssignment.count({
+          where: { deliveryPartnerId: partnerId, status: 'DELIVERED' as any },
         }),
         this.prisma.deliveryAssignment.count({
           where: {
@@ -574,26 +832,67 @@ export class DeliveryService {
         this.prisma.deliveryAssignment.count({
           where: {
             deliveryPartnerId: partnerId,
-            status: {
-              in: ['ASSIGNED', 'PICKED_UP', 'IN_TRANSIT'] as any[],
-            },
+            status: { in: ['ASSIGNED', 'PICKED_UP', 'IN_TRANSIT'] as any[] },
           },
         }),
       ]);
+      [assignedCount, pickedUpCount, deliveredCount, todayDeliveredCount, activeCount] = results;
+    } catch (e) {
+      this.logger.warn(`Failed to count assignments: ${e}`);
+    }
+
+    try {
+      const todayDeliveries = await this.prisma.deliveryAssignment.findMany({
+        where: {
+          deliveryPartnerId: partnerId,
+          status: 'DELIVERED' as any,
+          deliveredAt: { gte: today },
+        },
+        include: { order: { select: { total: true } } },
+      });
+      todayEarnings = todayDeliveries.reduce(
+        (sum, d) => sum + Number(d.order?.total || 0) * 0.05,
+        0,
+      );
+    } catch (e) {
+      this.logger.warn(`Failed to calculate today earnings: ${e}`);
+    }
+
+    try {
+      const allDelivered = await this.prisma.deliveryAssignment.findMany({
+        where: { deliveryPartnerId: partnerId, status: 'DELIVERED' as any },
+        include: { order: { select: { total: true } } },
+      });
+      totalEarnings = allDelivered.reduce(
+        (sum, d) => sum + Number(d.order?.total || 0) * 0.05,
+        0,
+      );
+    } catch (e) {
+      this.logger.warn(`Failed to calculate total earnings: ${e}`);
+    }
+
+    const userName = [partner.user?.firstName, partner.user?.lastName]
+      .filter(Boolean)
+      .join(' ') || 'Delivery Partner';
 
     return {
       partner: {
         id: partner.id,
-        name: `${partner.user.firstName} ${partner.user.lastName}`,
+        name: userName,
         isAvailable: partner.isAvailable,
         rating: partner.rating,
       },
-      stats: {
-        totalDeliveries,
-        todayDeliveries,
-        activeDeliveries,
-        averageRating: partner.rating || 0,
-      },
+      assigned: assignedCount,
+      pickedUp: pickedUpCount,
+      delivered: deliveredCount,
+      todayDelivered: todayDeliveredCount,
+      active: activeCount,
+      pending: assignedCount,
+      earnings: totalEarnings,
+      todayEarnings,
+      totalDeliveries: deliveredCount,
+      averageRating: partner.rating || 0,
+      isAvailable: partner.isAvailable,
     };
   }
 }

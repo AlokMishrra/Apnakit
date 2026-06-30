@@ -190,7 +190,7 @@ export class CartService {
       );
     }
 
-    if (coupon.applicableCategories) {
+    if (coupon.applicableCategories && Array.isArray(coupon.applicableCategories) && coupon.applicableCategories.length > 0) {
       const productIds = cart.items.map((item) => item.productId);
       const products = await this.prisma.product.findMany({
         where: { id: { in: productIds } },
@@ -212,7 +212,7 @@ export class CartService {
       }
     }
 
-    if (coupon.applicableBrands) {
+    if (coupon.applicableBrands && Array.isArray(coupon.applicableBrands) && coupon.applicableBrands.length > 0) {
       const productIds = cart.items.map((item) => item.productId);
       const products = await this.prisma.product.findMany({
         where: { id: { in: productIds } },
@@ -296,12 +296,22 @@ export class CartService {
   private async getOrCreateCart(userId: string) {
     let cart = await this.prisma.cart.findFirst({
       where: { userId },
+      include: {
+        items: {
+          include: {
+            product: true,
+            variant: true,
+          },
+        },
+        coupon: true,
+      },
     });
 
     if (!cart) {
-      cart = await this.prisma.cart.create({
+      const created = await this.prisma.cart.create({
         data: { userId, total: 0, discount: 0, tax: 0 },
       });
+      cart = { ...created, items: [], coupon: null } as any;
     }
 
     return cart;

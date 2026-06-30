@@ -45,14 +45,14 @@ interface Coupon {
   id: string;
   code: string;
   description: string;
-  type: "percentage" | "fixed" | "bog" | "free_shipping";
+  type: "PERCENTAGE" | "FIXED" | "BUY_X_GET_Y" | "FREE_SHIPPING";
   value: number;
-  minOrder: number;
-  maxDiscount: number | null;
+  minimumOrder: number;
+  maximumDiscount: number | null;
   usageLimit: number | null;
   usedCount: number;
-  startDate: string;
-  endDate: string;
+  startsAt: string;
+  expiresAt: string;
   isActive: boolean;
   applicableCategories: string[];
 }
@@ -61,22 +61,22 @@ const typeConfig: Record<
   Coupon["type"],
   { label: string; icon: React.ReactNode; color: string }
 > = {
-  percentage: {
+  PERCENTAGE: {
     label: "Percentage",
     icon: <Percent className="h-4 w-4" />,
     color: "bg-blue-100 text-blue-600",
   },
-  fixed: {
+  FIXED: {
     label: "Fixed Amount",
     icon: <DollarSign className="h-4 w-4" />,
     color: "bg-emerald-100 text-emerald-600",
   },
-  bog: {
+  BUY_X_GET_Y: {
     label: "Buy X Get Y",
     icon: <Gift className="h-4 w-4" />,
     color: "bg-purple-100 text-purple-600",
   },
-  free_shipping: {
+  FREE_SHIPPING: {
     label: "Free Shipping",
     icon: <Truck className="h-4 w-4" />,
     color: "bg-amber-100 text-amber-600",
@@ -312,7 +312,7 @@ export default function CouponsPage() {
             </thead>
             <tbody className="divide-y">
               {paginatedCoupons.map((coupon) => {
-                const typeInfo = typeConfig[coupon.type?.toLowerCase()];
+                const typeInfo = typeConfig[coupon.type?.toUpperCase() as Coupon["type"]] || typeConfig.PERCENTAGE;
                 const usagePercent = coupon.usageLimit
                   ? Math.round((coupon.usedCount / coupon.usageLimit) * 100)
                   : null;
@@ -348,22 +348,22 @@ export default function CouponsPage() {
                       </div>
                     </td>
                     <td className="px-4 py-3 font-medium text-gray-900">
-                      {coupon.type === "percentage"
+                      {coupon.type === "PERCENTAGE"
                         ? `${coupon.value}%`
-                        : coupon.type === "fixed"
+                        : coupon.type === "FIXED"
                         ? formatCurrency(coupon.value)
-                        : coupon.type === "free_shipping"
+                        : coupon.type === "FREE_SHIPPING"
                         ? "Free"
                         : `Buy 2 Get ${coupon.value}`}
-                      {coupon.maxDiscount && (
+                      {coupon.maximumDiscount && (
                         <span className="block text-xs text-gray-500">
-                          Max: {formatCurrency(coupon.maxDiscount)}
+                          Max: {formatCurrency(coupon.maximumDiscount)}
                         </span>
                       )}
                     </td>
                     <td className="px-4 py-3 text-gray-600">
-                      {coupon.minOrder > 0
-                        ? formatCurrency(coupon.minOrder)
+                      {coupon.minimumOrder > 0
+                        ? formatCurrency(coupon.minimumOrder)
                         : "-"}
                     </td>
                     <td className="px-4 py-3">
@@ -395,8 +395,8 @@ export default function CouponsPage() {
                       </div>
                     </td>
                     <td className="px-4 py-3 text-xs text-gray-500">
-                      <p>{formatDate(coupon.startDate, "MMM dd, yyyy")}</p>
-                      <p>to {formatDate(coupon.endDate, "MMM dd, yyyy")}</p>
+                      <p>{formatDate(coupon.startsAt, "MMM dd, yyyy")}</p>
+                      <p>to {formatDate(coupon.expiresAt, "MMM dd, yyyy")}</p>
                     </td>
                     <td className="px-4 py-3">
                       <Badge variant={coupon.isActive ? "success" : "secondary"}>

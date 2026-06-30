@@ -12,6 +12,7 @@ import {
   Request,
   Logger,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
@@ -31,7 +32,10 @@ import { Public } from '../../common/decorators/roles.decorator';
 @Controller('auth')
 export class AuthController {
   private readonly logger = new Logger(AuthController.name);
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly configService: ConfigService,
+  ) {}
 
   @Public()
   @Post('register')
@@ -125,7 +129,8 @@ export class AuthController {
         `Google OAuth redirect failed: ${err?.message || err}`,
       );
       const msg = encodeURIComponent(err?.message || 'google_failed');
-      return res.redirect(`/login?error=${msg}`);
+      const frontendUrl = this.configService.get<string>('PUBLIC_FRONTEND_URL') || 'http://localhost:3001';
+      return res.redirect(`${frontendUrl}/login?error=${msg}`);
     }
   }
 

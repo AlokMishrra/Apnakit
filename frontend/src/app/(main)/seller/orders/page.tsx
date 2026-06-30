@@ -43,21 +43,21 @@ import {
 } from "lucide-react";
 
 const statusColors: Record<string, string> = {
-  pending: "bg-blue-100 text-blue-800",
-  confirmed: "bg-blue-100 text-blue-800",
-  processing: "bg-amber-100 text-amber-800",
-  shipped: "bg-purple-100 text-purple-800",
-  delivered: "bg-emerald-100 text-emerald-800",
-  cancelled: "bg-red-100 text-red-800",
+  PENDING: "bg-blue-100 text-blue-800",
+  CONFIRMED: "bg-blue-100 text-blue-800",
+  PROCESSING: "bg-amber-100 text-amber-800",
+  SHIPPED: "bg-purple-100 text-purple-800",
+  DELIVERED: "bg-emerald-100 text-emerald-800",
+  CANCELLED: "bg-red-100 text-red-800",
 };
 
 const statusIcons: Record<string, typeof Clock> = {
-  pending: Clock,
-  confirmed: Clock,
-  processing: Package,
-  shipped: Truck,
-  delivered: CheckCircle,
-  cancelled: XCircle,
+  PENDING: Clock,
+  CONFIRMED: Clock,
+  PROCESSING: Package,
+  SHIPPED: Truck,
+  DELIVERED: CheckCircle,
+  CANCELLED: XCircle,
 };
 
 export default function SellerOrdersPage() {
@@ -96,7 +96,7 @@ export default function SellerOrdersPage() {
   };
 
   const filteredOrders = orders.filter((order: any) => {
-    const orderStatus = order.orderStatus || order.status || "pending";
+    const orderStatus = (order.orderStatus || order.status || "PENDING").toUpperCase();
     const matchesTab = activeTab === "all" || orderStatus === activeTab;
     const orderNum = order.orderNumber || order.id || "";
     const customerName = order.user?.name || order.customerName || order.customer || "";
@@ -108,11 +108,11 @@ export default function SellerOrdersPage() {
 
   const statusTabs = [
     { value: "all", label: "All", count: orders.length },
-    { value: "pending", label: "Pending", count: orders.filter((o: any) => (o.orderStatus || o.status) === "pending").length },
-    { value: "processing", label: "Processing", count: orders.filter((o: any) => (o.orderStatus || o.status) === "processing").length },
-    { value: "shipped", label: "Shipped", count: orders.filter((o: any) => (o.orderStatus || o.status) === "shipped").length },
-    { value: "delivered", label: "Delivered", count: orders.filter((o: any) => (o.orderStatus || o.status) === "delivered").length },
-    { value: "cancelled", label: "Cancelled", count: orders.filter((o: any) => (o.orderStatus || o.status) === "cancelled").length },
+    { value: "PENDING", label: "Pending", count: orders.filter((o: any) => (o.orderStatus || o.status || "").toUpperCase() === "PENDING").length },
+    { value: "PROCESSING", label: "Processing", count: orders.filter((o: any) => (o.orderStatus || o.status || "").toUpperCase() === "PROCESSING").length },
+    { value: "SHIPPED", label: "Shipped", count: orders.filter((o: any) => (o.orderStatus || o.status || "").toUpperCase() === "SHIPPED").length },
+    { value: "DELIVERED", label: "Delivered", count: orders.filter((o: any) => (o.orderStatus || o.status || "").toUpperCase() === "DELIVERED").length },
+    { value: "CANCELLED", label: "Cancelled", count: orders.filter((o: any) => (o.orderStatus || o.status || "").toUpperCase() === "CANCELLED").length },
   ];
 
   if (loading) {
@@ -241,20 +241,20 @@ export default function SellerOrdersPage() {
                               <Eye className="h-4 w-4 mr-2" />
                               View Details
                             </DropdownMenuItem>
-                            {orderStatus === "pending" && (
-                              <DropdownMenuItem onClick={() => handleStatusUpdate(orderId, "processing")}>
+                            {orderStatus === "PENDING" && (
+                              <DropdownMenuItem onClick={() => handleStatusUpdate(orderId, "PROCESSING")}>
                                 <Package className="h-4 w-4 mr-2" />
                                 Mark Processing
                               </DropdownMenuItem>
                             )}
-                            {orderStatus === "processing" && (
-                              <DropdownMenuItem onClick={() => handleStatusUpdate(orderId, "shipped")}>
+                            {orderStatus === "PROCESSING" && (
+                              <DropdownMenuItem onClick={() => handleStatusUpdate(orderId, "SHIPPED")}>
                                 <Truck className="h-4 w-4 mr-2" />
                                 Mark Shipped
                               </DropdownMenuItem>
                             )}
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem className="text-destructive" onClick={() => handleStatusUpdate(orderId, "cancelled")}>
+                            <DropdownMenuItem className="text-destructive" onClick={() => handleStatusUpdate(orderId, "CANCELLED")}>
                               <XCircle className="h-4 w-4 mr-2" />
                               Cancel Order
                             </DropdownMenuItem>

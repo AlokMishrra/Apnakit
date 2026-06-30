@@ -60,33 +60,62 @@ export class CategoriesService {
     return categories;
   }
 
-  async findBySlug(slug: string) {
-    const category = await this.prisma.category.findUnique({
-      where: { slug },
-      include: {
-        parent: {
-          select: { id: true, name: true, slug: true },
-        },
-        children: {
-          where: { isActive: true },
-          include: {
-            children: {
-              where: { isActive: true },
-              include: {
-                _count: { select: { products: true } },
-              },
-              orderBy: { sortOrder: 'asc' },
-            },
-            _count: { select: { products: true } },
+  async findBySlug(slugOrId: string) {
+    // Try by ID first (CUIDs start with 'c'), then by slug
+    let category;
+    if (slugOrId.startsWith('c')) {
+      category = await this.prisma.category.findUnique({
+        where: { id: slugOrId },
+        include: {
+          parent: {
+            select: { id: true, name: true, slug: true },
           },
-          orderBy: { sortOrder: 'asc' },
+          children: {
+            where: { isActive: true },
+            include: {
+              children: {
+                where: { isActive: true },
+                include: {
+                  _count: { select: { products: true } },
+                },
+                orderBy: { sortOrder: 'asc' },
+              },
+              _count: { select: { products: true } },
+            },
+            orderBy: { sortOrder: 'asc' },
+          },
+          _count: { select: { products: true } },
         },
-        _count: { select: { products: true } },
-      },
-    });
+      });
+    }
+    if (!category) {
+      category = await this.prisma.category.findUnique({
+        where: { slug: slugOrId },
+        include: {
+          parent: {
+            select: { id: true, name: true, slug: true },
+          },
+          children: {
+            where: { isActive: true },
+            include: {
+              children: {
+                where: { isActive: true },
+                include: {
+                  _count: { select: { products: true } },
+                },
+                orderBy: { sortOrder: 'asc' },
+              },
+              _count: { select: { products: true } },
+            },
+            orderBy: { sortOrder: 'asc' },
+          },
+          _count: { select: { products: true } },
+        },
+      });
+    }
 
     if (!category) {
-      throw new NotFoundException(`Category with slug "${slug}" not found`);
+      throw new NotFoundException(`Category "${slugOrId}" not found`);
     }
 
     return category;
@@ -145,6 +174,7 @@ export class CategoriesService {
         parentId: dto.parentId,
         isActive: dto.isActive ?? true,
         sortOrder: dto.sortOrder ?? 0,
+        isComingSoon: dto.isComingSoon ?? false,
         metaTitle: dto.metaTitle,
         metaDescription: dto.metaDescription,
       },
@@ -210,6 +240,7 @@ export class CategoriesService {
         parentId: dto.parentId,
         isActive: dto.isActive,
         sortOrder: dto.sortOrder,
+        isComingSoon: dto.isComingSoon,
         metaTitle: dto.metaTitle,
         metaDescription: dto.metaDescription,
       },

@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { slugify } from "@/lib/utils";
+import { slugify, cn } from "@/lib/utils";
 import { adminService } from "@/services/admin.service";
 import { toast } from "sonner";
 
@@ -42,6 +42,7 @@ export default function NewCategoryPage() {
     parentId: "",
     metaTitle: "",
     metaDescription: "",
+    isComingSoon: false,
   });
 
   const [image, setImage] = useState<{ file: File | null; preview: string } | null>(null);
@@ -74,6 +75,7 @@ export default function NewCategoryPage() {
         parentId: form.parentId === "none" ? undefined : form.parentId || undefined,
         metaTitle: form.metaTitle,
         metaDescription: form.metaDescription,
+        isComingSoon: form.isComingSoon,
       };
       await adminService.createCategory(payload);
       toast.success("Category created");
@@ -146,6 +148,30 @@ export default function NewCategoryPage() {
                   }
                   placeholder="Enter category description"
                 />
+              </div>
+
+              <div className="flex items-center justify-between gap-4 rounded-lg border p-4">
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium">Coming Soon</p>
+                  <p className="text-xs text-muted-foreground">Mark this category as coming soon - users will see a badge and cannot click into it</p>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={form.isComingSoon}
+                  onClick={() => setForm((p) => ({ ...p, isComingSoon: !p.isComingSoon }))}
+                  className={cn(
+                    "relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer items-center rounded-full transition-colors",
+                    form.isComingSoon ? "bg-emerald-600" : "bg-gray-300"
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow-lg ring-0 transition-transform",
+                      form.isComingSoon ? "translate-x-[22px]" : "translate-x-[2px]"
+                    )}
+                  />
+                </button>
               </div>
 
               <Select

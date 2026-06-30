@@ -39,6 +39,10 @@ export class DeliveryZonesService {
       state: zone.state,
       country: zone.country,
       estimatedDays: zone.estimatedDays,
+      estimatedHours: zone.estimatedHours,
+      estimatedMinutes: zone.estimatedMinutes,
+      deliveryTimeUnit: zone.deliveryTimeUnit,
+      cities: zone.cities,
       codEnabled: zone.codEnabled,
       prepaidOnly: zone.prepaidOnly,
       minOrderFreeDelivery: zone.minOrderFreeDelivery
@@ -100,6 +104,10 @@ export class DeliveryZonesService {
           prepaidOnly: dto.prepaidOnly ?? false,
           minOrderFreeDelivery: dto.minOrderFreeDelivery,
           estimatedDays: dto.estimatedDays ?? 3,
+          estimatedHours: dto.estimatedHours,
+          estimatedMinutes: dto.estimatedMinutes,
+          deliveryTimeUnit: dto.deliveryTimeUnit || 'days',
+          cities: dto.cities,
           notes: dto.notes,
         },
       });
@@ -134,6 +142,16 @@ export class DeliveryZonesService {
           ...(dto.estimatedDays !== undefined && {
             estimatedDays: dto.estimatedDays,
           }),
+          ...(dto.estimatedHours !== undefined && {
+            estimatedHours: dto.estimatedHours,
+          }),
+          ...(dto.estimatedMinutes !== undefined && {
+            estimatedMinutes: dto.estimatedMinutes,
+          }),
+          ...(dto.deliveryTimeUnit !== undefined && {
+            deliveryTimeUnit: dto.deliveryTimeUnit,
+          }),
+          ...(dto.cities !== undefined && { cities: dto.cities }),
           ...(dto.notes !== undefined && { notes: dto.notes }),
         },
       });
@@ -205,10 +223,30 @@ export class DeliveryZonesService {
     }
     const zones = await this.prisma.deliveryZone.findMany({
       where,
-      select: { city: true, state: true },
+      select: { city: true, state: true, cities: true },
       orderBy: [{ state: 'asc' }, { city: 'asc' }],
-      distinct: ['city', 'state'],
     });
-    return zones;
+    const seen = new Set<string>();
+    const result: { city: string; state: string; country: string }[] = [];
+    for (const zone of zones) {
+      const primary = `${zone.city?.toLowerCase().trim()}|${zone.state?.toLowerCase().trim()}`;
+      if (zone.city && !seen.has(primary)) {
+        seen.add(primary);
+        result.push({ city: zone.city, state: zone.state || '', country: 'India' });
+      }
+      if (Array.isArray(zone.cities)) {
+        for (const c of zone.cities) {
+          const name = typeof c === 'string' ? c : (c as any)?.name;
+          if (!name) continue;
+          const key = `${name.toLowerCase().trim()}|${zone.state?.toLowerCase().trim()}`;
+          if (!seen.has(key)) {
+            seen.add(key);
+            result.push({ city: name, state: zone.state || '', country: 'India' });
+          }
+        }
+      }
+    }
+    result.sort((a, b) => a.state.localeCompare(b.state) || a.city.localeCompare(b.city));
+    return result;
   }
 }

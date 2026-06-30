@@ -18,6 +18,7 @@ export type ServiceabilityState =
       codEnabled?: boolean;
       prepaidOnly?: boolean;
       minOrderFreeDelivery?: number | null;
+      cities?: { name: string; isActive?: boolean }[];
     };
 
 const IDLE: ServiceabilityState = { status: "idle" };
@@ -57,6 +58,7 @@ export function usePincodeCheck(debounceMs = 400) {
               codEnabled: payload.codEnabled,
               prepaidOnly: payload.prepaidOnly,
               minOrderFreeDelivery: payload.minOrderFreeDelivery,
+              cities: payload.cities || [],
             });
             lastCheckedRef.current = pin;
           } else {

@@ -30,14 +30,16 @@ const IMAGE_ROTATE_MS = 5000;
 
 function HeroSkeleton() {
   return (
-    <div className="relative w-full overflow-hidden">
-      <div className="flex min-h-[400px] animate-pulse items-center bg-gradient-to-r from-indigo-500 to-purple-600 sm:min-h-[480px] lg:min-h-[540px]">
-        <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="max-w-2xl space-y-4">
-            <Skeleton className="h-6 w-32 bg-white/30" />
-            <Skeleton className="h-12 w-3/4 bg-white/30" />
-            <Skeleton className="h-5 w-1/2 bg-white/30" />
-            <Skeleton className="h-11 w-36 rounded-md bg-white/30" />
+    <div className="w-full px-3 sm:px-4 lg:px-6">
+      <div className="relative mx-auto max-w-7xl aspect-video overflow-hidden rounded-2xl sm:rounded-3xl">
+        <div className="flex h-full animate-pulse bg-gradient-to-r from-indigo-500 to-purple-600">
+          <div className="mx-auto flex h-full w-full max-w-7xl items-center px-4 sm:px-6 lg:px-8">
+            <div className="max-w-2xl space-y-4">
+              <Skeleton className="h-6 w-32 bg-white/30" />
+              <Skeleton className="h-12 w-3/4 bg-white/30" />
+              <Skeleton className="h-5 w-1/2 bg-white/30" />
+                <Skeleton className="h-11 w-36 rounded-md bg-white/30" />
+            </div>
           </div>
         </div>
       </div>
@@ -187,181 +189,185 @@ export function HeroBanner() {
   }
 
   return (
-    <div
-      className="relative w-full overflow-hidden"
-      onMouseEnter={() => setIsPaused(true)}
-      onMouseLeave={() => setIsPaused(false)}
-    >
+    <div className="w-full px-3 sm:px-4 lg:px-6">
       <div
-        className="flex transition-transform duration-500 ease-in-out"
-        style={{ transform: `translateX(-${currentSlide * 100}%)` }}
+        className="relative mx-auto max-w-7xl overflow-hidden rounded-2xl shadow-lg sm:rounded-3xl sm:shadow-xl"
+        onMouseEnter={() => setIsPaused(true)}
+        onMouseLeave={() => setIsPaused(false)}
       >
-        {banners.map((banner, index) => {
-          const gradient = GRADIENTS[index % GRADIENTS.length];
-          const link = banner.link || "#";
-          const isExternal = /^https?:\/\//.test(link);
-          const isVideo = (banner.mediaType || "IMAGE") === "VIDEO";
-          const isMuted = mutedMap[banner.id] ?? true;
-          const shouldLoop = isVideo && banner.loopVideo === true;
-          return (
-            <div
-              key={banner.id}
-              className={cn(
-                "relative min-w-full text-white",
-                !banner.image && `bg-gradient-to-r ${gradient}`
-              )}
-            >
-              {banner.image && (
-                <div className="absolute inset-0">
-                  {isVideo ? (
-                    <HeroVideo
-                      src={banner.image}
-                      isMuted={isMuted}
-                      loop={shouldLoop}
-                      setRef={(el) => {
-                        videoRefs.current[banner.id] = el;
-                      }}
-                      onEnded={nextSlide}
-                    />
-                  ) : (
-                    <img
-                      src={banner.image}
-                      alt={banner.title}
-                      className="h-full w-full object-cover"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).style.display = "none";
-                      }}
-                    />
-                  )}
-                  <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/30 to-transparent" />
-                </div>
-              )}
-
-              {/* Video controls: only on the active video slide */}
-              {isVideo && banner.image && index === currentSlide && (
-                <div className="absolute right-4 bottom-4 z-20 flex items-center gap-2 sm:right-6 sm:bottom-6">
-                  {/* Loop indicator (only when looping is enabled) */}
-                  {shouldLoop && (
-                    <div
-                      className="flex h-9 w-9 items-center justify-center rounded-full bg-indigo-600/80 text-white shadow-lg backdrop-blur-sm sm:h-10 sm:w-10"
-                      aria-label="Video will loop"
-                      title="Video loops and hero will not advance"
-                    >
-                      <Repeat className="h-4 w-4 sm:h-5 sm:w-5" />
-                    </div>
-                  )}
-                  {/* Play/Pause */}
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      togglePlayPause();
-                    }}
-                    aria-label={isPlaying ? "Pause video" : "Play video"}
-                    className="flex h-9 w-9 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-sm transition-colors hover:bg-black/60 sm:h-10 sm:w-10"
-                  >
-                    {isPlaying ? (
-                      <Pause className="h-4 w-4 sm:h-5 sm:w-5" />
-                    ) : (
-                      <Play className="h-4 w-4 sm:h-5 sm:w-5" />
-                    )}
-                  </button>
-                  {/* Mute/Unmute */}
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      toggleMute(banner.id);
-                    }}
-                    aria-label={isMuted ? "Unmute video" : "Mute video"}
-                    className="flex h-9 w-9 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-sm transition-colors hover:bg-black/60 sm:h-10 sm:w-10"
-                  >
-                    {isMuted ? (
-                      <VolumeX className="h-4 w-4 sm:h-5 sm:w-5" />
-                    ) : (
-                      <Volume2 className="h-4 w-4 sm:h-5 sm:w-5" />
-                    )}
-                  </button>
-                </div>
-              )}
-
-              <div className="relative mx-auto flex min-h-[400px] max-w-7xl items-center px-4 py-16 sm:min-h-[480px] sm:px-6 lg:min-h-[540px] lg:px-8">
-                <div className="max-w-2xl space-y-6">
-                  {banner.showTitle !== false && (
-                    <h1 className="text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl">
-                      {banner.title}
-                    </h1>
-                  )}
-                  {banner.subtitle && banner.showSubtitle !== false && (
-                    <p className="text-lg text-white/90 sm:text-xl">{banner.subtitle}</p>
-                  )}
-                  {banner.link && banner.showButton !== false && (
-                    <Button
-                      size="lg"
-                      className="bg-white text-gray-900 hover:bg-gray-100"
-                      asChild
-                    >
-                      {isExternal ? (
-                        <a href={link} target="_blank" rel="noopener noreferrer">
-                          Shop Now
-                        </a>
-                      ) : (
-                        <Link href={link}>Shop Now</Link>
-                      )}
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {banners.length > 1 && (
-        <>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="absolute left-4 top-1/2 z-10 -translate-y-1/2 bg-white/20 text-white hover:bg-white/30"
-            onClick={prevSlide}
-            aria-label="Previous slide"
+        {/* Desktop: 16:9, Mobile: 9:16 via aspect ratio switching */}
+        <div className="relative w-full aspect-video">
+          <div
+            className="flex h-full transition-transform duration-500 ease-in-out"
+            style={{ transform: `translateX(-${currentSlide * 100}%)` }}
           >
-            <ChevronLeft className="h-6 w-6" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="absolute right-4 top-1/2 z-10 -translate-y-1/2 bg-white/20 text-white hover:bg-white/30"
-            onClick={nextSlide}
-            aria-label="Next slide"
-          >
-            <ChevronRight className="h-6 w-6" />
-          </Button>
-
-          <div className="absolute bottom-4 left-1/2 z-10 flex -translate-x-1/2 gap-2">
             {banners.map((banner, index) => {
-              const isVidDot = (banner.mediaType || "IMAGE") === "VIDEO";
+              const gradient = GRADIENTS[index % GRADIENTS.length];
+              const link = banner.link || "#";
+              const isExternal = /^https?:\/\//.test(link);
+              const isVideo = (banner.mediaType || "IMAGE") === "VIDEO";
+              const isMuted = mutedMap[banner.id] ?? true;
+              const shouldLoop = isVideo && banner.loopVideo === true;
               return (
-                <button
-                  key={index}
-                  onClick={() => goToSlide(index)}
-                  aria-label={`Go to slide ${index + 1}`}
+                <div
+                  key={banner.id}
                   className={cn(
-                    "h-3 rounded-full transition-all flex items-center justify-center",
-                    index === currentSlide ? "w-8 bg-white" : "w-3 bg-white/50"
+                    "relative h-full min-w-full text-white",
+                    !banner.image && `bg-gradient-to-r ${gradient}`
                   )}
                 >
-                  {isVidDot && index === currentSlide && (
-                    <span className="sr-only">Video slide</span>
+                  {banner.image && (
+                    <div className="absolute inset-0">
+                      {isVideo ? (
+                        <HeroVideo
+                          src={banner.image}
+                          isMuted={isMuted}
+                          loop={shouldLoop}
+                          setRef={(el) => {
+                            videoRefs.current[banner.id] = el;
+                          }}
+                          onEnded={nextSlide}
+                        />
+                      ) : (
+                        <div className="relative h-full w-full">
+                          <img
+                            src={banner.image}
+                            alt={banner.title}
+      className="h-full w-full object-contain"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).style.display = "none";
+                            }}
+                          />
+                        </div>
+                      )}
+                      <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/30 to-transparent" />
+                    </div>
                   )}
-                </button>
+
+                  {isVideo && banner.image && index === currentSlide && (
+                    <div className="absolute right-3 bottom-3 z-20 flex items-center gap-2 sm:right-6 sm:bottom-6">
+                      {shouldLoop && (
+                        <div
+                          className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-600/80 text-white shadow-lg backdrop-blur-sm sm:h-10 sm:w-10"
+                          aria-label="Video will loop"
+                          title="Video loops and hero will not advance"
+                        >
+                          <Repeat className="h-4 w-4 sm:h-5 sm:w-5" />
+                        </div>
+                      )}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          togglePlayPause();
+                        }}
+                        aria-label={isPlaying ? "Pause video" : "Play video"}
+                        className="flex h-8 w-8 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-sm transition-colors hover:bg-black/60 sm:h-10 sm:w-10"
+                      >
+                        {isPlaying ? (
+                          <Pause className="h-4 w-4 sm:h-5 sm:w-5" />
+                        ) : (
+                          <Play className="h-4 w-4 sm:h-5 sm:w-5" />
+                        )}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          toggleMute(banner.id);
+                        }}
+                        aria-label={isMuted ? "Unmute video" : "Mute video"}
+                        className="flex h-8 w-8 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-sm transition-colors hover:bg-black/60 sm:h-10 sm:w-10"
+                      >
+                        {isMuted ? (
+                          <VolumeX className="h-4 w-4 sm:h-5 sm:w-5" />
+                        ) : (
+                          <Volume2 className="h-4 w-4 sm:h-5 sm:w-5" />
+                        )}
+                      </button>
+                    </div>
+                  )}
+
+                  <div className="relative mx-auto flex h-full max-w-7xl items-center px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
+                    <div className="max-w-2xl space-y-4 sm:space-y-6">
+                      {banner.showTitle !== false && (
+                        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl lg:text-5xl">
+                          {banner.title}
+                        </h1>
+                      )}
+                      {banner.subtitle && banner.showSubtitle !== false && (
+                        <p className="text-base text-white/90 sm:text-lg lg:text-xl">{banner.subtitle}</p>
+                      )}
+                      {banner.link && banner.showButton !== false && (
+                        <Button
+                          size="lg"
+                          className="bg-white text-gray-900 hover:bg-gray-100"
+                          asChild
+                        >
+                          {isExternal ? (
+                            <a href={link} target="_blank" rel="noopener noreferrer">
+                              Shop Now
+                            </a>
+                          ) : (
+                            <Link href={link}>Shop Now</Link>
+                          )}
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </div>
               );
             })}
           </div>
-        </>
-      )}
+        </div>
+
+        {/* Navigation arrows */}
+        {banners.length > 1 && (
+          <>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute left-2 top-1/2 z-10 -translate-y-1/2 bg-white/20 text-white hover:bg-white/30 sm:left-4"
+              onClick={prevSlide}
+              aria-label="Previous slide"
+            >
+              <ChevronLeft className="h-5 w-5 sm:h-6 sm:w-6" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute right-2 top-1/2 z-10 -translate-y-1/2 bg-white/20 text-white hover:bg-white/30 sm:right-4"
+              onClick={nextSlide}
+              aria-label="Next slide"
+            >
+              <ChevronRight className="h-5 w-5 sm:h-6 sm:w-6" />
+            </Button>
+
+            <div className="absolute bottom-3 left-1/2 z-10 flex -translate-x-1/2 gap-2 sm:bottom-4">
+              {banners.map((banner, index) => {
+                const isVidDot = (banner.mediaType || "IMAGE") === "VIDEO";
+                return (
+                  <button
+                    key={index}
+                    onClick={() => goToSlide(index)}
+                    aria-label={`Go to slide ${index + 1}`}
+                    className={cn(
+                      "h-2.5 rounded-full transition-all flex items-center justify-center sm:h-3",
+                      index === currentSlide ? "w-7 sm:w-8 bg-white" : "w-2.5 bg-white/50"
+                    )}
+                  >
+                    {isVidDot && index === currentSlide && (
+                      <span className="sr-only">Video slide</span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 }

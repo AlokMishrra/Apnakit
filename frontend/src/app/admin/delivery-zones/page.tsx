@@ -48,6 +48,10 @@ interface DeliveryZone {
   prepaidOnly: boolean;
   minOrderFreeDelivery: number | null;
   estimatedDays: number;
+  estimatedHours: number | null;
+  estimatedMinutes: number | null;
+  deliveryTimeUnit: string;
+  cities: any;
   notes: string | null;
   createdAt: string;
   updatedAt: string;
@@ -527,7 +531,11 @@ export default function DeliveryZonesPage() {
                       <td className="px-4 py-3 text-xs">
                         <div className="flex items-center gap-1">
                           <Truck className="h-3.5 w-3.5 text-muted-foreground" />
-                          {z.estimatedDays}d
+                          {z.deliveryTimeUnit === "minutes"
+                            ? `${z.estimatedMinutes || 30}min`
+                            : z.deliveryTimeUnit === "hours"
+                            ? `${z.estimatedHours || 2}hr`
+                            : `${z.estimatedDays}d`}
                         </div>
                       </td>
                       <td className="px-4 py-3 text-xs">

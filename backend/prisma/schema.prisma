@@ -240,6 +240,7 @@ model Category {
   parentId        String?
   isActive        Boolean   @default(true)
   sortOrder       Int       @default(0)
+  isComingSoon    Boolean   @default(false)
   metaTitle       String?
   metaDescription String?
   createdAt       DateTime  @default(now())
@@ -1101,6 +1102,10 @@ model DeliveryZone {
   prepaidOnly Boolean @default(false)
   minOrderFreeDelivery Decimal? @db.Decimal(10, 2)
   estimatedDays Int    @default(3)
+  estimatedHours Int?
+  estimatedMinutes Int?
+  deliveryTimeUnit String @default("days")
+  cities      Json?
   notes       String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

@@ -44,6 +44,11 @@ export class CreateCategoryDto {
   @Min(0)
   sortOrder?: number;
 
+  @ApiPropertyOptional({ default: false })
+  @IsOptional()
+  @IsBoolean()
+  isComingSoon?: boolean;
+
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()

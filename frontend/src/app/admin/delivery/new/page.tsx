@@ -59,8 +59,9 @@ export default function NewDeliveryPersonPage() {
       });
       toast.success("Delivery person created successfully");
       router.push("/admin/dashboard");
-    } catch {
-      toast.error("Failed to create delivery person");
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || err?.message || "Failed to create delivery person";
+      toast.error("Failed to create delivery person", { description: Array.isArray(msg) ? msg[0] : msg });
     } finally {
       setSaving(false);
     }

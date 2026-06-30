@@ -53,6 +53,14 @@ export class DeliveryZonesController {
     return this.service.findAll(query);
   }
 
+  // Public: get single zone by id
+  @Public()
+  @Get(':id')
+  @ApiOperation({ summary: 'Get a delivery zone by ID' })
+  findOne(@Param('id') id: string) {
+    return this.service.findOne(id);
+  }
+
   // Admin endpoints
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)

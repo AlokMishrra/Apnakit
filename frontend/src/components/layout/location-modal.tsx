@@ -18,13 +18,11 @@ import {
   X,
   Loader2,
   CheckCircle2,
-  Truck,
   PartyPopper,
   ChevronRight,
   Check,
   AlertCircle,
   Shield,
-  XIcon,
 } from "lucide-react";
 import { useLocation, type UserLocation } from "./location-context";
 import { ALL_INDIAN_CITIES } from "./indian-cities";
@@ -153,6 +151,8 @@ type Banner =
       state?: string;
       days?: number;
       minFree?: number | null;
+      cities?: { name: string; isActive?: boolean }[];
+      pincode?: string;
     }
   | {
       type: "unserviceable";
@@ -188,6 +188,9 @@ export function LocationModal({
   const [banner, setBanner] = React.useState<Banner>({ type: "idle" });
   const [pincodeDebounceRef, setPincodeDebounceRef] =
     React.useState<ReturnType<typeof setTimeout> | null>(null);
+  const [pincodeCities, setPincodeCities] = React.useState<
+    { city: string; state: string; country: string }[]
+  >([]);
   const searchInputRef = React.useRef<HTMLInputElement>(null);
 
   // Detected location (after GPS): user must confirm before saving
@@ -204,6 +207,7 @@ export function LocationModal({
       setSearch("");
       setSearchResults([]);
       setDetectedLocation(null);
+      setPincodeCities([]);
     } else {
       setTimeout(() => searchInputRef.current?.focus(), 100);
     }
@@ -245,53 +249,53 @@ export function LocationModal({
 
   const listItems = React.useMemo(() => {
     const q = search.trim();
+    const seen = new Set<string>();
+    const out: { city: string; state: string; country: string; isServiceable: boolean; pincode?: string }[] = [];
+
+    const addIfNew = (city: string, state: string, country: string, svc: boolean, pincode?: string) => {
+      const key = `${city.toLowerCase().trim()}|${state.toLowerCase().trim()}`;
+      if (seen.has(key)) return;
+      seen.add(key);
+      out.push({ city, state, country, isServiceable: svc, pincode });
+    };
+
+    // Default: show all serviceable cities
     if (q.length === 0) {
-      const seen = new Set<string>();
-      const out: { city: string; state: string; country: string; isServiceable: boolean }[] = [];
-      for (const c of ALL_INDIAN_CITIES) {
-        const key = `${c.city.toLowerCase()}|${c.state.toLowerCase()}`;
-        if (seen.has(key)) continue;
-        seen.add(key);
-        out.push({
-          city: c.city,
-          state: c.state,
-          country: "India",
-          isServiceable: isServiceable(c.city, c.state),
-        });
+      for (const c of serviceableCities) {
+        addIfNew(c.city, c.state, c.country || "India", true);
       }
       return out;
     }
-    const seen = new Set<string>();
-    const out: { city: string; state: string; country: string; isServiceable: boolean }[] = [];
+
+    // Search serviceable cities
     const ql = q.toLowerCase();
-    for (const c of ALL_INDIAN_CITIES) {
-      const key = `${c.city.toLowerCase()}|${c.state.toLowerCase()}`;
-      if (seen.has(key)) continue;
+    for (const c of serviceableCities) {
       if (c.city.toLowerCase().includes(ql) || c.state.toLowerCase().includes(ql)) {
-        seen.add(key);
-        out.push({
-          city: c.city,
-          state: c.state,
-          country: "India",
-          isServiceable: isServiceable(c.city, c.state),
-        });
+        addIfNew(c.city, c.state, c.country || "India", true);
       }
       if (out.length >= 100) break;
     }
     for (const c of searchResults) {
-      const key = `${c.city.toLowerCase()}|${(c.state || "").toLowerCase()}`;
-      if (seen.has(key)) continue;
-      seen.add(key);
-      out.push({
-        city: c.city,
-        state: c.state,
-        country: c.country || "India",
-        isServiceable: true,
-      });
+      addIfNew(c.city, c.state, c.country || "India", true);
       if (out.length >= 120) break;
     }
+
+    // If search query doesn't match any serviceable city, show non-serviceable matches as Coming Soon
+    if (out.length === 0 && q.length >= 2) {
+      const seenCities = new Set<string>();
+      for (const c of ALL_INDIAN_CITIES) {
+        const key = `${c.city.toLowerCase()}|${c.state.toLowerCase()}`;
+        if (seenCities.has(key)) continue;
+        if (c.city.toLowerCase().includes(ql) || c.state.toLowerCase().includes(ql)) {
+          seenCities.add(key);
+          out.push({ city: c.city, state: c.state, country: "India", isServiceable: false });
+        }
+        if (out.length >= 20) break;
+      }
+    }
+
     return out;
-  }, [search, searchResults, isServiceable]);
+  }, [search, searchResults, serviceableCities]);
 
   const handleSelect = (loc: UserLocation) => {
     setLocation(loc);
@@ -299,6 +303,7 @@ export function LocationModal({
     setPincodeInput("");
     setBanner({ type: "idle" });
     setDetectedLocation(null);
+    setPincodeCities([]);
     markPrompted();
     onOpenChange(false);
     setTimeout(() => {
@@ -398,6 +403,7 @@ export function LocationModal({
       if (pincodeDebounceRef) clearTimeout(pincodeDebounceRef);
       if (pin.length !== 6) {
         setBanner({ type: "idle" });
+        setPincodeCities([]);
         return;
       }
       setBanner({ type: "idle" });
@@ -412,7 +418,24 @@ export function LocationModal({
             state: res.state,
             days: res.estimatedDays,
             minFree: res.minOrderFreeDelivery,
+            cities: res.cities || [],
+            pincode: pin,
           });
+          // Populate pincode cities for the city list
+          const cities = res.cities || [];
+          if (cities.length > 0) {
+            setPincodeCities(
+              cities
+                .filter((c: any) => c.isActive !== false)
+                .map((c: any) => ({
+                  city: c.name,
+                  state: res.state || "",
+                  country: res.country || "India",
+                }))
+            );
+          } else if (res.city) {
+            setPincodeCities([{ city: res.city, state: res.state || "", country: res.country || "India" }]);
+          }
         } else {
           setBanner({
             type: "unserviceable",
@@ -456,7 +479,24 @@ export function LocationModal({
         state: res.state,
         days: res.estimatedDays,
         minFree: res.minOrderFreeDelivery,
+        cities: res.cities || [],
+        pincode: pin,
       });
+      // Populate pincode cities for the city list
+      const cities = res.cities || [];
+      if (cities.length > 0) {
+        setPincodeCities(
+          cities
+            .filter((c: any) => c.isActive !== false)
+            .map((c: any) => ({
+              city: c.name,
+              state: res.state || "",
+              country: res.country || "India",
+            }))
+        );
+      } else if (res.city) {
+        setPincodeCities([{ city: res.city, state: res.state || "", country: res.country || "India" }]);
+      }
     } else {
       setBanner({
         type: "unserviceable",
@@ -594,14 +634,50 @@ export function LocationModal({
             )}
 
             {!checking && banner.type === "success" && (
-              <div className="mt-2 flex items-start gap-2 rounded-lg border border-emerald-200 bg-emerald-50 p-2.5 text-xs">
-                <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-emerald-600" />
-                <div className="flex-1 text-emerald-900">
-                  <p className="font-medium">We deliver to {banner.city}</p>
-                  {banner.days ? (
-                    <p className="text-emerald-700">Delivery in {banner.days} day{banner.days > 1 ? "s" : ""}</p>
-                  ) : null}
+              <div className="mt-2 rounded-lg border border-emerald-200 bg-emerald-50 p-2.5 text-xs">
+                <div className="flex items-start gap-2 text-emerald-900">
+                  <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-emerald-600" />
+                  <div className="flex-1">
+                    <p className="font-medium">We deliver to {banner.city}</p>
+                    <p className="text-emerald-700">
+                      {banner.cities && banner.cities.length > 1
+                        ? `Select your area from ${banner.cities.length} locations:`
+                        : banner.days
+                          ? `Delivery in ${banner.days} day${banner.days > 1 ? "s" : ""}`
+                          : ""}
+                    </p>
+                  </div>
                 </div>
+                {banner.cities && banner.cities.length > 1 && (
+                  <ul className="mt-2 divide-y divide-emerald-200 overflow-hidden rounded-md border border-emerald-200 bg-white">
+                    {banner.cities
+                      .filter((c) => c.isActive !== false)
+                      .map((c) => (
+                        <li key={c.name}>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              handleSelect({
+                                city: c.name,
+                                state: banner.state,
+                                country: "India",
+                                pincode: banner.pincode,
+                                source: "manual",
+                              });
+                            }}
+                            className="flex w-full items-center gap-2 px-2.5 py-2 text-left text-xs text-emerald-900 transition-colors hover:bg-emerald-50 active:bg-emerald-100"
+                          >
+                            <MapPin className="h-3.5 w-3.5 flex-shrink-0 text-emerald-600" />
+                            <span className="font-medium">{c.name}</span>
+                            {banner.state && (
+                              <span className="text-emerald-700/70">· {banner.state}</span>
+                            )}
+                            <ChevronRight className="ml-auto h-3.5 w-3.5 flex-shrink-0 text-emerald-600/50" />
+                          </button>
+                        </li>
+                      ))}
+                  </ul>
+                )}
               </div>
             )}
 
@@ -622,7 +698,7 @@ export function LocationModal({
             </div>
             <div className="relative flex justify-center text-[10px] uppercase tracking-widest">
               <span className="bg-background px-2 font-medium text-muted-foreground">
-                or pick a city
+                {pincodeCities.length > 0 ? "select your area" : "or pick a city"}
               </span>
             </div>
           </div>
@@ -673,64 +749,72 @@ export function LocationModal({
                     !location?.pincode;
                   return (
                     <li key={`${loc.city}-${loc.state}`}>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          handleSelect({
-                            city: loc.city,
-                            state: loc.state,
-                            country: loc.country,
-                            source: "manual",
-                          })
-                        }
-                        className={cn(
-                          "flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm transition-colors hover:bg-muted/60 active:bg-muted",
-                          isSelected && "bg-indigo-50/60"
-                        )}
-                      >
-                        <div className="relative flex-shrink-0">
-                          <MapPin
-                            className={cn(
-                              "h-4 w-4 transition-colors",
-                              loc.isServiceable
-                                ? "text-emerald-600"
-                                : "text-amber-500"
-                            )}
-                          />
-                          {loc.isServiceable && (
+                      {loc.isServiceable ? (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleSelect({
+                              city: loc.city,
+                              state: loc.state,
+                              country: loc.country,
+                              pincode: loc.pincode,
+                              source: "manual",
+                            })
+                          }
+                          className={cn(
+                            "flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm transition-colors hover:bg-muted/60 active:bg-muted",
+                            isSelected && "bg-indigo-50/60"
+                          )}
+                        >
+                          <div className="relative flex-shrink-0">
+                            <MapPin className="h-4 w-4 text-emerald-600" />
                             <span className="absolute -bottom-0.5 -right-0.5 flex h-2.5 w-2.5 items-center justify-center rounded-full bg-emerald-600 ring-1 ring-card">
                               <Check className="h-1.5 w-1.5 text-white" strokeWidth={4} />
                             </span>
-                          )}
-                          {!loc.isServiceable && (
-                            <span className="absolute -bottom-0.5 -right-0.5 flex h-2.5 w-2.5 items-center justify-center rounded-full bg-amber-500 ring-1 ring-card">
-                              <AlertCircle className="h-1.5 w-1.5 text-white" strokeWidth={3} />
-                            </span>
-                          )}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p
-                            className={cn(
-                              "truncate font-medium",
-                              isSelected ? "text-indigo-700" : "text-foreground"
-                            )}
-                          >
-                            {loc.city}
-                          </p>
-                          {loc.state && (
-                            <p className="truncate text-xs text-muted-foreground">
-                              {loc.state}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p
+                              className={cn(
+                                "truncate font-medium",
+                                isSelected ? "text-indigo-700" : "text-foreground"
+                              )}
+                            >
+                              {loc.city}
                             </p>
+                            {loc.state && (
+                              <p className="truncate text-xs text-muted-foreground">
+                                {loc.state}
+                              </p>
+                            )}
+                          </div>
+                          {isSelected ? (
+                            <Badge variant="default" className="bg-indigo-600 text-xs">
+                              Selected
+                            </Badge>
+                          ) : (
+                            <ChevronRight className="h-4 w-4 flex-shrink-0 text-muted-foreground/50" />
                           )}
-                        </div>
-                        {isSelected ? (
-                          <Badge variant="default" className="bg-indigo-600 text-xs">
-                            Selected
+                        </button>
+                      ) : (
+                        <div className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm opacity-60">
+                          <div className="relative flex-shrink-0">
+                            <MapPin className="h-4 w-4 text-amber-500" />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate font-medium text-foreground">
+                              {loc.city}
+                            </p>
+                            {loc.state && (
+                              <p className="truncate text-xs text-muted-foreground">
+                                {loc.state}
+                              </p>
+                            )}
+                          </div>
+                          <Badge variant="outline" className="text-[10px] border-amber-300 bg-amber-50 text-amber-700 whitespace-nowrap">
+                            Coming Soon
                           </Badge>
-                        ) : (
-                          <ChevronRight className="h-4 w-4 flex-shrink-0 text-muted-foreground/50" />
-                        )}
-                      </button>
+                        </div>
+                      )}
                     </li>
                   );
                 })}

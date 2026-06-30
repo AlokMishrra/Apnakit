@@ -38,6 +38,7 @@ interface LocationContextValue {
     state?: string;
     estimatedDays?: number;
     message?: string;
+    cities?: { name: string; isActive?: boolean }[];
   }>;
   refreshServiceability: () => Promise<void>;
   searchCities: (query: string) => Promise<ServiceablePlace[]>;
@@ -276,6 +277,7 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
           state?: string;
           estimatedDays?: number;
           message?: string;
+          cities?: { name: string; isActive?: boolean }[];
         };
         return data;
       } catch {

@@ -177,13 +177,21 @@ export class OrdersService {
     try {
       await this.notificationsService.create(
         userId,
-        'Order Placed Successfully! 🎉',
+        'Order Placed Successfully!',
         `Your order #${order.orderNumber} has been placed and is being processed.`,
         'ORDER_PLACED',
         { link: `/account/orders/${order.id}`, orderId: order.id, orderNumber: order.orderNumber },
       );
     } catch (e) {
       this.logger.warn('Failed to create order notification', e as any);
+    }
+
+    if (dto.paymentMethod === 'COD' || dto.paymentMethod === 'cod') {
+      try {
+        await this.updateStatus(order.id, { status: OrderStatus.CONFIRMED, notes: 'COD order confirmed' });
+      } catch (e) {
+        this.logger.warn('Failed to auto-confirm COD order', e as any);
+      }
     }
 
     return order;
@@ -346,6 +354,14 @@ export class OrdersService {
       }
     } catch (e) {
       this.logger.warn('Failed to create status notification', e as any);
+    }
+
+    if (dto.status === OrderStatus.CONFIRMED) {
+      try {
+        await this.autoAssignDelivery(id);
+      } catch (e) {
+        this.logger.warn('Auto-assign delivery failed', e as any);
+      }
     }
 
     return updatedOrder;
@@ -593,5 +609,45 @@ export class OrdersService {
     const delivery = new Date(createdAt);
     delivery.setDate(delivery.getDate() + 7);
     return delivery;
+  }
+
+  private async autoAssignDelivery(orderId: string) {
+    const existing = await this.prisma.deliveryAssignment.findFirst({
+      where: { orderId },
+    });
+    if (existing) return;
+
+    const availablePartners = await this.prisma.deliveryPartner.findMany({
+      where: { isAvailable: true },
+      include: {
+        assignments: {
+          where: { status: { in: ['ASSIGNED', 'PICKED_UP', 'IN_TRANSIT'] as any[] } },
+        },
+      },
+    });
+
+    if (availablePartners.length === 0) {
+      this.logger.log(`No available delivery partners for order ${orderId}`);
+      return;
+    }
+
+    const sorted = availablePartners.sort(
+      (a, b) => a.assignments.length - b.assignments.length,
+    );
+    const bestPartner = sorted[0];
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.deliveryAssignment.create({
+        data: {
+          orderId,
+          deliveryPartnerId: bestPartner.id,
+          status: 'ASSIGNED' as any,
+        },
+      });
+    });
+
+    this.logger.log(
+      `Auto-assigned delivery partner ${bestPartner.id} to order ${orderId}`,
+    );
   }
 }

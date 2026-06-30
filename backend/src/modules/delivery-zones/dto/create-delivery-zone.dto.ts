@@ -5,6 +5,7 @@ import {
   IsBoolean,
   IsInt,
   IsNumber,
+  IsArray,
   Min,
   Max,
   Length,
@@ -58,6 +59,29 @@ export class CreateDeliveryZoneDto {
   @Min(1)
   @Max(30)
   estimatedDays?: number;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(168)
+  estimatedHours?: number;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(1440)
+  estimatedMinutes?: number;
+
+  @ApiProperty({ default: 'days', required: false, enum: ['minutes', 'hours', 'days'] })
+  @IsOptional()
+  @IsString()
+  deliveryTimeUnit?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  cities?: any;
 
   @ApiProperty({ required: false })
   @IsOptional()

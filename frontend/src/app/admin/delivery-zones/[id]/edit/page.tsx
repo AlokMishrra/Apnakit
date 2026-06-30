@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -18,7 +18,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { adminService } from "@/services/admin.service";
 import { toast } from "sonner";
@@ -29,9 +28,15 @@ interface CityItem {
   isActive: boolean;
 }
 
-export default function NewDeliveryZonePage() {
+export default function EditDeliveryZonePage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = use(params);
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [form, setForm] = useState({
     pincode: "",
     city: "",
@@ -49,6 +54,39 @@ export default function NewDeliveryZonePage() {
   });
   const [cities, setCities] = useState<CityItem[]>([]);
   const [newCityName, setNewCityName] = useState("");
+
+  useEffect(() => {
+    const fetchZone = async () => {
+      try {
+        const res = await adminService.getDeliveryZone(id);
+        const zone = res?.data || res;
+        setForm({
+          pincode: zone.pincode || "",
+          city: zone.city || "",
+          state: zone.state || "",
+          country: zone.country || "India",
+          isActive: zone.isActive ?? true,
+          codEnabled: zone.codEnabled ?? true,
+          prepaidOnly: zone.prepaidOnly ?? false,
+          minOrderFreeDelivery: zone.minOrderFreeDelivery ?? "",
+          deliveryTimeUnit: (zone.deliveryTimeUnit as any) || "days",
+          estimatedDays: zone.estimatedDays ?? 3,
+          estimatedHours: zone.estimatedHours ?? "",
+          estimatedMinutes: zone.estimatedMinutes ?? "",
+          notes: zone.notes || "",
+        });
+        if (zone.cities && Array.isArray(zone.cities)) {
+          setCities(zone.cities);
+        }
+      } catch (err: any) {
+        toast.error("Failed to load delivery zone");
+        router.push("/admin/delivery-zones");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchZone();
+  }, [id, router]);
 
   const addCity = () => {
     const name = newCityName.trim();
@@ -119,20 +157,28 @@ export default function NewDeliveryZonePage() {
       if (cities.length > 0) {
         payload.cities = cities;
       }
-      await adminService.createDeliveryZone(payload);
-      toast.success("Delivery zone created");
+      await adminService.updateDeliveryZone(id, payload);
+      toast.success("Delivery zone updated");
       router.push("/admin/delivery-zones");
     } catch (err: any) {
       const msg = err?.response?.data?.message || getSafeErrorMessage(err);
       if (msg.toLowerCase().includes("already exists")) {
         toast.error("This pincode already exists in delivery zones");
       } else {
-        toast.error("Failed to create zone", { description: msg });
+        toast.error("Failed to update zone", { description: msg });
       }
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  if (loading) {
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -143,9 +189,9 @@ export default function NewDeliveryZonePage() {
           </Button>
         </Link>
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Add Delivery Zone</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Edit Delivery Zone</h1>
           <p className="text-sm text-muted-foreground">
-            Add a new pincode to the delivery serviceable list
+            Update delivery zone settings for pincode {form.pincode}
           </p>
         </div>
       </div>
@@ -478,7 +524,7 @@ export default function NewDeliveryZonePage() {
                 </div>
                 <Button type="submit" className="w-full gap-2" disabled={isSubmitting}>
                   {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                  Save Zone
+                  Save Changes
                 </Button>
                 <Link href="/admin/delivery-zones" className="block">
                   <Button type="button" variant="outline" className="w-full">

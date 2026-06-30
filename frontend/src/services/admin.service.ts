@@ -109,6 +109,11 @@ export const adminService = {
     return response.data;
   },
 
+  getDeliveryZone: async (id: string): Promise<any> => {
+    const response = await api.get(`/delivery-zones/${id}`);
+    return response.data;
+  },
+
   createDeliveryZone: async (data: any): Promise<any> => {
     const response = await api.post("/delivery-zones", data);
     return response.data;
