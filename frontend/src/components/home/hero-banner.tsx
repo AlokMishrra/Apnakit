@@ -72,7 +72,9 @@ function HeroVideo({
       onEnded={loop ? undefined : onEnded}
       className="h-full w-full object-cover"
       onError={(e) => {
-        (e.currentTarget as HTMLVideoElement).style.display = "none";
+        const video = e.currentTarget as HTMLVideoElement;
+        const parent = video.parentElement;
+        if (parent) parent.style.display = "none";
       }}
     />
   );
@@ -233,9 +235,11 @@ export function HeroBanner() {
                           <img
                             src={banner.image}
                             alt={banner.title}
-      className="h-full w-full object-contain"
+                            className="h-full w-full object-contain"
                             onError={(e) => {
-                              (e.target as HTMLImageElement).style.display = "none";
+                              const img = e.target as HTMLImageElement;
+                              const parent = img.parentElement;
+                              if (parent) parent.style.display = "none";
                             }}
                           />
                         </div>
