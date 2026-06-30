@@ -39,7 +39,7 @@ export function TruecallerButton({
   const startPolling = (requestId: string) => {
     setShowWaiting(true);
     let polls = 0;
-    const maxPolls = 10;
+    const maxPolls = 40; // 40 × 3s = 2 minutes
     pollingRef.current = setInterval(async () => {
       polls++;
       try {
@@ -69,6 +69,39 @@ export function TruecallerButton({
       }
     }, 3000);
   };
+
+  // Manual status check — triggered when user returns to the page from Truecaller app
+  const checkStatusNow = async () => {
+    const requestId = sessionStorage.getItem("tc_requestId");
+    if (!requestId) return;
+    try {
+      const result: TruecallerStatus = await truecallerService.getStatus(requestId);
+      if (result.status === "completed" && result.user && result.tokens) {
+        if (pollingRef.current) clearInterval(pollingRef.current);
+        sessionStorage.removeItem("tc_requestId");
+        onSuccess({ user: result.user, tokens: result.tokens });
+      } else if (result.status === "rejected") {
+        if (pollingRef.current) clearInterval(pollingRef.current);
+        setShowWaiting(false);
+        sessionStorage.removeItem("tc_requestId");
+        onError?.(result.error || "Truecaller verification was denied.");
+      }
+    } catch {
+      // Ignore — polling will continue
+    }
+  };
+
+  // Detect when user returns to the page from the Truecaller app
+  React.useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible" && showWaiting) {
+        checkStatusNow();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showWaiting]);
 
   const triggerTruecaller = async () => {
     if (hasTriggered.current) return;
@@ -141,7 +174,7 @@ export function TruecallerButton({
             <Loader2 className="h-5 w-5 animate-spin text-green-600" />
             <div className="flex-1">
               <p className="text-sm font-medium text-green-900">Waiting for Truecaller...</p>
-              <p className="text-xs text-green-700">Please complete verification in the Truecaller app</p>
+              <p className="text-xs text-green-700">Complete verification in the Truecaller app, then return here</p>
             </div>
             <button
               onClick={() => {
@@ -157,6 +190,13 @@ export function TruecallerButton({
               <X className="h-4 w-4 text-green-700" />
             </button>
           </div>
+          <button
+            onClick={checkStatusNow}
+            className="mt-2 w-full rounded border border-green-300 bg-white py-1.5 text-xs font-medium text-green-700 hover:bg-green-50"
+            type="button"
+          >
+            I&apos;ve completed verification — check now
+          </button>
         </div>
       )}
       {!showWaiting && (
