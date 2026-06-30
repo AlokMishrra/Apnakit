@@ -29,7 +29,7 @@ const popularProducts = [
 const policies = [
   { name: 'About Us', href: '/about' },
   { name: 'Contact Us', href: '/contact' },
-  { name: 'Privacy Policy', href: '/privacy-policy' },
+  { name: 'Privacy Policy', href: '/privacy' },
   { name: 'Terms & Conditions', href: '/terms' },
   { name: 'Shipping Policy', href: '/shipping-policy' },
   { name: 'Return & Refund Policy', href: '/return-policy' },
