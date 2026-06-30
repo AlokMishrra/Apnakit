@@ -42,6 +42,8 @@ export default function AdminDashboard() {
     fetchStats();
   }, []);
 
+  const overview = stats?.overview || {};
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -79,32 +81,32 @@ export default function AdminDashboard() {
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <StatsCard
               title="Total Revenue"
-              value={formatCurrency(stats?.totalRevenue ?? 3215000)}
-              change={stats?.revenueChange ?? 12.5}
+              value={formatCurrency(overview.totalRevenue ?? 0)}
+              change={overview.revenueChange ?? 0}
               icon={IndianRupee}
               iconColor="text-emerald-600"
               iconBg="bg-emerald-100"
             />
             <StatsCard
               title="Total Orders"
-              value={String(stats?.totalOrders ?? 1248)}
-              change={stats?.ordersChange ?? 8.2}
+              value={String(overview.totalOrders ?? 0)}
+              change={overview.ordersChange ?? 0}
               icon={ShoppingCart}
               iconColor="text-blue-600"
               iconBg="bg-blue-100"
             />
             <StatsCard
               title="Total Customers"
-              value={String(stats?.totalCustomers ?? 3250)}
-              change={stats?.customersChange ?? 15.3}
+              value={String(overview.totalCustomers ?? 0)}
+              change={overview.customersChange ?? 0}
               icon={Users}
               iconColor="text-purple-600"
               iconBg="bg-purple-100"
             />
             <StatsCard
               title="Total Products"
-              value={String(stats?.totalProducts ?? 486)}
-              change={stats?.productsChange ?? -2.1}
+              value={String(overview.totalProducts ?? 0)}
+              change={0}
               icon={Package}
               iconColor="text-amber-600"
               iconBg="bg-amber-100"
@@ -112,18 +114,18 @@ export default function AdminDashboard() {
           </div>
 
           <div className="grid gap-6 lg:grid-cols-2">
-            <RevenueChart data={stats?.revenueData} />
-            <OrdersChart data={stats?.ordersData} />
+            <RevenueChart data={stats?.revenueByDay} />
+            <OrdersChart data={stats?.ordersByStatus} />
           </div>
 
           <RecentOrdersTable data={stats?.recentOrders} />
 
           <div className="grid gap-6 lg:grid-cols-2">
             <TopSellingProducts data={stats?.topProducts} />
-            <CategoryChart data={stats?.categoryData} />
+            <CategoryChart data={stats?.topCategories} />
           </div>
 
-          <CustomerGrowthChart data={stats?.customerData} />
+          <CustomerGrowthChart data={stats?.customerGrowth} />
         </>
       )}
     </div>

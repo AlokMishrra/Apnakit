@@ -11,20 +11,11 @@ import {
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-const customerData = [
-  { month: "Jan", customers: 1200, newCustomers: 320 },
-  { month: "Feb", customers: 1380, newCustomers: 280 },
-  { month: "Mar", customers: 1520, newCustomers: 340 },
-  { month: "Apr", customers: 1710, newCustomers: 390 },
-  { month: "May", customers: 1890, newCustomers: 420 },
-  { month: "Jun", customers: 2050, newCustomers: 380 },
-  { month: "Jul", customers: 2240, newCustomers: 450 },
-  { month: "Aug", customers: 2410, newCustomers: 410 },
-  { month: "Sep", customers: 2580, newCustomers: 430 },
-  { month: "Oct", customers: 2790, newCustomers: 480 },
-  { month: "Nov", customers: 3010, newCustomers: 520 },
-  { month: "Dec", customers: 3250, newCustomers: 560 },
-];
+interface CustomerGrowthData {
+  month: string;
+  customers: number;
+  newCustomers: number;
+}
 
 const CustomTooltip = ({
   active,
@@ -51,7 +42,9 @@ const CustomTooltip = ({
   return null;
 };
 
-export function CustomerGrowthChart() {
+export function CustomerGrowthChart({ data }: { data?: CustomerGrowthData[] }) {
+  const chartData = data || [];
+
   return (
     <Card>
       <CardHeader>
@@ -59,52 +52,58 @@ export function CustomerGrowthChart() {
       </CardHeader>
       <CardContent>
         <div className="h-[350px]">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart
-              data={customerData}
-              margin={{ top: 5, right: 10, left: 10, bottom: 0 }}
-            >
-              <defs>
-                <linearGradient id="colorCustomers" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#6366f1" stopOpacity={0.1} />
-                  <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
-                </linearGradient>
-                <linearGradient id="colorNew" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#10b981" stopOpacity={0.1} />
-                  <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-              <XAxis
-                dataKey="month"
-                axisLine={false}
-                tickLine={false}
-                tick={{ fill: "#94a3b8", fontSize: 12 }}
-              />
-              <YAxis
-                axisLine={false}
-                tickLine={false}
-                tick={{ fill: "#94a3b8", fontSize: 12 }}
-              />
-              <Tooltip content={<CustomTooltip />} />
-              <Area
-                type="monotone"
-                dataKey="customers"
-                stroke="#6366f1"
-                strokeWidth={2}
-                fillOpacity={1}
-                fill="url(#colorCustomers)"
-              />
-              <Area
-                type="monotone"
-                dataKey="newCustomers"
-                stroke="#10b981"
-                strokeWidth={2}
-                fillOpacity={1}
-                fill="url(#colorNew)"
-              />
-            </AreaChart>
-          </ResponsiveContainer>
+          {chartData.length === 0 ? (
+            <div className="flex h-full items-center justify-center text-sm text-gray-400">
+              No customer data yet
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart
+                data={chartData}
+                margin={{ top: 5, right: 10, left: 10, bottom: 0 }}
+              >
+                <defs>
+                  <linearGradient id="colorCustomers" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#6366f1" stopOpacity={0.1} />
+                    <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id="colorNew" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.1} />
+                    <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                <XAxis
+                  dataKey="month"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: "#94a3b8", fontSize: 12 }}
+                />
+                <YAxis
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: "#94a3b8", fontSize: 12 }}
+                />
+                <Tooltip content={<CustomTooltip />} />
+                <Area
+                  type="monotone"
+                  dataKey="customers"
+                  stroke="#6366f1"
+                  strokeWidth={2}
+                  fillOpacity={1}
+                  fill="url(#colorCustomers)"
+                />
+                <Area
+                  type="monotone"
+                  dataKey="newCustomers"
+                  stroke="#10b981"
+                  strokeWidth={2}
+                  fillOpacity={1}
+                  fill="url(#colorNew)"
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          )}
         </div>
       </CardContent>
     </Card>

@@ -11,14 +11,13 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/utils";
 
-const categoryData = [
-  { name: "Electronics", value: 425000, color: "#6366f1" },
-  { name: "Fashion", value: 318000, color: "#f59e0b" },
-  { name: "Home & Kitchen", value: 245000, color: "#10b981" },
-  { name: "Beauty", value: 189000, color: "#ec4899" },
-  { name: "Sports", value: 156000, color: "#8b5cf6" },
-  { name: "Books", value: 98000, color: "#06b6d4" },
-];
+interface CategoryData {
+  name: string;
+  revenue: number;
+  orders: number;
+}
+
+const COLORS = ["#6366f1", "#f59e0b", "#10b981", "#ec4899", "#8b5cf6", "#06b6d4"];
 
 const CustomTooltip = ({
   active,
@@ -76,7 +75,13 @@ const renderCustomizedLabel = ({
   );
 };
 
-export function CategoryChart() {
+export function CategoryChart({ data }: { data?: CategoryData[] }) {
+  const chartData = (data || []).map((d, i) => ({
+    name: d.name,
+    value: d.revenue,
+    color: COLORS[i % COLORS.length],
+  }));
+
   return (
     <Card>
       <CardHeader>
@@ -86,34 +91,40 @@ export function CategoryChart() {
       </CardHeader>
       <CardContent>
         <div className="h-[350px]">
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie
-                data={categoryData}
-                cx="50%"
-                cy="50%"
-                labelLine={false}
-                label={renderCustomizedLabel}
-                outerRadius={130}
-                innerRadius={60}
-                dataKey="value"
-                strokeWidth={2}
-                stroke="#ffffff"
-              >
-                {categoryData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
-                ))}
-              </Pie>
-              <Tooltip content={<CustomTooltip />} />
-              <Legend
-                verticalAlign="bottom"
-                height={36}
-                formatter={(value) => (
-                  <span className="text-sm text-gray-600">{value}</span>
-                )}
-              />
-            </PieChart>
-          </ResponsiveContainer>
+          {chartData.length === 0 ? (
+            <div className="flex h-full items-center justify-center text-sm text-gray-400">
+              No category data yet
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={chartData}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={renderCustomizedLabel}
+                  outerRadius={130}
+                  innerRadius={60}
+                  dataKey="value"
+                  strokeWidth={2}
+                  stroke="#ffffff"
+                >
+                  {chartData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip content={<CustomTooltip />} />
+                <Legend
+                  verticalAlign="bottom"
+                  height={36}
+                  formatter={(value) => (
+                    <span className="text-sm text-gray-600">{value}</span>
+                  )}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          )}
         </div>
       </CardContent>
     </Card>
