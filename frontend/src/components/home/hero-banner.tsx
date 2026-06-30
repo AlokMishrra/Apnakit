@@ -197,8 +197,9 @@ export function HeroBanner() {
         onMouseEnter={() => setIsPaused(true)}
         onMouseLeave={() => setIsPaused(false)}
       >
-        {/* Desktop: 16:9, Mobile: 9:16 via aspect ratio switching */}
-        <div className="relative w-full aspect-video">
+        {/* Mobile: 16:9 (full width looks good on narrow screens).
+            Desktop: capped at ~400px tall so it doesn't dominate the viewport. */}
+        <div className="relative w-full aspect-video sm:aspect-[5/2] lg:max-h-[420px]">
           <div
             className="flex h-full transition-transform duration-500 ease-in-out"
             style={{ transform: `translateX(-${currentSlide * 100}%)` }}
@@ -294,15 +295,15 @@ export function HeroBanner() {
                     </div>
                   )}
 
-                  <div className="relative mx-auto flex h-full max-w-7xl items-center px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
-                    <div className="max-w-2xl space-y-4 sm:space-y-6">
+                  <div className="relative mx-auto flex h-full max-w-7xl items-center px-4 py-8 sm:px-6 sm:py-10 lg:px-8 lg:py-8">
+                    <div className="max-w-2xl space-y-3 sm:space-y-4">
                       {banner.showTitle !== false && (
-                        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl lg:text-5xl">
+                        <h1 className="text-xl font-bold tracking-tight sm:text-2xl lg:text-4xl">
                           {banner.title}
                         </h1>
                       )}
                       {banner.subtitle && banner.showSubtitle !== false && (
-                        <p className="text-base text-white/90 sm:text-lg lg:text-xl">{banner.subtitle}</p>
+                        <p className="text-sm text-white/90 sm:text-base lg:text-lg">{banner.subtitle}</p>
                       )}
                       {banner.link && banner.showButton !== false && (
                         <Button
