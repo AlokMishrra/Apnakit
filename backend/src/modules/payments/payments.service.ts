@@ -41,9 +41,16 @@ export class PaymentsService {
         receipt: 'test_rcpt_1',
       });
       return { success: true, order };
-    } catch (error) {
-      this.logger.error('Razorpay test failed', error?.message || error);
-      return { success: false, error: error?.message || 'Unknown error', details: error?.response };
+    } catch (error: any) {
+      this.logger.error('Razorpay test failed', JSON.stringify(error));
+      return {
+        success: false,
+        error: error?.message || String(error),
+        code: error?.code,
+        status: error?.status,
+        response: error?.response?.data,
+        string: String(error)
+      };
     }
   }
 
