@@ -183,7 +183,7 @@ export function BestSellers() {
           <h2 className="text-2xl font-bold text-gray-900">Best Sellers</h2>
         </div>
         <Link
-          href="/products/best-sellers"
+          href="/products?filter=best-sellers"
           className="flex items-center gap-1 text-sm font-medium text-indigo-600 hover:text-indigo-500"
         >
           View All

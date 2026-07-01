@@ -85,7 +85,7 @@ export function FeaturedProducts() {
       <div className="mb-6 flex items-center justify-between">
         <h2 className="text-2xl font-bold text-gray-900">Featured Products</h2>
         <Link
-          href="/search?featured=true"
+          href="/products?filter=featured"
           className="flex items-center gap-1 text-sm font-medium text-indigo-600 hover:text-indigo-500"
         >
           View All

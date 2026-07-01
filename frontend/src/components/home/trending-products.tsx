@@ -89,7 +89,7 @@ export function TrendingProducts() {
           <h2 className="text-2xl font-bold text-gray-900">Trending Now</h2>
         </div>
         <Link
-          href="/products/trending"
+          href="/products?filter=trending"
           className="flex items-center gap-1 text-sm font-medium text-indigo-600 hover:text-indigo-500"
         >
           View All
