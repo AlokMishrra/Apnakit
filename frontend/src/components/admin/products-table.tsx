@@ -270,8 +270,9 @@ export function ProductsTable({
                   <Filter className="mr-2 h-4 w-4" />
                   <SelectValue placeholder="Category" />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Categories</SelectItem>
+                <SelectContent className="flex flex-col">
+                  <div className="px-2 py-1.5 text-sm font-semibold text-muted-foreground">Category</div>
+                  <SelectItem value="all">All</SelectItem>
                   {categories.map((cat) => (
                     <SelectItem key={cat} value={cat}>
                       {cat}
