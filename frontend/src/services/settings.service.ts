@@ -30,31 +30,31 @@ export interface AllSettings {
 export const settingsService = {
   async getSettings(): Promise<AllSettings> {
     const res = await api.get("/settings");
-    return res.data;
+    return res.data.data;
   },
 
   async getDeliverySettings(): Promise<DeliverySettings> {
     const res = await api.get("/settings/delivery");
-    return res.data;
+    return res.data.data;
   },
 
   async getTaxSettings(): Promise<TaxSettings> {
     const res = await api.get("/settings/tax");
-    return res.data;
+    return res.data.data;
   },
 
   async updateDeliverySettings(delivery: Partial<DeliverySettings>): Promise<DeliverySettings> {
     const res = await api.put("/settings/delivery", delivery);
-    return res.data;
+    return res.data.data;
   },
 
   async updateTaxSettings(tax: Partial<TaxSettings>): Promise<TaxSettings> {
     const res = await api.put("/settings/tax", tax);
-    return res.data;
+    return res.data.data;
   },
 
   async updateStoreSettings(store: Partial<StoreSettings>): Promise<StoreSettings> {
     const res = await api.put("/settings/store", store);
-    return res.data;
+    return res.data.data;
   },
 };
