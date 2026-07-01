@@ -32,13 +32,13 @@ function mapBackendProduct(raw: any): Product {
       isPrimary: i === 0,
     })),
     category: raw.category
-      ? { _id: raw.category.id, name: raw.category.name, slug: raw.category.slug, productCount: 0, isActive: true, createdAt: "", updatedAt: "" }
+      ? { _id: raw.category.id || raw.category._id, name: raw.category.name, slug: raw.category.slug, productCount: 0, isActive: true, createdAt: "", updatedAt: "" }
       : { _id: "", name: "", slug: "", productCount: 0, isActive: true, createdAt: "", updatedAt: "" },
     brand: raw.brand
-      ? { _id: raw.brand.id, name: raw.brand.name, slug: raw.brand.slug, productCount: 0, isActive: true }
+      ? { _id: raw.brand.id || raw.brand._id, name: raw.brand.name, slug: raw.brand.slug, productCount: 0, isActive: true }
       : { _id: "", name: "", slug: "", productCount: 0, isActive: true },
     variants: (raw.variants || []).map((v: any) => ({
-      _id: v.id,
+      _id: v.id || v._id,
       name: v.name || "",
       sku: v.sku || "",
       price: Number(v.price),
@@ -47,7 +47,7 @@ function mapBackendProduct(raw: any): Product {
       attributes: v.attributes || {},
       image: v.image,
     })),
-    tags: raw.tags ? raw.tags.split(",") : [],
+    tags: raw.tags ? (typeof raw.tags === "string" ? raw.tags.split(",") : raw.tags) : [],
     specifications: [],
     ratings: { average: raw.averageRating || 0, count: raw.reviewCount || 0 },
     rating: raw.averageRating || 0,
@@ -79,24 +79,35 @@ export default function ProductsPage() {
 
   React.useEffect(() => {
     setLoading(true);
-    let url = "/products?limit=50";
 
+    let url: string;
     if (filter === "featured") {
-      url += "&featured=true";
+      url = "/products/featured?limit=100";
     } else if (filter === "best-sellers") {
-      url += "&sort=popularity";
+      url = "/products/bestsellers?limit=100";
     } else if (filter === "trending") {
-      url += "&sort=createdAt";
+      url = "/products/trending?limit=100";
+    } else {
+      url = "/products?limit=100";
     }
 
     api
       .get(url)
       .then((res: any) => {
         const payload = res?.data?.data ?? res?.data ?? res;
-        const data = payload?.data || [];
-        const transformed = Array.isArray(data) ? data.map(mapBackendProduct) : [];
+        let rawData: any[] = [];
+
+        if (Array.isArray(payload)) {
+          rawData = payload;
+        } else if (payload?.data && Array.isArray(payload.data)) {
+          rawData = payload.data;
+        } else if (payload?.products && Array.isArray(payload.products)) {
+          rawData = payload.products;
+        }
+
+        const transformed = rawData.map(mapBackendProduct);
         setProducts(transformed);
-        setTotal(payload?.meta?.total || transformed.length || 0);
+        setTotal(rawData.length);
       })
       .catch(() => {
         setProducts([]);

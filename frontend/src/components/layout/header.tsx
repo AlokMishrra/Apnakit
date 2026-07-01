@@ -189,7 +189,7 @@ function Header({ user: userProp, cartCount = 0, wishlistCount = 0 }: HeaderProp
 
           {/* Logo */}
           <div className="flex flex-shrink-0 items-center">
-            <Logo className="h-11 sm:h-13 lg:h-14" />
+            <Logo className="h-12 sm:h-14 lg:h-16" />
           </div>
 
           {/* Search Bar - Desktop */}
