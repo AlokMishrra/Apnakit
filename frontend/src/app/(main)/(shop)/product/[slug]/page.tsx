@@ -13,6 +13,7 @@ import { ProductInfo } from "@/components/product/product-info";
 import { ProductTabs } from "@/components/product/product-tabs";
 import { ReviewSection } from "@/components/product/review-section";
 import { RelatedProducts } from "@/components/product/related-products";
+import { trackProductView } from "@/lib/recently-viewed";
 import { useProductBySlug, useRelatedProducts } from "@/hooks/use-products";
 import type { Product, Review, Specification } from "@/types";
 
@@ -118,6 +119,22 @@ export default function ProductDetailPage() {
   const [isStickyBarVisible, setIsStickyBarVisible] = React.useState(false);
 
   const product = rawProduct ? mapBackendProduct(rawProduct as any) : null;
+
+  React.useEffect(() => {
+    if (product) {
+      trackProductView({
+        _id: product._id,
+        name: product.name,
+        slug: product.slug,
+        price: product.price,
+        originalPrice: product.originalPrice,
+        images: product.images.map((img) => img.url),
+        brand: product.brand ? { name: product.brand.name } : undefined,
+        category: product.category ? { name: product.category.name } : undefined,
+        stock: product.stock,
+      });
+    }
+  }, [product?._id]);
 
   const { data: relatedData } = useRelatedProducts(
     (rawProduct as any)?.id || ""
