@@ -30,7 +30,8 @@ function ProductCard({
   className,
 }: ProductCardProps) {
   const discount = calculateDiscount(product.price, product.originalPrice);
-  const inStock = (product.stock || 0) > 0;
+  const totalStock = product.stock ?? product.variants?.reduce((s: number, v: any) => s + (v.stock || 0), 0) ?? 0;
+  const inStock = totalStock > 0;
 
   return (
     <div
