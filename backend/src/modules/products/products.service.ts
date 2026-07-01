@@ -610,23 +610,24 @@ export class ProductsService {
       slug = await this.generateUniqueSlug(dto.name, id);
     }
 
+    const updateData: any = {};
+    if (dto.name !== undefined) updateData.name = dto.name;
+    if (slug !== existing.slug) updateData.slug = slug;
+    if (dto.description !== undefined) updateData.description = dto.description;
+    if (dto.shortDescription !== undefined) updateData.shortDescription = dto.shortDescription;
+    if (dto.sku !== undefined) updateData.sku = dto.sku;
+    if (dto.barcode !== undefined) updateData.barcode = dto.barcode;
+    if (dto.isFeatured !== undefined) updateData.isFeatured = dto.isFeatured;
+    if (dto.isActive !== undefined) updateData.isActive = dto.isActive;
+    if (dto.metaTitle !== undefined) updateData.metaTitle = dto.metaTitle;
+    if (dto.metaDescription !== undefined) updateData.metaDescription = dto.metaDescription;
+    if (dto.tags !== undefined) updateData.tags = dto.tags;
+    if (dto.categoryId !== undefined) updateData.categoryId = dto.categoryId || null;
+    if (dto.brandId !== undefined) updateData.brandId = dto.brandId || null;
+
     const product = await this.prisma.product.update({
       where: { id },
-      data: {
-        name: dto.name,
-        slug,
-        description: dto.description,
-        shortDescription: dto.shortDescription,
-        sku: dto.sku,
-        barcode: dto.barcode,
-        isFeatured: dto.isFeatured,
-        isActive: dto.isActive,
-        metaTitle: dto.metaTitle,
-        metaDescription: dto.metaDescription,
-        tags: dto.tags,
-        categoryId: dto.categoryId,
-        brandId: dto.brandId,
-      },
+      data: updateData,
       include: {
         brand: true,
         category: true,
@@ -642,38 +643,38 @@ export class ProductsService {
         where: { productId: id },
       });
 
-      await Promise.all(
-        dto.variants.map(async (v, index) => {
-          const existing = existingVariants[index];
-          if (existing) {
-            await this.prisma.productVariant.update({
-              where: { id: existing.id },
-              data: {
-                name: v.name,
-                sku: v.sku,
-                price: v.price,
-                stock: v.stock,
-                compareAtPrice: v.compareAtPrice,
-                costPrice: v.costPrice,
-                weight: v.weight,
-              },
-            });
-          } else {
-            await this.prisma.productVariant.create({
-              data: {
-                productId: id,
-                name: v.name,
-                sku: v.sku,
-                price: v.price,
-                stock: v.stock,
-                compareAtPrice: v.compareAtPrice,
-                costPrice: v.costPrice,
-                weight: v.weight,
-              },
-            });
-          }
-        }),
-      );
+      for (let index = 0; index < dto.variants.length; index++) {
+        const v = dto.variants[index];
+        const matched = existingVariants.find((ev) => ev.sku === v.sku);
+        if (matched) {
+          await this.prisma.productVariant.update({
+            where: { id: matched.id },
+            data: {
+              name: v.name,
+              price: v.price,
+              stock: v.stock,
+              compareAtPrice: v.compareAtPrice,
+              costPrice: v.costPrice,
+              weight: v.weight,
+              attributes: v.attributes as any,
+            },
+          });
+        } else {
+          await this.prisma.productVariant.create({
+            data: {
+              productId: id,
+              name: v.name,
+              sku: v.sku,
+              price: v.price,
+              stock: v.stock,
+              compareAtPrice: v.compareAtPrice,
+              costPrice: v.costPrice,
+              weight: v.weight,
+              attributes: v.attributes as any,
+            },
+          });
+        }
+      }
     }
 
     this.logger.log(`Product updated: ${product.id}`);
