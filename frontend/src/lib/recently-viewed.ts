@@ -2,6 +2,7 @@ import type { Product } from "@/types";
 
 const STORAGE_KEY = "recentlyViewed";
 const MAX_ITEMS = 20;
+const STALE_IDS = new Set(["r1", "r2", "r3", "r4"]);
 
 export interface RecentlyViewedProduct {
   _id: string;
@@ -19,7 +20,13 @@ function readStorage(): RecentlyViewedProduct[] {
   if (typeof window === "undefined") return [];
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
-    return stored ? JSON.parse(stored) : [];
+    if (!stored) return [];
+    const parsed: RecentlyViewedProduct[] = JSON.parse(stored);
+    const filtered = parsed.filter((p) => !STALE_IDS.has(p._id));
+    if (filtered.length !== parsed.length) {
+      writeStorage(filtered);
+    }
+    return filtered;
   } catch {
     return [];
   }
