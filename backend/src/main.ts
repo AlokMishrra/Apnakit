@@ -38,7 +38,6 @@ async function bootstrap() {
       { path: 'truecaller/callback', method: RequestMethod.POST },
       { path: 'truecaller/callback', method: RequestMethod.GET },
       { path: '', method: RequestMethod.GET },
-      { path: 'health', method: RequestMethod.GET },
     ],
   });
 
