@@ -38,6 +38,7 @@ export interface RazorpayInstance {
 
 let scriptLoaded = false;
 
+// Razorpay Standard Checkout loader
 export function loadRazorpayScript(): Promise<void> {
   if (scriptLoaded) return Promise.resolve();
   return new Promise((resolve, reject) => {
