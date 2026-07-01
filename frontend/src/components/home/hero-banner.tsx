@@ -28,16 +28,7 @@ const GRADIENTS = [
 
 const IMAGE_ROTATE_MS = 5000;
 
-function getGoogleDriveFileId(url: string): string | null {
-  const match = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
-  if (match) return match[1];
-  const match2 = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
-  if (match2) return match2[1];
-  return null;
-}
-
 function isEmbedUrl(url: string): boolean {
-  if (getGoogleDriveFileId(url)) return true;
   if (/youtube\.com\/embed\//.test(url)) return true;
   if (/youtu\.be\//.test(url)) return true;
   if (/youtube\.com\/watch\?v=/.test(url)) return true;
@@ -47,8 +38,6 @@ function isEmbedUrl(url: string): boolean {
 }
 
 function getEmbedUrl(url: string): string {
-  const gdriveId = getGoogleDriveFileId(url);
-  if (gdriveId) return `https://drive.google.com/file/d/${gdriveId}/preview`;
   if (/youtu\.be\/([a-zA-Z0-9_-]+)/.test(url)) {
     const id = url.match(/youtu\.be\/([a-zA-Z0-9_-]+)/)?.[1];
     if (id) return `https://www.youtube.com/embed/${id}?autoplay=1&mute=1`;
@@ -240,17 +229,16 @@ export function HeroBanner() {
   // Determine if current slide is a video
   const currentBanner = banners[currentSlide];
   const isCurrentVideo = currentBanner && (currentBanner.mediaType || "IMAGE") === "VIDEO";
-  const doesCurrentLoop = isCurrentVideo && currentBanner?.loopVideo === true;
+  const isCurrentEmbed = isCurrentVideo && isEmbedUrl(currentBanner?.image || "");
+  const doesCurrentLoop = isCurrentVideo && !isCurrentEmbed && currentBanner?.loopVideo === true;
 
-  // Auto-rotate: only for image slides, never for video slides
+  // Auto-rotate: images + embeds rotate every 5s, direct MP4 videos wait for ended event
   useEffect(() => {
     if (isPaused || banners.length <= 1) return;
-    // Videos: do not auto-advance. The video's `ended` event drives navigation,
-    // and looping videos never advance.
-    if (isCurrentVideo) return;
+    if (isCurrentVideo && !isCurrentEmbed) return;
     const interval = setInterval(nextSlide, IMAGE_ROTATE_MS);
     return () => clearInterval(interval);
-  }, [isPaused, nextSlide, banners.length, isCurrentVideo, currentSlide]);
+  }, [isPaused, nextSlide, banners.length, isCurrentVideo, isCurrentEmbed, currentSlide]);
 
   // Pause non-active videos, play active
   useEffect(() => {
