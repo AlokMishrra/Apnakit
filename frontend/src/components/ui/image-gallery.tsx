@@ -59,7 +59,10 @@ function ImageGallery({ images, alt, className }: ImageGalleryProps) {
                 fill
                 sizes="64px"
                 className="object-cover"
-                unoptimized={getImageUrl(image).includes("placehold")}
+                unoptimized
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = "/images/placeholder.svg";
+                }}
               />
             </button>
           ))}
@@ -87,7 +90,10 @@ function ImageGallery({ images, alt, className }: ImageGalleryProps) {
               "object-contain transition-transform duration-200",
               isZoomed && "scale-150"
             )}
-            unoptimized={getImageUrl(currentImage).includes("placehold")}
+            unoptimized
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = "/images/placeholder.svg";
+            }}
             style={
               isZoomed
                 ? {

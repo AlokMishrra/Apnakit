@@ -52,7 +52,10 @@ function ProductCard({
             "object-contain transition-transform duration-300 group-hover:scale-105",
             !inStock && "opacity-60 grayscale"
           )}
-          unoptimized={getImageUrl(product.images[0]).includes("placehold")}
+          unoptimized
+          onError={(e) => {
+            (e.target as HTMLImageElement).src = "/images/placeholder.svg";
+          }}
         />
         {discount > 0 && (
           <Badge variant="destructive" className="absolute left-2 top-2 z-10">

@@ -51,6 +51,7 @@ docker-compose.override.yml
 # Uploads
 uploads/*
 !uploads/.gitkeep
+backend/uploads/uploads/*
 
 # Database
 *.sqlite

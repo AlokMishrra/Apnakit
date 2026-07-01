@@ -399,4 +399,22 @@ export class UploadService {
       throw new BadRequestException('File deletion failed');
     }
   }
+
+  async getStorageStatus() {
+    const supabase = this.initSupabase();
+    const supabaseReady = !!supabase;
+    let supabaseBucketOk = false;
+    if (supabase) {
+      try {
+        const { data, error } = await supabase.storage.getBucket(this.supabaseBucket);
+        supabaseBucketOk = !error && !!data;
+      } catch {}
+    }
+    await this.initS3();
+    return {
+      supabase: { configured: supabaseReady, bucket: this.supabaseBucket, bucketOk: supabaseBucketOk },
+      s3: { configured: this.useS3, bucket: this.bucketName },
+      activeProvider: supabaseReady && supabaseBucketOk ? 'supabase' : this.useS3 ? 's3' : 'local',
+    };
+  }
 }

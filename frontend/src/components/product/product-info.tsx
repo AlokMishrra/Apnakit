@@ -28,11 +28,11 @@ function ProductInfo({ product, className }: ProductInfoProps) {
   const [addingToCart, setAddingToCart] = React.useState(false);
 
   const handleAddToCart = async (buyNow = false) => {
-    if (product.stock === 0) {
+    if (activeStock === 0) {
       toast.error("This product is out of stock");
       return;
     }
-    const variantId = product.variants?.[0]?._id;
+    const variantId = selectedVariant["variant"] || product.variants?.[0]?._id;
     try {
       setAddingToCart(true);
       await cartService.addToCart(
@@ -106,7 +106,14 @@ function ProductInfo({ product, className }: ProductInfoProps) {
     setShowShareMenu(false);
   };
 
-  const discount = calculateDiscount(product.price, product.originalPrice);
+  const selectedVariantData = selectedVariant["variant"]
+    ? product.variants?.find((v) => v._id === selectedVariant["variant"])
+    : null;
+  const activePrice = selectedVariantData?.price || product.price;
+  const activeOriginalPrice = selectedVariantData?.compareAtPrice || product.originalPrice;
+  const activeStock = selectedVariantData?.stock ?? product.stock;
+
+  const discount = calculateDiscount(activePrice, activeOriginalPrice);
 
   const handleShare = async () => {
     if (navigator.share) {
@@ -188,7 +195,7 @@ function ProductInfo({ product, className }: ProductInfoProps) {
       <Rating value={product.ratings?.average || 0} showCount count={product.ratings?.count || 0} size="lg" />
 
       <div className="flex items-baseline gap-3">
-        <Price amount={product.price} originalAmount={product.originalPrice} size="lg" />
+        <Price amount={activePrice} originalAmount={activeOriginalPrice} size="lg" />
       </div>
 
       {product.isDeal && product.dealPrice && (
@@ -237,16 +244,16 @@ function ProductInfo({ product, className }: ProductInfoProps) {
         <QuantitySelector
           value={quantity}
           onChange={setQuantity}
-          max={Math.min(product.stock, 10)}
+          max={Math.min(activeStock, 10)}
         />
       </div>
 
       <div className="flex items-center gap-2">
-        {product.stock > 0 ? (
+        {activeStock > 0 ? (
           <>
             <Check className="h-4 w-4 text-emerald-600" />
             <span className="text-sm text-emerald-600 font-medium">In Stock</span>
-            {product.stock <= 5 && (
+            {activeStock <= 5 && (
               <Badge variant="outline" className="text-[10px] border-orange-300 text-orange-600 px-1.5 py-0">
                 Only few left
               </Badge>
@@ -261,7 +268,7 @@ function ProductInfo({ product, className }: ProductInfoProps) {
         <Button
           size="lg"
           className="h-12 w-full bg-indigo-600 font-semibold text-white shadow-sm hover:bg-indigo-700 sm:flex-1"
-          disabled={product.stock === 0 || addingToCart}
+          disabled={activeStock === 0 || addingToCart}
           onClick={() => handleAddToCart(false)}
         >
           {addingToCart ? (
@@ -274,7 +281,7 @@ function ProductInfo({ product, className }: ProductInfoProps) {
         <Button
           size="lg"
           className="h-12 w-full bg-gradient-to-r from-amber-500 to-orange-500 font-semibold text-white shadow-sm hover:from-amber-600 hover:to-orange-600 sm:flex-1"
-          disabled={product.stock === 0 || addingToCart}
+          disabled={activeStock === 0 || addingToCart}
           onClick={() => handleAddToCart(true)}
         >
           <Zap className="mr-2 h-5 w-5" />
