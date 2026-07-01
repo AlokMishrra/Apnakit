@@ -244,8 +244,8 @@ export function ProductsTable({
     <div className="space-y-4">
       <Card>
         <CardContent className="p-0">
-          <div className="flex flex-col gap-4 border-b p-4 md:flex-row md:items-center md:justify-between">
-            <div className="relative flex-1 max-w-sm">
+          <div className="flex flex-col gap-3 border-b p-4 md:flex-row md:items-center md:justify-between">
+            <div className="relative w-full md:w-72 lg:w-80">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 placeholder="Search by name or SKU..."
@@ -258,7 +258,7 @@ export function ProductsTable({
               />
             </div>
 
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-2">
               <Select
                 value={categoryFilter}
                 onValueChange={(v) => {
