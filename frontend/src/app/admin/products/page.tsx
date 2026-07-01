@@ -20,14 +20,19 @@ export default function ProductsPage() {
       setLoading(true);
       const res = await adminService.getAllProducts({ page, limit: 20, search });
       const raw = res?.data?.data || res?.data || [];
-      const data = Array.isArray(raw) ? raw.map((p: any) => ({
-        ...p,
-        id: p.id || p._id,
-        price: p.price ?? p.variants?.[0]?.price ?? 0,
-        stock: p.stock ?? p.variants?.[0]?.stock ?? 0,
-        sku: p.sku ?? p.variants?.[0]?.sku ?? '',
-        totalStock: p.totalStock ?? p.variants?.reduce((s: number, v: any) => s + (v.stock || 0), 0) ?? 0,
-      })) : [];
+      const data = Array.isArray(raw) ? raw.map((p: any) => {
+        const totalStock = p.totalStock ?? p.variants?.reduce((s: number, v: any) => s + (v.stock || 0), 0) ?? p.stock ?? p.variants?.[0]?.stock ?? 0;
+        const stockStatus = totalStock === 0 ? "out_of_stock" : totalStock <= 10 ? "low_stock" : "in_stock";
+        return {
+          ...p,
+          id: p.id || p._id,
+          price: p.price ?? p.variants?.[0]?.price ?? 0,
+          stock: p.stock ?? p.variants?.[0]?.stock ?? 0,
+          sku: p.sku ?? p.variants?.[0]?.sku ?? '',
+          totalStock,
+          stockStatus,
+        };
+      }) : [];
       setProducts(data);
     } catch {
       toast.error("Failed to load products");
