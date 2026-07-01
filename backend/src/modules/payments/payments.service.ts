@@ -41,18 +41,16 @@ export class PaymentsService {
         receipt: 'test_rcpt_1',
       });
       return { success: true, order };
-    } catch (error) {
-      const errObj = error as Record<string, any>;
-      this.logger.error('Razorpay test failed. Error keys: ' + Object.keys(errObj).join(', '));
-      this.logger.error('Razorpay error full:', error);
+    } catch (error: any) {
+      this.logger.error('Razorpay error:', JSON.stringify(error, null, 2));
       return {
         success: false,
-        errorMessage: errObj.message,
-        errorCode: errObj.code,
-        errorStatus: errObj.status,
-        errorResponse: errObj.response?.data,
-        errorToString: error?.toString?.(),
-        rawError: Object.assign({}, error)
+        error: error?.description || error?.message || error?.error?.description || JSON.stringify(error),
+        code: error?.code,
+        status: error?.status,
+        description: error?.description,
+        fieldErrors: error?.fieldErrors,
+        response: error?.response?.data
       };
     }
   }
