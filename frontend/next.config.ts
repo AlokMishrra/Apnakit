@@ -53,6 +53,10 @@ const nextConfig: NextConfig = {
         hostname: "res.cloudinary.com",
       },
       {
+        protocol: "https",
+        hostname: "*.supabase.co",
+      },
+      {
         protocol: "http",
         hostname: "localhost",
       },
