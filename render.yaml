@@ -29,9 +29,9 @@ services:
       - key: GOOGLE_CLIENT_SECRET
         sync: false
       - key: RAZORPAY_KEY_ID
-        value: rzp_test_T8C5UMmSjRIJDA
+        value: rzp_test_T8CtqnvXhhbrKb
       - key: RAZORPAY_KEY_SECRET
-        value: lTpW9mkDNZLB7y2PTb1k2W52
+        value: rNLJMIoVXVrCHaF1LHOx65mr
       - key: SMTP_HOST
         value: smtp.gmail.com
       - key: SMTP_PORT
