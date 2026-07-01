@@ -119,8 +119,8 @@ function OrderSuccessContent() {
   const total = order?.total || 0;
   const estimatedDelivery = (() => {
     const d = new Date();
-    d.setDate(d.getDate() + 4);
-    return d.toLocaleDateString("en-IN", { weekday: "long", month: "long", day: "numeric", year: "numeric" });
+    d.setMinutes(d.getMinutes() + 20);
+    return d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
   })();
   const address = order?.shippingAddress;
 
@@ -188,7 +188,7 @@ function OrderSuccessContent() {
                 <div className="flex items-center gap-3 rounded-lg bg-indigo-50 p-4">
                   <Truck className="h-5 w-5 text-indigo-600" />
                   <div>
-                    <p className="text-sm font-medium text-foreground">Estimated Delivery</p>
+                    <p className="text-sm font-medium text-foreground">Delivery in</p>
                     <p className="text-sm font-semibold text-indigo-600">{estimatedDelivery}</p>
                   </div>
                 </div>
