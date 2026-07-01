@@ -54,4 +54,19 @@ export class SettingsController {
   async updateStoreSettings(@Body() body: any) {
     return this.settingsService.updateStoreSettings(body);
   }
+
+  @Get('payment')
+  @ApiOperation({ summary: 'Get payment settings' })
+  async getPaymentSettings() {
+    return this.settingsService.getPaymentSettings();
+  }
+
+  @Put('payment')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update payment settings (admin only)' })
+  async updatePaymentSettings(@Body() body: any) {
+    return this.settingsService.updatePaymentSettings(body);
+  }
 }

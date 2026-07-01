@@ -9,6 +9,14 @@ const DEFAULTS: AllSettings = {
   delivery: { deliveryCharge: 99, freeDeliveryThreshold: 999, enableFreeDelivery: true },
   tax: { gstRate: 18, gstEnabled: true, gstNumber: "", companyName: "ApnaKit" },
   store: { storeName: "ApnaKit", storeEmail: "", storePhone: "", storeDescription: "", currency: "INR" },
+  payment: {
+    cod: { enabled: true },
+    razorpay: { enabled: true },
+    upi: { enabled: false },
+    card: { enabled: false },
+    netbanking: { enabled: false },
+    wallet: { enabled: false },
+  },
 };
 
 let cachedSettings: AllSettings | null = DEFAULTS;

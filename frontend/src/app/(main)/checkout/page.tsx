@@ -39,15 +39,6 @@ import { deliveryZoneService } from "@/services/delivery-zone.service";
 import { useSettings } from "@/hooks/use-settings";
 import { toast } from "sonner";
 
-const paymentMethods = [
-  { id: "COD", label: "Cash on Delivery", icon: Banknote, description: "Pay when you receive", available: true },
-  { id: "RAZORPAY", label: "Razorpay", icon: CreditCard, description: "Credit/Debit Card, UPI, Net Banking", available: false },
-  { id: "UPI", label: "UPI", icon: Smartphone, description: "Google Pay, PhonePe, Paytm", available: false },
-  { id: "CARD", label: "Credit/Debit Card", icon: CreditCard, description: "Visa, Mastercard, RuPay", available: false },
-  { id: "NETBANKING", label: "Net Banking", icon: Building2, description: "All major banks", available: false },
-  { id: "WALLET", label: "Wallet", icon: Wallet, description: "Paytm, PhonePe, Amazon Pay", available: false },
-];
-
 const steps = [
   { id: 1, label: "Address", icon: MapPin },
   { id: 2, label: "Payment", icon: CreditCard },
@@ -158,6 +149,15 @@ export default function CheckoutPage() {
   const shippingCharge = enableFreeDelivery && subtotal >= deliveryThreshold ? 0 : deliveryCharge;
   const taxAmount = gstEnabled ? Math.round(subtotal * gstRate) : 0;
   const totalAmount = subtotal + shippingCharge + taxAmount;
+
+  const paymentMethods = [
+    { id: "COD", label: "Cash on Delivery", icon: Banknote, description: "Pay when you receive", available: settings?.payment?.cod?.enabled ?? true },
+    { id: "RAZORPAY", label: "Razorpay", icon: CreditCard, description: "Credit/Debit Card, UPI, Net Banking", available: settings?.payment?.razorpay?.enabled ?? true },
+    { id: "UPI", label: "UPI", icon: Smartphone, description: "Google Pay, PhonePe, Paytm", available: settings?.payment?.upi?.enabled ?? false },
+    { id: "CARD", label: "Credit/Debit Card", icon: CreditCard, description: "Visa, Mastercard, RuPay", available: settings?.payment?.card?.enabled ?? false },
+    { id: "NETBANKING", label: "Net Banking", icon: Building2, description: "All major banks", available: settings?.payment?.netbanking?.enabled ?? false },
+    { id: "WALLET", label: "Wallet", icon: Wallet, description: "Paytm, PhonePe, Amazon Pay", available: settings?.payment?.wallet?.enabled ?? false },
+  ];
 
   const selectedAddress = useMemo(
     () => addresses.find((a) => (a.id || a._id) === selectedAddressId),

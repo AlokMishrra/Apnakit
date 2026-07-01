@@ -21,10 +21,24 @@ export interface StoreSettings {
   currency: string;
 }
 
+export interface PaymentMethodSetting {
+  enabled: boolean;
+}
+
+export interface PaymentSettings {
+  cod: PaymentMethodSetting;
+  razorpay: PaymentMethodSetting;
+  upi: PaymentMethodSetting;
+  card: PaymentMethodSetting;
+  netbanking: PaymentMethodSetting;
+  wallet: PaymentMethodSetting;
+}
+
 export interface AllSettings {
   delivery: DeliverySettings;
   tax: TaxSettings;
   store: StoreSettings;
+  payment: PaymentSettings;
 }
 
 export const settingsService = {
@@ -55,6 +69,16 @@ export const settingsService = {
 
   async updateStoreSettings(store: Partial<StoreSettings>): Promise<StoreSettings> {
     const res = await api.put("/settings/store", store);
+    return res.data.data;
+  },
+
+  async getPaymentSettings(): Promise<PaymentSettings> {
+    const res = await api.get("/settings/payment");
+    return res.data.data;
+  },
+
+  async updatePaymentSettings(payment: Partial<PaymentSettings>): Promise<PaymentSettings> {
+    const res = await api.put("/settings/payment", payment);
     return res.data.data;
   },
 };

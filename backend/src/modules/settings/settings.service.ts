@@ -22,10 +22,24 @@ export interface StoreSettings {
   currency: string;
 }
 
+export interface PaymentMethodSetting {
+  enabled: boolean;
+}
+
+export interface PaymentSettings {
+  cod: PaymentMethodSetting;
+  razorpay: PaymentMethodSetting;
+  upi: PaymentMethodSetting;
+  card: PaymentMethodSetting;
+  netbanking: PaymentMethodSetting;
+  wallet: PaymentMethodSetting;
+}
+
 export interface AllSettings {
   delivery: DeliverySettings;
   tax: TaxSettings;
   store: StoreSettings;
+  payment: PaymentSettings;
 }
 
 const DEFAULTS: AllSettings = {
@@ -47,6 +61,14 @@ const DEFAULTS: AllSettings = {
     storeDescription: 'ApnaKit - Your trusted online shopping destination.',
     currency: 'INR',
   },
+  payment: {
+    cod: { enabled: true },
+    razorpay: { enabled: true },
+    upi: { enabled: false },
+    card: { enabled: false },
+    netbanking: { enabled: false },
+    wallet: { enabled: false },
+  },
 };
 
 @Injectable()
@@ -66,6 +88,7 @@ export class SettingsService {
         delivery: { ...DEFAULTS.delivery, ...(map['delivery'] || {}) },
         tax: { ...DEFAULTS.tax, ...(map['tax'] || {}) },
         store: { ...DEFAULTS.store, ...(map['store'] || {}) },
+        payment: { ...DEFAULTS.payment, ...(map['payment'] || {}) },
       };
     } catch (error) {
       this.logger.warn('Failed to read settings from DB, using defaults');
@@ -109,6 +132,18 @@ export class SettingsService {
     const current = (await this.getSettings()).store;
     const updated = { ...current, ...store };
     await this.updateSettings('store', updated);
+    return updated;
+  }
+
+  async getPaymentSettings(): Promise<PaymentSettings> {
+    const all = await this.getSettings();
+    return all.payment;
+  }
+
+  async updatePaymentSettings(payment: Partial<PaymentSettings>): Promise<PaymentSettings> {
+    const current = await this.getPaymentSettings();
+    const updated = { ...current, ...payment };
+    await this.updateSettings('payment', updated);
     return updated;
   }
 }
