@@ -89,8 +89,9 @@ export default function EditProductPage() {
 
   const [variants, setVariants] = useState<Variant[]>([]);
   const [specs, setSpecs] = useState<Spec[]>([]);
-  const [images, setImages] = useState<{ file: File | null; preview: string; isPrimary: boolean; url?: string }[]>([]);
+  const [images, setImages] = useState<{ file: File | null; preview: string; isPrimary: boolean; url?: string; imageId?: string }[]>([]);
   const [imageUrlInput, setImageUrlInput] = useState("");
+  const [deletedImageIds, setDeletedImageIds] = useState<string[]>([]);
 
   useEffect(() => {
     const loadProduct = async () => {
@@ -155,6 +156,7 @@ export default function EditProductPage() {
               file: null,
               preview: img.url || img,
               isPrimary: img.isPrimary || false,
+              imageId: img.id,
             }))
           );
         }
@@ -236,7 +238,16 @@ export default function EditProductPage() {
     setImages((prev) => [...prev, ...newImages]);
   };
 
-  const removeImage = (index: number) => {
+  const removeImage = async (index: number) => {
+    const image = images[index];
+    if (image?.imageId) {
+      try {
+        await adminService.deleteProductImage(productId, image.imageId);
+      } catch {
+        toast.error("Failed to delete image from server");
+        return;
+      }
+    }
     setImages((prev) => {
       const removed = prev[index];
       if (removed.preview.startsWith("blob:")) {
@@ -244,16 +255,26 @@ export default function EditProductPage() {
       }
       const newImages = prev.filter((_, i) => i !== index);
       if (removed.isPrimary && newImages.length > 0) {
-        newImages[0].isPrimary = true;
+        newImages[0] = { ...newImages[0], isPrimary: true };
       }
       return newImages;
     });
+    toast.success("Image removed");
   };
 
-  const setPrimaryImage = (index: number) => {
+  const setPrimaryImage = async (index: number) => {
+    const image = images[index];
     setImages((prev) =>
       prev.map((img, i) => ({ ...img, isPrimary: i === index }))
     );
+    if (image?.imageId) {
+      try {
+        await adminService.setPrimaryProductImage(productId, image.imageId);
+        toast.success("Primary image updated");
+      } catch {
+        toast.error("Failed to set primary image");
+      }
+    }
   };
 
   const addImageByUrl = () => {
@@ -304,6 +325,16 @@ export default function EditProductPage() {
           .map((s) => ({ name: s.key, value: s.value, groupId: s.group || undefined })),
       };
       await adminService.updateProduct(productId, payload);
+
+      if (deletedImageIds.length > 0) {
+        await adminService.deleteProductImages(productId, deletedImageIds);
+      }
+
+      const primaryImage = images.find((img) => img.isPrimary && img.imageId);
+      if (primaryImage?.imageId) {
+        await adminService.setPrimaryProductImage(productId, primaryImage.imageId);
+      }
+
       const newFileImages = images.filter((img) => img.file !== null);
       const newUrlImages = images.filter((img) => img.url && !img.file);
       if (newFileImages.length > 0) {

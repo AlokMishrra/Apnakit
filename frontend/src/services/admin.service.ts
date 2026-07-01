@@ -73,6 +73,21 @@ export const adminService = {
     return response.data;
   },
 
+  deleteProductImage: async (productId: string, imageId: string): Promise<any> => {
+    const response = await api.delete(`/products/${productId}/images/${imageId}`);
+    return response.data;
+  },
+
+  deleteProductImages: async (productId: string, imageIds: string[]): Promise<any> => {
+    const response = await api.delete(`/products/${productId}/images`, { data: { imageIds } });
+    return response.data;
+  },
+
+  setPrimaryProductImage: async (productId: string, imageId: string): Promise<any> => {
+    const response = await api.patch(`/products/${productId}/images/primary`, { imageId });
+    return response.data;
+  },
+
   // Categories
   getCategoryById: async (id: string): Promise<any> => {
     const response = await api.get(`/categories/${id}`);

@@ -768,6 +768,42 @@ export class ProductsService {
     return imageRecords;
   }
 
+  async deleteImage(productId: string, imageId: string) {
+    const image = await this.prisma.productImage.findFirst({
+      where: { id: imageId, productId },
+    });
+    if (!image) {
+      throw new NotFoundException(`Image not found for this product`);
+    }
+    await this.prisma.productImage.delete({ where: { id: imageId } });
+    return { message: 'Image deleted successfully' };
+  }
+
+  async deleteImages(productId: string, imageIds: string[]) {
+    await this.prisma.productImage.deleteMany({
+      where: { id: { in: imageIds }, productId },
+    });
+    return { message: `${imageIds.length} image(s) deleted` };
+  }
+
+  async setPrimaryImage(productId: string, imageId: string) {
+    const image = await this.prisma.productImage.findFirst({
+      where: { id: imageId, productId },
+    });
+    if (!image) {
+      throw new NotFoundException(`Image not found for this product`);
+    }
+    await this.prisma.productImage.updateMany({
+      where: { productId },
+      data: { isPrimary: false },
+    });
+    await this.prisma.productImage.update({
+      where: { id: imageId },
+      data: { isPrimary: true },
+    });
+    return { message: 'Primary image set successfully' };
+  }
+
   async updateVariants(productId: string, dto: UpdateVariantsDto) {
     const product = await this.prisma.product.findUnique({
       where: { id: productId },

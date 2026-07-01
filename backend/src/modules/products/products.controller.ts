@@ -199,6 +199,47 @@ export class ProductsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.SELLER, Role.ADMIN)
   @ApiBearerAuth()
+  @Delete(':id/images/:imageId')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Delete a product image' })
+  @ApiResponse({ status: 200, description: 'Image deleted' })
+  deleteImage(
+    @Param('id') id: string,
+    @Param('imageId') imageId: string,
+  ) {
+    return this.productsService.deleteImage(id, imageId);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.SELLER, Role.ADMIN)
+  @ApiBearerAuth()
+  @Patch(':id/images/primary')
+  @ApiOperation({ summary: 'Set primary product image' })
+  @ApiResponse({ status: 200, description: 'Primary image set' })
+  setPrimaryImage(
+    @Param('id') id: string,
+    @Body() body: { imageId: string },
+  ) {
+    return this.productsService.setPrimaryImage(id, body.imageId);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.SELLER, Role.ADMIN)
+  @ApiBearerAuth()
+  @Delete(':id/images')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Delete multiple product images' })
+  @ApiResponse({ status: 200, description: 'Images deleted' })
+  deleteImages(
+    @Param('id') id: string,
+    @Body() body: { imageIds: string[] },
+  ) {
+    return this.productsService.deleteImages(id, body.imageIds);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.SELLER, Role.ADMIN)
+  @ApiBearerAuth()
   @Patch(':id/variants')
   @ApiOperation({ summary: 'Upsert product variants' })
   @ApiResponse({ status: 200, description: 'Variants updated' })
