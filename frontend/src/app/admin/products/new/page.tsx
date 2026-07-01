@@ -106,7 +106,8 @@ export default function NewProductPage() {
     { key: "", value: "", group: "General" },
   ]);
 
-  const [images, setImages] = useState<{ file: File | null; preview: string; isPrimary: boolean }[]>([]);
+  const [images, setImages] = useState<{ file: File | null; preview: string; isPrimary: boolean; url?: string }[]>([]);
+  const [imageUrlInput, setImageUrlInput] = useState("");
 
   const handleNameChange = (name: string) => {
     setForm((prev) => ({
@@ -197,6 +198,20 @@ export default function NewProductPage() {
     );
   };
 
+  const addImageByUrl = () => {
+    const url = imageUrlInput.trim();
+    if (!url) return;
+    if (!url.startsWith("http://") && !url.startsWith("https://")) {
+      toast.error("Please enter a valid URL starting with http:// or https://");
+      return;
+    }
+    setImages((prev) => [
+      ...prev,
+      { file: null, preview: url, isPrimary: prev.length === 0, url },
+    ]);
+    setImageUrlInput("");
+  };
+
   const handleSave = async (status: "draft" | "published") => {
     if (!form.name.trim()) {
       toast.error("Product name is required");
@@ -234,14 +249,22 @@ export default function NewProductPage() {
       const res = await adminService.createProduct(payload);
       const productId = res?.data?.id || res?.id;
       if (productId && images.length > 0) {
-        const formData = new FormData();
-        images.forEach((img) => {
-          if (img.file) {
-            formData.append('files', img.file);
-          }
-        });
-        if (formData.has('files')) {
+        const fileImages = images.filter((img) => img.file);
+        const urlImages = images.filter((img) => img.url && !img.file);
+
+        if (fileImages.length > 0) {
+          const formData = new FormData();
+          fileImages.forEach((img) => {
+            if (img.file) {
+              formData.append('files', img.file);
+            }
+          });
           await adminService.uploadProductImages(productId, formData);
+        }
+
+        if (urlImages.length > 0) {
+          const urls = urlImages.map((img) => img.url!);
+          await adminService.addProductImagesByUrls(productId, urls);
         }
       }
       toast.success("Product created");
@@ -500,6 +523,34 @@ export default function NewProductPage() {
               </Button>
             </div>
 
+            <div className="flex items-end gap-3 rounded-lg border bg-muted/30 p-4">
+              <div className="flex-1">
+                <label className="mb-1.5 block text-sm font-medium text-foreground">
+                  Or add image by URL
+                </label>
+                <Input
+                  value={imageUrlInput}
+                  onChange={(e) => setImageUrlInput(e.target.value)}
+                  placeholder="https://example.com/image.jpg"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      addImageByUrl();
+                    }
+                  }}
+                />
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={addImageByUrl}
+                disabled={!imageUrlInput.trim()}
+              >
+                <Plus className="mr-1 h-4 w-4" />
+                Add URL
+              </Button>
+            </div>
+
             {images.length > 0 && (
               <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
                 {images.map((image, index) => (
@@ -538,6 +589,11 @@ export default function NewProductPage() {
                     {image.isPrimary && (
                       <Badge className="absolute left-2 top-2" variant="default">
                         Primary
+                      </Badge>
+                    )}
+                    {image.url && (
+                      <Badge className="absolute right-2 top-2" variant="secondary">
+                        URL
                       </Badge>
                     )}
                   </div>

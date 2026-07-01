@@ -89,7 +89,8 @@ export default function EditProductPage() {
 
   const [variants, setVariants] = useState<Variant[]>([]);
   const [specs, setSpecs] = useState<Spec[]>([]);
-  const [images, setImages] = useState<{ file: File | null; preview: string; isPrimary: boolean }[]>([]);
+  const [images, setImages] = useState<{ file: File | null; preview: string; isPrimary: boolean; url?: string }[]>([]);
+  const [imageUrlInput, setImageUrlInput] = useState("");
 
   useEffect(() => {
     const loadProduct = async () => {
@@ -255,6 +256,20 @@ export default function EditProductPage() {
     );
   };
 
+  const addImageByUrl = () => {
+    const url = imageUrlInput.trim();
+    if (!url) return;
+    if (!url.startsWith("http://") && !url.startsWith("https://")) {
+      toast.error("Please enter a valid URL starting with http:// or https://");
+      return;
+    }
+    setImages((prev) => [
+      ...prev,
+      { file: null, preview: url, isPrimary: prev.length === 0, url },
+    ]);
+    setImageUrlInput("");
+  };
+
   const handleSave = async (status: "draft" | "published") => {
     if (!form.name.trim()) {
       toast.error("Product name is required");
@@ -289,17 +304,20 @@ export default function EditProductPage() {
           .map((s) => ({ name: s.key, value: s.value, groupId: s.group || undefined })),
       };
       await adminService.updateProduct(productId, payload);
-      const newImages = images.filter((img) => img.file !== null);
-      if (newImages.length > 0) {
+      const newFileImages = images.filter((img) => img.file !== null);
+      const newUrlImages = images.filter((img) => img.url && !img.file);
+      if (newFileImages.length > 0) {
         const formData = new FormData();
-        newImages.forEach((img) => {
+        newFileImages.forEach((img) => {
           if (img.file) {
             formData.append('files', img.file);
           }
         });
-        if (formData.has('files')) {
-          await adminService.uploadProductImages(productId, formData);
-        }
+        await adminService.uploadProductImages(productId, formData);
+      }
+      if (newUrlImages.length > 0) {
+        const urls = newUrlImages.map((img) => img.url!);
+        await adminService.addProductImagesByUrls(productId, urls);
       }
       toast.success("Product updated");
       router.push("/admin/products");
@@ -576,6 +594,34 @@ export default function EditProductPage() {
               </Button>
             </div>
 
+            <div className="flex items-end gap-3 rounded-lg border bg-muted/30 p-4">
+              <div className="flex-1">
+                <label className="mb-1.5 block text-sm font-medium text-foreground">
+                  Or add image by URL
+                </label>
+                <Input
+                  value={imageUrlInput}
+                  onChange={(e) => setImageUrlInput(e.target.value)}
+                  placeholder="https://example.com/image.jpg"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      addImageByUrl();
+                    }
+                  }}
+                />
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={addImageByUrl}
+                disabled={!imageUrlInput.trim()}
+              >
+                <Plus className="mr-1 h-4 w-4" />
+                Add URL
+              </Button>
+            </div>
+
             {images.length > 0 && (
               <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
                 {images.map((image, index) => (
@@ -614,6 +660,11 @@ export default function EditProductPage() {
                     {image.isPrimary && (
                       <Badge className="absolute left-2 top-2" variant="default">
                         Primary
+                      </Badge>
+                    )}
+                    {image.url && (
+                      <Badge className="absolute right-2 top-2" variant="secondary">
+                        URL
                       </Badge>
                     )}
                   </div>

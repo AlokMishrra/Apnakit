@@ -68,6 +68,11 @@ export const adminService = {
     return response.data;
   },
 
+  addProductImagesByUrls: async (id: string, urls: string[], alt?: string): Promise<any> => {
+    const response = await api.post(`/products/${id}/images/urls`, { urls, alt });
+    return response.data;
+  },
+
   // Categories
   getCategoryById: async (id: string): Promise<any> => {
     const response = await api.get(`/categories/${id}`);

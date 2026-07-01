@@ -186,6 +186,19 @@ export class ProductsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.SELLER, Role.ADMIN)
   @ApiBearerAuth()
+  @Post(':id/images/urls')
+  @ApiOperation({ summary: 'Add product images by URL' })
+  @ApiResponse({ status: 201, description: 'Images added' })
+  addImagesByUrls(
+    @Param('id') id: string,
+    @Body() body: { urls: string[]; alt?: string },
+  ) {
+    return this.productsService.addImagesByUrls(id, body.urls, body.alt);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.SELLER, Role.ADMIN)
+  @ApiBearerAuth()
   @Patch(':id/variants')
   @ApiOperation({ summary: 'Upsert product variants' })
   @ApiResponse({ status: 200, description: 'Variants updated' })

@@ -733,6 +733,40 @@ export class ProductsService {
     return imageRecords;
   }
 
+  async addImagesByUrls(productId: string, urls: string[], alt?: string) {
+    const product = await this.prisma.product.findUnique({
+      where: { id: productId },
+    });
+    if (!product) {
+      throw new NotFoundException(`Product with ID "${productId}" not found`);
+    }
+
+    if (!urls || urls.length === 0) {
+      throw new BadRequestException('At least one image URL is required');
+    }
+
+    const existingCount = await this.prisma.productImage.count({
+      where: { productId },
+    });
+
+    const imageRecords = await Promise.all(
+      urls.map((url, index) =>
+        this.prisma.productImage.create({
+          data: {
+            productId,
+            url: url.trim(),
+            alt: alt || `Product image ${existingCount + index + 1}`,
+            sortOrder: existingCount + index,
+            isPrimary: existingCount === 0 && index === 0,
+          },
+        }),
+      ),
+    );
+
+    this.logger.log(`Added ${imageRecords.length} image URLs for product ${productId}`);
+    return imageRecords;
+  }
+
   async updateVariants(productId: string, dto: UpdateVariantsDto) {
     const product = await this.prisma.product.findUnique({
       where: { id: productId },
