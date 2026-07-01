@@ -135,18 +135,20 @@ export function ProductsTable({
     currentPage * itemsPerPage
   );
 
+  const getProductId = (p: any) => p._id || p.id;
+
   const allSelected =
     paginatedProducts.length > 0 &&
-    paginatedProducts.every((p) => selectedIds.includes(p._id));
+    paginatedProducts.every((p) => selectedIds.includes(getProductId(p)));
 
   const toggleSelectAll = () => {
     if (allSelected) {
       setSelectedIds((prev) =>
-        prev.filter((id) => !paginatedProducts.find((p) => p._id === id))
+        prev.filter((id) => !paginatedProducts.find((p) => getProductId(p) === id))
       );
     } else {
       setSelectedIds((prev) => [
-        ...new Set([...prev, ...paginatedProducts.map((p) => p._id)]),
+        ...new Set([...prev, ...paginatedProducts.map((p) => getProductId(p))]),
       ]);
     }
   };
@@ -418,16 +420,16 @@ export function ProductsTable({
                 <tbody>
                   {paginatedProducts.map((product) => (
                     <tr
-                      key={product._id || (product as any).id}
+                      key={getProductId(product)}
                       className={`border-b transition-colors hover:bg-muted/30 ${
-                        selectedIds.includes(product._id || (product as any).id) ? "bg-muted/50" : ""
+                        selectedIds.includes(getProductId(product)) ? "bg-muted/50" : ""
                       }`}
                     >
                       <td className="px-4 py-3 relative z-10">
                         <input
                           type="checkbox"
-                          checked={selectedIds.includes(product._id || (product as any).id)}
-                          onChange={() => toggleSelect(product._id || (product as any).id)}
+                          checked={selectedIds.includes(getProductId(product))}
+                          onChange={() => toggleSelect(getProductId(product))}
                           className="h-4 w-4 rounded border-gray-300 cursor-pointer"
                           onClick={(e) => e.stopPropagation()}
                         />
