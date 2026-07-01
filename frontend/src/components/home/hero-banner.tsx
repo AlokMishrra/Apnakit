@@ -28,6 +28,42 @@ const GRADIENTS = [
 
 const IMAGE_ROTATE_MS = 5000;
 
+function getGoogleDriveFileId(url: string): string | null {
+  const match = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+  if (match) return match[1];
+  const match2 = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  if (match2) return match2[1];
+  return null;
+}
+
+function isEmbedUrl(url: string): boolean {
+  if (getGoogleDriveFileId(url)) return true;
+  if (/youtube\.com\/embed\//.test(url)) return true;
+  if (/youtu\.be\//.test(url)) return true;
+  if (/youtube\.com\/watch\?v=/.test(url)) return true;
+  if (/vimeo\.com\//.test(url)) return true;
+  if (/screenpal\.com\//.test(url)) return true;
+  return false;
+}
+
+function getEmbedUrl(url: string): string {
+  const gdriveId = getGoogleDriveFileId(url);
+  if (gdriveId) return `https://drive.google.com/file/d/${gdriveId}/preview`;
+  if (/youtu\.be\/([a-zA-Z0-9_-]+)/.test(url)) {
+    const id = url.match(/youtu\.be\/([a-zA-Z0-9_-]+)/)?.[1];
+    if (id) return `https://www.youtube.com/embed/${id}?autoplay=1&mute=1`;
+  }
+  if (/youtube\.com\/watch\?v=([a-zA-Z0-9_-]+)/.test(url)) {
+    const id = url.match(/youtube\.com\/watch\?v=([a-zA-Z0-9_-]+)/)?.[1];
+    if (id) return `https://www.youtube.com/embed/${id}?autoplay=1&mute=1`;
+  }
+  if (/screenpal\.com\/watch\/([a-zA-Z0-9_-]+)/.test(url)) {
+    const id = url.match(/screenpal\.com\/watch\/([a-zA-Z0-9_-]+)/)?.[1];
+    if (id) return `https://go.screenpal.com/embed/${id}`;
+  }
+  return url;
+}
+
 function HeroSkeleton() {
   return (
     <div className="w-full px-3 sm:px-4 lg:px-6">
@@ -116,6 +152,24 @@ function HeroImage({
         const parent = target.parentElement;
         if (parent) parent.style.display = "none";
       }}
+    />
+  );
+}
+
+function HeroEmbed({
+  src,
+  onReady,
+}: {
+  src: string;
+  onReady?: () => void;
+}) {
+  return (
+    <iframe
+      src={getEmbedUrl(src)}
+      className="h-full w-full border-0"
+      allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
+      allowFullScreen
+      onLoad={() => onReady?.()}
     />
   );
 }
@@ -249,6 +303,7 @@ export function HeroBanner() {
               const isVideo = (banner.mediaType || "IMAGE") === "VIDEO";
               const isMuted = mutedMap[banner.id] ?? true;
               const shouldLoop = isVideo && banner.loopVideo === true;
+              const useEmbed = isVideo && isEmbedUrl(banner.image);
               return (
                 <div
                   key={banner.id}
@@ -261,15 +316,22 @@ export function HeroBanner() {
                     <>
                       {isVideo ? (
                         <div className="absolute inset-0 flex items-center justify-center">
-                          <HeroVideo
-                            src={banner.image}
-                            isMuted={isMuted}
-                            loop={shouldLoop}
-                            setRef={(el) => {
-                              videoRefs.current[banner.id] = el;
-                            }}
-                            onEnded={nextSlide}
-                          />
+                          {useEmbed ? (
+                            <HeroEmbed
+                              src={banner.image}
+                              onReady={() => {}}
+                            />
+                          ) : (
+                            <HeroVideo
+                              src={banner.image}
+                              isMuted={isMuted}
+                              loop={shouldLoop}
+                              setRef={(el) => {
+                                videoRefs.current[banner.id] = el;
+                              }}
+                              onEnded={nextSlide}
+                            />
+                          )}
                         </div>
                       ) : (
                         <div className="absolute inset-0 flex items-center justify-center">
@@ -283,7 +345,7 @@ export function HeroBanner() {
                     </>
                   )}
 
-                  {isVideo && banner.image && index === currentSlide && (
+                  {isVideo && !useEmbed && banner.image && index === currentSlide && (
                     <div className="absolute right-3 bottom-3 z-20 flex items-center gap-2 sm:right-6 sm:bottom-6">
                       {shouldLoop && (
                         <div
