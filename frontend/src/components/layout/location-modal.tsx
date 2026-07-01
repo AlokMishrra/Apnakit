@@ -693,45 +693,35 @@ export function LocationModal({
                   </div>
                 </div>
                 {banner.cities && banner.cities.length > 1 && (
-                  <ul className="mt-2 divide-y divide-emerald-200 overflow-hidden rounded-md border border-emerald-200 bg-white">
-                    {banner.cities
-                      .filter((c) => c.isActive !== false)
-                      .map((c) => {
-                        const isSelected = selectedPincodeCity?.city === c.name;
-                        return (
-                          <li key={c.name}>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setSelectedPincodeCity({
-                                  city: c.name,
-                                  state: banner.state || "",
-                                  country: "India",
-                                  pincode: banner.pincode,
-                                });
-                              }}
-                              className={cn(
-                                "flex w-full items-center gap-2 px-2.5 py-2 text-left text-xs text-emerald-900 transition-colors active:bg-emerald-100",
-                                isSelected
-                                  ? "bg-emerald-100 font-semibold"
-                                  : "hover:bg-emerald-50"
-                              )}
-                            >
-                              {isSelected ? (
-                                <CheckCircle2 className="h-3.5 w-3.5 flex-shrink-0 text-emerald-700" />
-                              ) : (
-                                <MapPin className="h-3.5 w-3.5 flex-shrink-0 text-emerald-600" />
-                              )}
-                              <span className="font-medium">{c.name}</span>
-                              {banner.state && (
-                                <span className="text-emerald-700/70">· {banner.state}</span>
-                              )}
-                              <ChevronRight className="ml-auto h-3.5 w-3.5 flex-shrink-0 text-emerald-600/50" />
-                            </button>
-                          </li>
-                        );
-                      })}
-                  </ul>
+                  <div className="mt-2">
+                    <label className="mb-1 block text-xs font-medium text-emerald-800">
+                      Select your area
+                    </label>
+                    <select
+                      className="w-full rounded-md border border-emerald-200 bg-white px-2.5 py-2 text-xs text-emerald-900 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                      value={selectedPincodeCity?.city || ""}
+                      onChange={(e) => {
+                        const city = e.target.value;
+                        if (city) {
+                          setSelectedPincodeCity({
+                            city,
+                            state: banner.state || "",
+                            country: "India",
+                            pincode: banner.pincode,
+                          });
+                        }
+                      }}
+                    >
+                      <option value="">-- Select area --</option>
+                      {banner.cities
+                        .filter((c) => c.isActive !== false)
+                        .map((c) => (
+                          <option key={c.name} value={c.name}>
+                            {c.name}{banner.state ? ` · ${banner.state}` : ""}
+                          </option>
+                        ))}
+                    </select>
+                  </div>
                 )}
               </div>
             )}

@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import { MapPin, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ServiceabilityState } from "./use-pincode-check";
 
@@ -59,24 +58,26 @@ export function ServiceabilityBanner({ state, className, onSelectCity }: Service
           </div>
         </div>
         {hasMultiple && (
-          <ul className="mt-1.5 divide-y divide-emerald-200 overflow-hidden rounded-md border border-emerald-200 bg-white">
-            {activeCities.map((c) => (
-              <li key={c.name}>
-                <button
-                  type="button"
-                  onClick={() => onSelectCity?.({ name: c.name, state: state.state })}
-                  className="flex w-full items-center gap-2 px-2.5 py-1.5 text-left text-xs text-emerald-900 transition-colors hover:bg-emerald-50 active:bg-emerald-100"
-                >
-                  <MapPin className="h-3 w-3 flex-shrink-0 text-emerald-600" />
-                  <span className="font-medium">{c.name}</span>
-                  {state.state && (
-                    <span className="text-emerald-700/70">· {state.state}</span>
-                  )}
-                  <ChevronRight className="ml-auto h-3 w-3 flex-shrink-0 text-emerald-600/50" />
-                </button>
-              </li>
-            ))}
-          </ul>
+          <div className="mt-1.5">
+            <label className="mb-1 block text-xs font-medium text-emerald-800">
+              Select your area
+            </label>
+            <select
+              className="w-full rounded-md border border-emerald-200 bg-white px-2.5 py-1.5 text-xs text-emerald-900 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+              defaultValue=""
+              onChange={(e) => {
+                const city = activeCities.find((c) => c.name === e.target.value);
+                if (city) onSelectCity?.({ name: city.name, state: state.state });
+              }}
+            >
+              <option value="">-- Select area --</option>
+              {activeCities.map((c) => (
+                <option key={c.name} value={c.name}>
+                  {c.name}{state.state ? ` · ${state.state}` : ""}
+                </option>
+              ))}
+            </select>
+          </div>
         )}
       </div>
     );

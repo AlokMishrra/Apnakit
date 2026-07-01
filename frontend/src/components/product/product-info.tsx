@@ -140,6 +140,9 @@ function ProductInfo({ product, className }: ProductInfoProps) {
             )}
             <h1 className="text-2xl font-bold text-foreground lg:text-3xl">
               {product.name}
+              {selectedVariantData?.name ? (
+                <span className="text-lg font-semibold text-muted-foreground"> — {selectedVariantData.name}</span>
+              ) : ""}
             </h1>
           </div>
           <div className="flex items-center gap-2">
