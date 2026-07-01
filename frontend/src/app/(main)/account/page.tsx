@@ -338,9 +338,9 @@ export default function AccountPage() {
                         href="/account/wallet"
                         className="flex-shrink-0 rounded-lg bg-indigo-50 p-4 text-center transition-colors hover:bg-indigo-100 sm:text-right"
                       >
-                        <p className="text-xs text-muted-foreground">Wallet Balance</p>
-                        <p className="text-lg font-bold text-indigo-600">
-                          {formatCurrency(stats.walletBalance)}
+                        <p className="text-xs text-muted-foreground">Wallet</p>
+                        <p className="text-sm font-semibold text-indigo-600">
+                          Coming Soon
                         </p>
                       </Link>
                     </div>
@@ -365,7 +365,7 @@ export default function AccountPage() {
                                 {link.key === "orders" && `${stats.orders} ${stats.orders === 1 ? "order" : "orders"}`}
                                 {link.key === "wishlist" && `${stats.wishlist} ${stats.wishlist === 1 ? "item" : "items"}`}
                                 {link.key === "addresses" && `${stats.addresses} saved`}
-                                {link.key === "wallet" && `Balance available`}
+                                {link.key === "wallet" && `Coming Soon`}
                                 {link.key === "returns" && `${stats.pendingReturns} pending`}
                                 {link.key === "support" && `${stats.openTickets} open`}
                               </p>
