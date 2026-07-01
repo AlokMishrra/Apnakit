@@ -24,6 +24,7 @@ import {
   ChevronUp,
   Loader2,
   ExternalLink,
+  Tag,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -150,7 +151,8 @@ export default function CheckoutPage() {
   const gstEnabled = settings?.tax?.gstEnabled ?? true;
   const shippingCharge = enableFreeDelivery && subtotal >= deliveryThreshold ? 0 : deliveryCharge;
   const taxAmount = gstEnabled ? Math.round(subtotal * gstRate) : 0;
-  const totalAmount = subtotal + shippingCharge + taxAmount;
+  const couponDiscount = cart?.discount > 0 ? Number(cart.discount) : 0;
+  const totalAmount = subtotal + shippingCharge + taxAmount - couponDiscount;
 
   const paymentMethods = [
     { id: "COD", label: "Cash on Delivery", icon: Banknote, description: "Pay when you receive", available: settings?.payment?.cod?.enabled ?? true },
@@ -750,6 +752,15 @@ export default function CheckoutPage() {
               <Card>
                 <CardContent className="p-4">
                   <h3 className="mb-4 text-base font-semibold text-foreground">Order Summary</h3>
+                  {cart?.coupon && couponDiscount > 0 && (
+                    <div className="mb-3 flex items-center justify-between rounded-lg bg-emerald-50 px-3 py-2">
+                      <div className="flex items-center gap-2">
+                        <Tag className="h-3 w-3 text-emerald-600" />
+                        <span className="text-xs font-medium text-emerald-700">{cart.coupon.code}</span>
+                      </div>
+                      <span className="text-xs text-emerald-600">-{formatCurrency(couponDiscount)}</span>
+                    </div>
+                  )}
                   <div className="space-y-3">
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">
@@ -775,6 +786,12 @@ export default function CheckoutPage() {
                       <span className="text-muted-foreground">Tax (GST {settings?.tax?.gstRate ?? 18}%)</span>
                       <span className="text-foreground">{formatCurrency(taxAmount)}</span>
                     </div>
+                    {couponDiscount > 0 && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Coupon Discount</span>
+                        <span className="font-medium text-emerald-600">-{formatCurrency(couponDiscount)}</span>
+                      </div>
+                    )}
                     <Separator />
                     <div className="flex justify-between">
                       <span className="text-base font-semibold text-foreground">Total</span>
