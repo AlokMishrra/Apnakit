@@ -27,8 +27,6 @@ import { SupabaseLoginDto } from './dto/supabase-login.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Public } from '../../common/decorators/roles.decorator';
-import { PrismaService } from '../../config/database.config';
-import * as bcrypt from 'bcryptjs';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -37,7 +35,6 @@ export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly configService: ConfigService,
-    private readonly prisma: PrismaService,
   ) {}
 
   @Public()
@@ -218,18 +215,5 @@ export class AuthController {
   async truecallerStatus(@Req() req: any) {
     const requestId = req.params.requestId;
     return this.authService.getTruecallerStatus(requestId);
-  }
-
-  @Public()
-  @Post('_reset-pass-temp')
-  @HttpCode(HttpStatus.OK)
-  async resetPassTemp(@Body() body: { email: string; password: string }) {
-    const { PrismaClient } = require('@prisma/client');
-    const bcrypt = require('bcryptjs');
-    const user = await this.prisma.user.findUnique({ where: { email: body.email } });
-    if (!user) return { message: 'User not found' };
-    const hashed = await bcrypt.hash(body.password, 12);
-    await this.prisma.user.update({ where: { email: body.email }, data: { password: hashed } });
-    return { message: 'Password reset done' };
   }
 }
