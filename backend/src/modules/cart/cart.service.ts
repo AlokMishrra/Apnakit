@@ -9,12 +9,16 @@ import { AddCartItemDto } from './dto/add-cart-item.dto';
 import { UpdateCartItemDto } from './dto/update-cart-item.dto';
 import { ApplyCouponDto } from './dto/apply-coupon.dto';
 import { Decimal } from '@prisma/client/runtime/library';
+import { SettingsService } from '../settings/settings.service';
 
 @Injectable()
 export class CartService {
   private readonly logger = new Logger(CartService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly settingsService: SettingsService,
+  ) {}
 
   async getCart(userId: string) {
     const cart = await this.prisma.cart.findFirst({
@@ -337,8 +341,9 @@ export class CartService {
     }
 
     const taxableAmount = subtotal - discount;
-    const taxRate = 0.18;
-    const tax = taxableAmount * taxRate;
+    const settings = await this.settingsService.getSettings();
+    const gstRate = (settings.tax.gstRate ?? 18) / 100;
+    const tax = settings.tax.gstEnabled ? taxableAmount * gstRate : 0;
     const total = taxableAmount + tax;
 
     await this.prisma.cart.update({

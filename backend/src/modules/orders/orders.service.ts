@@ -1,10 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-  ForbiddenException,
-  Logger,
-} from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ForbiddenException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../config/database.config';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
@@ -12,6 +6,7 @@ import { OrderFilterDto } from './dto/order-filter.dto';
 import { RequestReturnDto } from './dto/request-return.dto';
 import { OrderStatus, PaymentStatus, Prisma } from '@prisma/client';
 import { NotificationsService } from '../notifications/notifications.service';
+import { SettingsService } from '../settings/settings.service';
 
 @Injectable()
 export class OrdersService {
@@ -20,6 +15,7 @@ export class OrdersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly notificationsService: NotificationsService,
+    private readonly settingsService: SettingsService,
   ) {}
 
   private readonly CANCELLABLE_STATUSES: OrderStatus[] = [
@@ -100,9 +96,12 @@ export class OrdersService {
     }
 
     const taxableAmount = subtotal - discount;
-    const taxRate = 0.18;
-    const tax = taxableAmount * taxRate;
-    const shippingCost = subtotal >= 500 ? 0 : 49;
+    const settings = await this.settingsService.getSettings();
+    const gstRate = (settings.tax.gstRate ?? 18) / 100;
+    const tax = settings.tax.gstEnabled ? taxableAmount * gstRate : 0;
+    const freeThreshold = settings.delivery.freeDeliveryThreshold ?? 999;
+    const deliveryCharge = settings.delivery.deliveryCharge ?? 99;
+    const shippingCost = settings.delivery.enableFreeDelivery && subtotal >= freeThreshold ? 0 : deliveryCharge;
     const total = taxableAmount + tax + shippingCost;
 
     const order = await this.prisma.$transaction(async (tx) => {

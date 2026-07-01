@@ -36,6 +36,7 @@ import { cartService } from "@/services/cart.service";
 import { userService } from "@/services/user.service";
 import { AddressForm, type AddressFormData } from "@/components/address/address-form";
 import { deliveryZoneService } from "@/services/delivery-zone.service";
+import { useSettings } from "@/hooks/use-settings";
 import { toast } from "sonner";
 
 const paymentMethods = [
@@ -55,6 +56,7 @@ const steps = [
 
 export default function CheckoutPage() {
   const router = useRouter();
+  const { settings } = useSettings();
   const [loading, setLoading] = useState(true);
   const [cart, setCart] = useState<any>(null);
   const [addresses, setAddresses] = useState<any[]>([]);
@@ -148,9 +150,13 @@ export default function CheckoutPage() {
     [cartItems]
   );
   const itemSavings = totalOriginal - subtotal;
-  const FREE_DELIVERY_THRESHOLD = 999;
-  const shippingCharge = subtotal >= FREE_DELIVERY_THRESHOLD ? 0 : 99;
-  const taxAmount = Math.round(subtotal * 0.18);
+  const deliveryThreshold = settings?.delivery?.freeDeliveryThreshold ?? 999;
+  const deliveryCharge = settings?.delivery?.deliveryCharge ?? 99;
+  const enableFreeDelivery = settings?.delivery?.enableFreeDelivery ?? true;
+  const gstRate = (settings?.tax?.gstRate ?? 18) / 100;
+  const gstEnabled = settings?.tax?.gstEnabled ?? true;
+  const shippingCharge = enableFreeDelivery && subtotal >= deliveryThreshold ? 0 : deliveryCharge;
+  const taxAmount = gstEnabled ? Math.round(subtotal * gstRate) : 0;
   const totalAmount = subtotal + shippingCharge + taxAmount;
 
   const selectedAddress = useMemo(
@@ -679,7 +685,7 @@ export default function CheckoutPage() {
                       )}
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Tax (GST 18%)</span>
+                      <span className="text-muted-foreground">Tax (GST {settings?.tax?.gstRate ?? 18}%)</span>
                       <span className="text-foreground">{formatCurrency(taxAmount)}</span>
                     </div>
                     <Separator />

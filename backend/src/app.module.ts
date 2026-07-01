@@ -33,6 +33,7 @@ import { AppBannerModule } from './modules/app-banner/app-banner.module';
 import { SocialMediaModule } from './modules/social-media/social-media.module';
 import { ContactModule } from './modules/contact/contact.module';
 import { HealthModule } from './modules/health/health.module';
+import { SettingsModule } from './modules/settings/settings.module';
 
 @Module({
   imports: [
@@ -76,6 +77,7 @@ import { HealthModule } from './modules/health/health.module';
     AppBannerModule,
     SocialMediaModule,
     ContactModule,
+    SettingsModule,
   ],
 })
 export class AppModule {}

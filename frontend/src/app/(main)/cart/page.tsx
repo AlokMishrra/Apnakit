@@ -27,13 +27,13 @@ import { Separator } from "@/components/ui/separator";
 import { formatCurrency, formatDate, getImageUrl } from "@/lib/utils";
 import { cartService } from "@/services/cart.service";
 import { useCartActions } from "@/hooks/use-cart-actions";
+import { useSettings } from "@/hooks/use-settings";
 import { toast } from "sonner";
 import { CartPageSkeleton } from "@/components/skeletons/cart-skeleton";
 
-const FREE_DELIVERY_THRESHOLD = 999;
-
 export default function CartPage() {
   const router = useRouter();
+  const { settings } = useSettings();
   const [loading, setLoading] = useState(true);
   const [cart, setCart] = useState<any>(null);
   const [couponCode, setCouponCode] = useState("");
@@ -77,9 +77,13 @@ export default function CartPage() {
     0
   );
   const itemSavings = totalOriginal - subtotal;
-  const shippingCharge = subtotal >= FREE_DELIVERY_THRESHOLD ? 0 : 99;
-  const taxRate = 0.18;
-  const taxAmount = Math.round(subtotal * taxRate);
+  const deliveryThreshold = settings?.delivery?.freeDeliveryThreshold ?? 999;
+  const deliveryChargeAmount = settings?.delivery?.deliveryCharge ?? 99;
+  const enableFreeDelivery = settings?.delivery?.enableFreeDelivery ?? true;
+  const gstRate = (settings?.tax?.gstRate ?? 18) / 100;
+  const gstEnabled = settings?.tax?.gstEnabled ?? true;
+  const shippingCharge = enableFreeDelivery && subtotal >= deliveryThreshold ? 0 : deliveryChargeAmount;
+  const taxAmount = gstEnabled ? Math.round(subtotal * gstRate) : 0;
 
   let couponDiscount = 0;
   if (cart?.discount && Number(cart.discount) > 0) {
@@ -92,8 +96,8 @@ export default function CartPage() {
   }
 
   const totalAmount = subtotal + shippingCharge + taxAmount - couponDiscount;
-  const freeDeliveryProgress = Math.min((subtotal / FREE_DELIVERY_THRESHOLD) * 100, 100);
-  const amountForFreeDelivery = Math.max(FREE_DELIVERY_THRESHOLD - subtotal, 0);
+  const freeDeliveryProgress = Math.min((subtotal / deliveryThreshold) * 100, 100);
+  const amountForFreeDelivery = Math.max(deliveryThreshold - subtotal, 0);
 
   // Use the shared cart actions for instant UI updates (Redux), debounced server sync
   const cartActions = useCartActions();
@@ -242,7 +246,7 @@ export default function CartPage() {
           </Link>
         </div>
 
-        {subtotal < FREE_DELIVERY_THRESHOLD && (
+        {subtotal < deliveryThreshold && (
           <Card className="mb-6 border-indigo-100 bg-indigo-50/50">
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
@@ -497,7 +501,7 @@ export default function CartPage() {
                       )}
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Tax (GST 18%)</span>
+                      <span className="text-muted-foreground">Tax (GST {settings?.tax?.gstRate ?? 18}%)</span>
                       <span className="text-foreground">{formatCurrency(taxAmount)}</span>
                     </div>
                     {couponDiscount > 0 && (
