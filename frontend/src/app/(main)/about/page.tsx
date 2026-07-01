@@ -7,14 +7,13 @@ import {
   Target,
   Award,
   MapPin,
-  Phone,
   Mail,
 } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "About Us",
   description:
-    "Learn about ApnaKit - your trusted online shopping destination. Our mission, values, and the team behind your favorite ecommerce platform.",
+    "Learn about ApnaKit - your trusted online shopping destination. Our mission, values, and our commitment to delivering the best online shopping experience.",
 };
 
 const values = [
@@ -49,29 +48,6 @@ const stats = [
   { label: "Products", value: "50L+" },
   { label: "Sellers", value: "50K+" },
   { label: "Cities Served", value: "1000+" },
-];
-
-const team = [
-  {
-    name: "Nishu Kumar",
-    role: "Founder & CEO",
-    description: "Visionary leader with 15+ years in ecommerce and technology.",
-  },
-  {
-    name: "Priya Sharma",
-    role: "Head of Operations",
-    description: "Expert in supply chain management and customer experience.",
-  },
-  {
-    name: "Amit Patel",
-    role: "CTO",
-    description: "Tech enthusiast building scalable platforms for millions.",
-  },
-  {
-    name: "Sneha Reddy",
-    role: "Head of Marketing",
-    description: "Creative mind behind ApnaKit's brand and community.",
-  },
 ];
 
 export default function AboutPage() {
@@ -155,37 +131,12 @@ export default function AboutPage() {
         </div>
       </div>
 
-      {/* Team */}
-      <div className="mb-16">
-        <h2 className="text-3xl font-bold text-center mb-8">Meet Our Team</h2>
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {team.map((member) => (
-            <div
-              key={member.name}
-              className="rounded-xl border bg-card p-6 text-center shadow-sm"
-            >
-              <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-muted text-2xl font-bold text-muted-foreground">
-                {member.name
-                  .split(" ")
-                  .map((n) => n[0])
-                  .join("")}
-              </div>
-              <h3 className="font-semibold">{member.name}</h3>
-              <p className="text-sm text-primary mb-2">{member.role}</p>
-              <p className="text-xs text-muted-foreground">
-                {member.description}
-              </p>
-            </div>
-          ))}
-        </div>
-      </div>
-
       {/* Contact Info */}
       <div className="rounded-xl bg-muted/50 p-8">
         <h2 className="text-2xl font-bold mb-6 text-center">
           Get in Touch
         </h2>
-        <div className="grid gap-6 md:grid-cols-3">
+        <div className="grid gap-6 md:grid-cols-2">
           <div className="flex items-center gap-4">
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
               <MapPin className="h-5 w-5 text-primary" />
@@ -193,18 +144,7 @@ export default function AboutPage() {
             <div>
               <h3 className="font-semibold">Address</h3>
               <p className="text-sm text-muted-foreground">
-                123, Tech Park, Sector 62, Noida, UP - 201301
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-              <Phone className="h-5 w-5 text-primary" />
-            </div>
-            <div>
-              <h3 className="font-semibold">Phone</h3>
-              <p className="text-sm text-muted-foreground">
-                +91 1800-123-4567 (Toll Free)
+                ApnaKit, Noida, Uttar Pradesh, India - 201301
               </p>
             </div>
           </div>
@@ -214,9 +154,12 @@ export default function AboutPage() {
             </div>
             <div>
               <h3 className="font-semibold">Email</h3>
-              <p className="text-sm text-muted-foreground">
+              <a
+                href="mailto:support@apnakit.in"
+                className="text-sm text-muted-foreground hover:text-primary"
+              >
                 support@apnakit.in
-              </p>
+              </a>
             </div>
           </div>
         </div>
