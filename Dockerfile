@@ -10,7 +10,6 @@ COPY backend/prisma ./prisma/
 RUN npm ci && npm install ws
 
 RUN npx prisma generate
-RUN npx prisma db push --skip-generate
 
 COPY backend/tsconfig.json ./
 COPY backend/src ./src/
