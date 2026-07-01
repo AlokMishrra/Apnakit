@@ -78,42 +78,70 @@ export default function ProductsPage() {
   }, [filter]);
 
   React.useEffect(() => {
+    let cancelled = false;
     setLoading(true);
+    setProducts([]);
+    setTotal(0);
 
-    let url: string;
-    if (filter === "featured") {
-      url = "/products/featured?limit=100";
-    } else if (filter === "best-sellers") {
-      url = "/products/bestsellers?limit=100";
-    } else if (filter === "trending") {
-      url = "/products/trending?limit=100";
-    } else {
-      url = "/products?limit=100";
-    }
-
-    api
-      .get(url)
-      .then((res: any) => {
-        const payload = res?.data?.data ?? res?.data ?? res;
-        let rawData: any[] = [];
-
-        if (Array.isArray(payload)) {
-          rawData = payload;
-        } else if (payload?.data && Array.isArray(payload.data)) {
-          rawData = payload.data;
-        } else if (payload?.products && Array.isArray(payload.products)) {
-          rawData = payload.products;
+    async function tryEndpoints(endpoints: string[]) {
+      for (const url of endpoints) {
+        try {
+          const res = await api.get(url);
+          if (cancelled) return;
+          const payload = res?.data?.data ?? res?.data ?? res;
+          let rawData: any[] = [];
+          if (Array.isArray(payload)) {
+            rawData = payload;
+          } else if (payload?.data && Array.isArray(payload.data)) {
+            rawData = payload.data;
+          } else if (payload?.products && Array.isArray(payload.products)) {
+            rawData = payload.products;
+          }
+          if (rawData.length > 0) {
+            const transformed = rawData.map(mapBackendProduct);
+            const filtered =
+              filter === "featured"
+                ? transformed.filter((p) => p.isFeatured)
+                : filter === "best-sellers"
+                ? transformed
+                : filter === "trending"
+                ? transformed
+                : transformed;
+            setProducts(filtered);
+            setTotal(filtered.length);
+            return;
+          }
+        } catch {
+          if (cancelled) return;
         }
-
-        const transformed = rawData.map(mapBackendProduct);
-        setProducts(transformed);
-        setTotal(rawData.length);
-      })
-      .catch(() => {
+      }
+      if (!cancelled) {
         setProducts([]);
         setTotal(0);
-      })
-      .finally(() => setLoading(false));
+      }
+    }
+
+    const endpoints: string[] = [];
+    if (filter === "featured") {
+      endpoints.push("/products/featured?limit=100");
+      endpoints.push("/products?limit=100");
+    } else if (filter === "best-sellers") {
+      endpoints.push("/products/bestsellers?limit=100");
+      endpoints.push("/products?limit=100&sort=popularity");
+    } else if (filter === "trending") {
+      endpoints.push("/products/trending?limit=100");
+      endpoints.push("/products?limit=100&sort=createdAt");
+    } else {
+      endpoints.push("/products?limit=100");
+    }
+
+    tryEndpoints(endpoints).finally(() => {
+      if (!cancelled) setLoading(false);
+    });
+
+    return () => {
+      cancelled = true;
+    };
   }, [filter]);
 
   return (

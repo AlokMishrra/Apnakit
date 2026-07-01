@@ -54,8 +54,9 @@ export class ProductsController {
   @ApiOperation({ summary: 'Get featured products' })
   @ApiQuery({ name: 'limit', required: false, type: Number })
   @ApiResponse({ status: 200, description: 'Featured products' })
-  findFeatured(@Query('limit') limit?: number) {
-    return this.productsService.findFeatured(limit);
+  findFeatured(@Query('limit') limit?: string) {
+    const parsed = limit ? parseInt(limit, 10) : undefined;
+    return this.productsService.findFeatured(parsed);
   }
 
   @Public()
@@ -63,8 +64,9 @@ export class ProductsController {
   @ApiOperation({ summary: 'Get trending products based on recent orders' })
   @ApiQuery({ name: 'limit', required: false, type: Number })
   @ApiResponse({ status: 200, description: 'Trending products' })
-  findTrending(@Query('limit') limit?: number) {
-    return this.productsService.findTrending(limit);
+  findTrending(@Query('limit') limit?: string) {
+    const parsed = limit ? parseInt(limit, 10) : undefined;
+    return this.productsService.findTrending(parsed);
   }
 
   @Public()
@@ -72,8 +74,9 @@ export class ProductsController {
   @ApiOperation({ summary: 'Get best selling products' })
   @ApiQuery({ name: 'limit', required: false, type: Number })
   @ApiResponse({ status: 200, description: 'Best selling products' })
-  findBestsellers(@Query('limit') limit?: number) {
-    return this.productsService.findBestsellers(limit);
+  findBestsellers(@Query('limit') limit?: string) {
+    const parsed = limit ? parseInt(limit, 10) : undefined;
+    return this.productsService.findBestsellers(parsed);
   }
 
   @Public()
