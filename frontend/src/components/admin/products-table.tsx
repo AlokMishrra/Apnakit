@@ -423,16 +423,17 @@ export function ProductsTable({
                         selectedIds.includes(product._id || (product as any).id) ? "bg-muted/50" : ""
                       }`}
                     >
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3 relative z-10">
                         <input
                           type="checkbox"
                           checked={selectedIds.includes(product._id || (product as any).id)}
                           onChange={() => toggleSelect(product._id || (product as any).id)}
-                          className="h-4 w-4 rounded border-gray-300"
+                          className="h-4 w-4 rounded border-gray-300 cursor-pointer"
+                          onClick={(e) => e.stopPropagation()}
                         />
                       </td>
                       <td className="px-4 py-3">
-                        <div className="relative h-10 w-10 overflow-hidden rounded-lg border bg-muted">
+                        <div className="relative h-10 w-10 overflow-hidden rounded-lg border bg-muted pointer-events-none">
                           {product.images?.[0] ? (
                             <Image
                               src={getImageUrl(product.images[0])}

@@ -55,6 +55,20 @@ export default function CartPage() {
       const res = await cartService.getCart();
       const data = (res as any)?.data?.data || (res as any)?.data || res;
       setCart(data);
+      // Restore applied coupon from server cart data
+      if (data?.coupon && data?.discount > 0) {
+        const coupon = data.coupon;
+        setAppliedCoupon({
+          code: coupon.code || "",
+          discount: coupon.type === "PERCENTAGE"
+            ? Number(coupon.value)
+            : coupon.type === "FIXED"
+            ? Number(coupon.value)
+            : 0,
+          type: coupon.type === "FIXED" ? "fixed" : "percent",
+        });
+        setCouponCode(coupon.code || "");
+      }
     } catch (err: any) {
       if (err.message?.includes("Unauthorized") || err.message?.includes("401")) {
         toast.error("Please login to view your cart");
@@ -85,8 +99,9 @@ export default function CartPage() {
   const shippingCharge = enableFreeDelivery && subtotal >= deliveryThreshold ? 0 : deliveryChargeAmount;
   const taxAmount = gstEnabled ? Math.round(subtotal * gstRate) : 0;
 
+  // Prefer server-side discount value when available, otherwise calculate from appliedCoupon
   let couponDiscount = 0;
-  if (cart?.discount && Number(cart.discount) > 0) {
+  if (cart?.discount !== undefined && cart?.discount !== null && Number(cart.discount) > 0) {
     couponDiscount = Number(cart.discount);
   } else if (appliedCoupon) {
     couponDiscount =
