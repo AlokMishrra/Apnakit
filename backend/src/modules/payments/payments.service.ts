@@ -91,7 +91,7 @@ export class PaymentsService {
           orderId: dto.orderId,
           method: order.paymentMethod,
           razorpayOrderId: razorpayOrder.id,
-          amount: dto.amount,
+          amount: amount,
           status: PaymentStatus.PENDING,
           metadata: {
             razorpayOrderId: razorpayOrder.id,
