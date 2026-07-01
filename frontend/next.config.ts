@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 
-const backendUrl = process.env.BACKEND_URL || 'http://localhost:3000';
+const isProd = process.env.NODE_ENV === 'production';
+const backendUrl = isProd
+  ? 'https://apnakit-backend.onrender.com'
+  : (process.env.NEXT_PUBLIC_BACKEND_URL || process.env.BACKEND_URL || 'http://localhost:3000');
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
