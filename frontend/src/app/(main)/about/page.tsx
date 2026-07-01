@@ -144,7 +144,7 @@ export default function AboutPage() {
             <div>
               <h3 className="font-semibold">Address</h3>
               <p className="text-sm text-muted-foreground">
-                ApnaKit, Noida, Uttar Pradesh, India - 201301
+                Near Baal Vidhya Mandir School, Chhutmalpur, Saharanpur 247662
               </p>
             </div>
           </div>
