@@ -41,7 +41,7 @@ export function RecentlyViewed() {
             : undefined,
           rating: 0,
           numReviews: 0,
-          countInStock: item.stock,
+          stock: item.stock,
           isFeatured: false,
           isDeal: false,
           createdAt: "",

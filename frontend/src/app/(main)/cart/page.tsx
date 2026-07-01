@@ -469,9 +469,6 @@ export default function CartPage() {
                       </Button>
                     </div>
                   )}
-                  <p className="mt-2 text-xs text-muted-foreground">
-                    Try: WELCOME10, FLAT200, or FREESHIP
-                  </p>
                 </CardContent>
               </Card>
 
