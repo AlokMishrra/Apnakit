@@ -334,15 +334,15 @@ export default function AccountPage() {
                           <p className="text-sm text-muted-foreground">{displayPhone}</p>
                         )}
                       </div>
-                      <Link
-                        href="/account/wallet"
-                        className="flex-shrink-0 rounded-lg bg-indigo-50 p-4 text-center transition-colors hover:bg-indigo-100 sm:text-right"
+                      <div
+                        className="flex-shrink-0 cursor-not-allowed rounded-lg bg-indigo-50 p-4 text-center opacity-70 sm:text-right"
+                        title="Wallet feature coming soon"
                       >
                         <p className="text-xs text-muted-foreground">Wallet</p>
                         <p className="text-sm font-semibold text-indigo-600">
                           Coming Soon
                         </p>
-                      </Link>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -350,31 +350,57 @@ export default function AccountPage() {
                 {/* Quick Links Grid */}
                 <div className="mb-4 grid grid-cols-2 gap-2 sm:mb-6 sm:grid-cols-3 sm:gap-3">
                   {quickLinks.map((link) => (
-                    <Link key={link.label} href={link.href}>
-                      <Card className="h-full transition-all hover:shadow-md hover:border-indigo-200">
-                        <CardContent className="p-3 sm:p-4">
-                          <div className="flex items-center gap-2 sm:gap-3">
-                            <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-indigo-50 sm:h-10 sm:w-10">
-                              <link.icon className="h-4 w-4 text-indigo-600 sm:h-5 sm:w-5" />
+                    link.key === "wallet" ? (
+                      <div
+                        key={link.label}
+                        className="cursor-not-allowed opacity-70"
+                        title="Wallet feature coming soon"
+                      >
+                        <Card className="h-full">
+                          <CardContent className="p-3 sm:p-4">
+                            <div className="flex items-center gap-2 sm:gap-3">
+                              <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-indigo-50 sm:h-10 sm:w-10">
+                                <link.icon className="h-4 w-4 text-indigo-600 sm:h-5 sm:w-5" />
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <p className="text-sm font-medium text-foreground">
+                                  {link.label}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  Coming Soon
+                                </p>
+                              </div>
+                              <ChevronRight className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
                             </div>
-                            <div className="min-w-0 flex-1">
-                              <p className="text-sm font-medium text-foreground">
-                                {link.label}
-                              </p>
-                              <p className="text-xs text-muted-foreground">
-                                {link.key === "orders" && `${stats.orders} ${stats.orders === 1 ? "order" : "orders"}`}
-                                {link.key === "wishlist" && `${stats.wishlist} ${stats.wishlist === 1 ? "item" : "items"}`}
-                                {link.key === "addresses" && `${stats.addresses} saved`}
-                                {link.key === "wallet" && `Coming Soon`}
-                                {link.key === "returns" && `${stats.pendingReturns} pending`}
-                                {link.key === "support" && `${stats.openTickets} open`}
-                              </p>
+                          </CardContent>
+                        </Card>
+                      </div>
+                    ) : (
+                      <Link key={link.label} href={link.href}>
+                        <Card className="h-full transition-all hover:shadow-md hover:border-indigo-200">
+                          <CardContent className="p-3 sm:p-4">
+                            <div className="flex items-center gap-2 sm:gap-3">
+                              <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-indigo-50 sm:h-10 sm:w-10">
+                                <link.icon className="h-4 w-4 text-indigo-600 sm:h-5 sm:w-5" />
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <p className="text-sm font-medium text-foreground">
+                                  {link.label}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  {link.key === "orders" && `${stats.orders} ${stats.orders === 1 ? "order" : "orders"}`}
+                                  {link.key === "wishlist" && `${stats.wishlist} ${stats.wishlist === 1 ? "item" : "items"}`}
+                                  {link.key === "addresses" && `${stats.addresses} saved`}
+                                  {link.key === "returns" && `${stats.pendingReturns} pending`}
+                                  {link.key === "support" && `${stats.openTickets} open`}
+                                </p>
+                              </div>
+                              <ChevronRight className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
                             </div>
-                            <ChevronRight className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </Link>
+                          </CardContent>
+                        </Card>
+                      </Link>
+                    )
                   ))}
                 </div>
 
