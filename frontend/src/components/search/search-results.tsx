@@ -105,11 +105,22 @@ function SearchResults({ className }: SearchResultsProps) {
     }
     setLoading(true);
     api
-      .get(`/products?search=${encodeURIComponent(urlQuery)}&limit=20`)
+      .get(`/search?q=${encodeURIComponent(urlQuery)}&limit=20`)
       .then((res: any) => {
-        const data = res?.data?.data?.data || res?.data?.data || [];
-        setProducts(Array.isArray(data) ? data : []);
-        setTotal(res?.data?.data?.meta?.total || data.length || 0);
+        const payload = res?.data?.data ?? res?.data ?? res;
+        const products = payload?.products || [];
+        const transformed = products.map((p: any) => ({
+          ...p,
+          _id: p.id,
+          price: p.variants?.[0]?.price ?? p.minPrice ?? 0,
+          originalPrice: p.variants?.[0]?.compareAtPrice,
+          stock: p.totalStock ?? p.variants?.reduce((s: number, v: any) => s + (v.stock || 0), 0) ?? 0,
+          images: p.images || [],
+          rating: p.averageRating || 0,
+          numReviews: p.reviewCount || 0,
+        }));
+        setProducts(Array.isArray(transformed) ? transformed : []);
+        setTotal(payload?.pagination?.total || products.length || 0);
       })
       .catch(() => {
         setProducts([]);

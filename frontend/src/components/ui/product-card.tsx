@@ -29,8 +29,8 @@ function ProductCard({
   isInWishlist = false,
   className,
 }: ProductCardProps) {
-  const discount = calculateDiscount(product.price, product.originalPrice);
-  const totalStock = product.stock ?? product.variants?.reduce((s: number, v: any) => s + (v.stock || 0), 0) ?? 0;
+  const discount = calculateDiscount(product.price, product.compareAtPrice || product.originalPrice);
+  const totalStock = product.stock ?? product.totalStock ?? product.variants?.reduce((s: number, v: any) => s + (v.stock || 0), 0) ?? 0;
   const inStock = totalStock > 0;
 
   return (
@@ -124,7 +124,7 @@ function ProductCard({
 
         <Price
           amount={product.price}
-          originalAmount={product.originalPrice}
+          originalAmount={product.compareAtPrice || product.originalPrice}
           size="md"
         />
 
