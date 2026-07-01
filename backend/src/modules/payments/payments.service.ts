@@ -37,9 +37,11 @@ export class PaymentsService {
       throw new BadRequestException('Order is already paid');
     }
 
+    const amount = dto.amount ?? Number(order.total);
+
     try {
       const razorpayOrder = await this.razorpay.orders.create({
-        amount: Math.round(dto.amount * 100),
+        amount: Math.round(amount * 100),
         currency: 'INR',
         receipt: order.orderNumber,
         notes: {
@@ -207,7 +209,7 @@ export class PaymentsService {
         const refundRecord = await tx.refund.create({
           data: {
             paymentId: dto.paymentId,
-            amount: dto.amount,
+          amount: amount,
             reason: dto.reason,
             status: RefundStatus.PROCESSING,
             transactionId: refund.id,
