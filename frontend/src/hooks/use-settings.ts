@@ -3,14 +3,19 @@
 import { useState, useEffect, useCallback } from "react";
 import { settingsService, type AllSettings } from "@/services/settings.service";
 
-const CACHE_KEY = "apnakit:settings";
-const CACHE_TTL = 5 * 60 * 1000; // 5 min
+const CACHE_TTL = 5 * 60 * 1000;
 
-let cachedSettings: AllSettings | null = null;
+const DEFAULTS: AllSettings = {
+  delivery: { deliveryCharge: 99, freeDeliveryThreshold: 999, enableFreeDelivery: true },
+  tax: { gstRate: 18, gstEnabled: true, gstNumber: "", companyName: "ApnaKit" },
+  store: { storeName: "ApnaKit", storeEmail: "", storePhone: "", storeDescription: "", currency: "INR" },
+};
+
+let cachedSettings: AllSettings | null = DEFAULTS;
 let cacheTime = 0;
 
 export function useSettings() {
-  const [settings, setSettings] = useState<AllSettings | null>(cachedSettings);
+  const [settings, setSettings] = useState<AllSettings>(cachedSettings ?? DEFAULTS);
   const [loading, setLoading] = useState(!cachedSettings);
 
   const fetchSettings = useCallback(async () => {
@@ -28,7 +33,9 @@ export function useSettings() {
       setSettings(data);
       return data;
     } catch {
-      return null;
+      setSettings(DEFAULTS);
+      cachedSettings = DEFAULTS;
+      return DEFAULTS;
     } finally {
       setLoading(false);
     }
