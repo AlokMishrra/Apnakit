@@ -25,6 +25,10 @@ export class PaymentsService {
   ) {}
 
   async createRazorpayOrder(dto: CreatePaymentDto) {
+    if (!this.razorpay) {
+      throw new BadRequestException('Razorpay not configured on server');
+    }
+
     const order = await this.prisma.order.findUnique({
       where: { id: dto.orderId },
     });
@@ -73,8 +77,8 @@ export class PaymentsService {
         keyId: this.configService.get('RAZORPAY_KEY_ID'),
       };
     } catch (error) {
-      this.logger.error('Failed to create Razorpay order', error);
-      throw new BadRequestException('Failed to create payment order');
+      this.logger.error('Failed to create Razorpay order', error?.message || error?.response || error);
+      throw new BadRequestException(error?.message || 'Failed to create payment order');
     }
   }
 
