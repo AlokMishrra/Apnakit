@@ -24,7 +24,31 @@ export class PaymentsService {
     @Inject(RAZORPAY_CLIENT) private readonly razorpay: any,
   ) {}
 
+  async testRazorpayConnection() {
+    const keyId = this.configService.get('RAZORPAY_KEY_ID');
+    const keySecret = this.configService.get('RAZORPAY_KEY_SECRET');
+    this.logger.log(`Config - Key ID: ${keyId}, Has Secret: ${!!keySecret}`);
+    this.logger.log(`Razorpay client: ${!!this.razorpay}`);
+
+    if (!this.razorpay) {
+      return { success: false, error: 'Razorpay client is null - credentials not configured' };
+    }
+
+    try {
+      const order = await this.razorpay.orders.create({
+        amount: 100,
+        currency: 'INR',
+        receipt: 'test_rcpt_1',
+      });
+      return { success: true, order };
+    } catch (error) {
+      this.logger.error('Razorpay test failed', error?.message || error);
+      return { success: false, error: error?.message || 'Unknown error', details: error?.response };
+    }
+  }
+
   async createRazorpayOrder(dto: CreatePaymentDto) {
+    this.logger.log(`Razorpay client: ${!!this.razorpay}, Key ID: ${this.configService.get('RAZORPAY_KEY_ID')}`);
     if (!this.razorpay) {
       throw new BadRequestException('Razorpay not configured on server');
     }

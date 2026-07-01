@@ -23,6 +23,12 @@ import { Roles } from '../../common/decorators/roles.decorator';
 export class PaymentsController {
   constructor(private readonly paymentsService: PaymentsService) {}
 
+  @Get('test-razorpay')
+  @ApiOperation({ summary: 'Test Razorpay connectivity (debug)' })
+  testRazorpay() {
+    return this.paymentsService.testRazorpayConnection();
+  }
+
   @Post('create-order')
   @ApiOperation({ summary: 'Create Razorpay payment order' })
   createOrder(
