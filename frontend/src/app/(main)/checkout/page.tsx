@@ -36,7 +36,9 @@ import { cartService } from "@/services/cart.service";
 import { userService } from "@/services/user.service";
 import { AddressForm, type AddressFormData } from "@/components/address/address-form";
 import { deliveryZoneService } from "@/services/delivery-zone.service";
+import { paymentService } from "@/services/payment.service";
 import { useSettings } from "@/hooks/use-settings";
+import { loadRazorpayScript } from "@/lib/razorpay";
 import { toast } from "sonner";
 
 const steps = [
@@ -247,6 +249,91 @@ export default function CheckoutPage() {
       router.push("/cart");
       return;
     }
+
+    if (selectedPayment === "RAZORPAY") {
+      try {
+        setIsPlacingOrder(true);
+        toast.info("Preparing payment...", { description: "Please wait" });
+
+        // Step 1: Create order (pending payment)
+        const orderRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/orders`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${localStorage.getItem("accessToken")}` },
+          body: JSON.stringify({ addressId: selectedAddressId, paymentMethod: selectedPayment }),
+        });
+        const orderRaw = await orderRes.json();
+        if (!orderRes.ok) {
+          toast.error(orderRaw.message || "Failed to create order");
+          setIsPlacingOrder(false);
+          return;
+        }
+        const order = orderRaw.data?.data || orderRaw.data || orderRaw;
+
+        // Step 2: Create Razorpay order
+        const rzRes = await paymentService.createPaymentOrder(order.id);
+        const rzData = rzRes.data?.data || rzRes.data;
+        if (!rzData?.razorpayOrderId) {
+          toast.error("Failed to create payment order");
+          setIsPlacingOrder(false);
+          return;
+        }
+
+        // Step 3: Load and open Razorpay
+        await loadRazorpayScript();
+
+        const rzPayload = {
+          key: rzData.keyId || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+          amount: rzData.amount,
+          currency: rzData.currency || "INR",
+          name: "ApnaKit",
+          description: `Order #${order.orderNumber || order.id}`,
+          order_id: rzData.razorpayOrderId,
+          handler: async (response: { razorpay_payment_id: string; razorpay_order_id: string; razorpay_signature: string }) => {
+            try {
+              // Step 4: Verify payment
+              const verifyRes = await paymentService.verifyPayment({
+                razorpayOrderId: response.razorpay_order_id,
+                razorpayPaymentId: response.razorpay_payment_id,
+                razorpaySignature: response.razorpay_signature,
+              });
+              if (verifyRes.data?.success || verifyRes.data?.status === "PAID") {
+                toast.success("Payment successful! 🎉", { description: `Order #${order.orderNumber || order.id} confirmed` });
+                router.push(`/checkout/success?orderId=${order.id}`);
+              } else {
+                toast.error("Payment verification failed");
+              }
+            } catch (verifyErr: any) {
+              toast.error(verifyErr?.message || "Payment verification failed");
+            }
+          },
+          prefill: {
+            name: sel?.name || "",
+            email: sel?.email || "",
+            contact: sel?.phone || "",
+          },
+          theme: { color: "#6366f1" },
+          modal: {
+            ondismiss: () => {
+              toast.error("Payment cancelled", { description: "Your order is saved but payment was not completed" });
+              setIsPlacingOrder(false);
+            },
+          },
+        };
+
+        const razorpay = new (window as any).Razorpay(rzPayload);
+        razorpay.on("payment.failed", (response: { error: { description: string } }) => {
+          toast.error("Payment failed", { description: response.error?.description || "Please try again" });
+          setIsPlacingOrder(false);
+        });
+        razorpay.open();
+      } catch (err: any) {
+        toast.error(err?.message || "Payment failed");
+        setIsPlacingOrder(false);
+      }
+      return;
+    }
+
+    // COD flow
     try {
       setIsPlacingOrder(true);
       toast.info("Placing your order...", { description: "Please wait" });
