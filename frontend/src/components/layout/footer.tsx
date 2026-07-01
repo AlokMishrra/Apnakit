@@ -46,6 +46,7 @@ const socialLabels: Record<string, string> = {
 function Footer() {
   const [socialLinks, setSocialLinks] = useState<SocialMediaLinks | null>(null);
   const [appConfig, setAppConfig] = useState<AppBannerConfig | null>(null);
+  const [apiCategories, setApiCategories] = useState<any[]>([]);
 
   useEffect(() => {
     socialMediaService
@@ -56,7 +57,23 @@ function Footer() {
       .getPublic()
       .then(setAppConfig)
       .catch(() => {});
+    const fetchCategories = async () => {
+      try {
+        const res = await import("@/services/api").then((m) => m.default.get("/categories"));
+        const data = res?.data?.data;
+        if (Array.isArray(data) && data.length > 0) {
+          setApiCategories(data.slice(0, 6));
+        }
+      } catch {
+        // fallback to static CATEGORIES
+      }
+    };
+    fetchCategories();
   }, []);
+
+  const categories = apiCategories.length > 0
+    ? apiCategories.map((c: any) => ({ name: c.name, slug: c.slug }))
+    : CATEGORIES.slice(0, 6);
 
   const activeLinks = socialLinks
     ? (Object.entries(socialLinks) as [string, string | null][]).filter(([, url]) => url)
@@ -132,7 +149,7 @@ function Footer() {
               Categories
             </h4>
             <ul className="space-y-2">
-              {CATEGORIES.slice(0, 6).map((cat) => (
+              {categories.map((cat) => (
                 <li key={cat.slug}>
                   <Link
                     href={`/category/${cat.slug}`}
