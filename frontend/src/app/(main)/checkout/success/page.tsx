@@ -77,6 +77,7 @@ function OrderSuccessContent() {
         if (!mounted) return;
         if (res.ok) {
           const raw = await res.json();
+          console.log("Order details response:", JSON.stringify(raw, null, 2));
           const data = raw.data?.data || raw.data || raw;
           setOrder(data);
         } else {
