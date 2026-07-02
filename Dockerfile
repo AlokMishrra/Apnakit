@@ -23,4 +23,4 @@ RUN mkdir -p uploads
 
 EXPOSE 3000
 
-CMD ["node", "dist/main"]
+CMD ["sh", "-c", "npx prisma migrate deploy 2>&1 || true; node dist/main"]
