@@ -7,7 +7,6 @@ import { RequestReturnDto } from './dto/request-return.dto';
 import { OrderStatus, PaymentStatus, Prisma } from '@prisma/client';
 import { NotificationsService } from '../notifications/notifications.service';
 import { SettingsService } from '../settings/settings.service';
-import { EmailService } from '../notifications/email.service';
 
 @Injectable()
 export class OrdersService {
@@ -17,7 +16,6 @@ export class OrdersService {
     private readonly prisma: PrismaService,
     private readonly notificationsService: NotificationsService,
     private readonly settingsService: SettingsService,
-    private readonly emailService: EmailService,
   ) {}
 
   private readonly CANCELLABLE_STATUSES: OrderStatus[] = [
@@ -112,7 +110,6 @@ export class OrdersService {
           orderNumber,
           userId,
           sellerId: cart.items[0]?.product.sellerId || null,
-          couponId: cart.couponId || null,
           status: OrderStatus.PENDING,
           subtotal,
           discount,
@@ -144,8 +141,6 @@ export class OrdersService {
             },
           },
           shippingAddress: true,
-          user: { select: { firstName: true, lastName: true, email: true, phone: true } },
-          coupon: true,
         },
       });
 
@@ -162,13 +157,6 @@ export class OrdersService {
         await tx.coupon.update({
           where: { id: cart.couponId },
           data: { usedCount: { increment: 1 } },
-        });
-        await tx.couponUsage.create({
-          data: {
-            couponId: cart.couponId,
-            userId,
-            orderId: newOrder.id,
-          },
         });
       }
 
@@ -197,44 +185,7 @@ export class OrdersService {
       this.logger.warn('Failed to create order notification', e as any);
     }
 
-    try {
-      const customerName = `${order.user.firstName || ''} ${order.user.lastName || ''}`.trim() || 'N/A';
-      const customerEmail = order.user.email || 'N/A';
-      const customerPhone = order.user.phone || 'N/A';
-      const paymentMethodDisplay = order.paymentMethod === 'COD' ? 'Cash on Delivery' : order.paymentMethod;
-      const address = order.shippingAddress;
-
-      await this.emailService.sendOrderNotification('apnakit.official@gmail.com', {
-        orderNumber: order.orderNumber,
-        customerName,
-        customerEmail,
-        customerPhone,
-        items: order.items.map((item) => ({
-          name: `${item.product.name}${item.variant ? ` (${item.variant.name})` : ''}`,
-          quantity: item.quantity,
-          price: Number(item.price),
-        })),
-        subtotal: Number(order.subtotal),
-        discount: Number(order.discount),
-        tax: Number(order.tax),
-        shippingCost: Number(order.shippingCost),
-        total: Number(order.total),
-        paymentMethod: paymentMethodDisplay,
-        shippingAddress: {
-          name: address?.name || customerName,
-          phone: address?.phone || customerPhone,
-          addressLine1: address?.addressLine1 || '',
-          addressLine2: address?.addressLine2,
-          city: address?.city || '',
-          state: address?.state || '',
-          pincode: address?.pincode || '',
-        },
-      });
-    } catch (e) {
-      this.logger.warn('Failed to send order email to admin', e as any);
-    }
-
-    if (dto.paymentMethod === 'COD') {
+    if (dto.paymentMethod === 'COD' || dto.paymentMethod === 'cod') {
       try {
         await this.updateStatus(order.id, { status: OrderStatus.CONFIRMED, notes: 'COD order confirmed' });
       } catch (e) {

@@ -11,11 +11,6 @@ export class ValidateCouponDto {
   @Min(0)
   cartTotal: number;
 
-  @ApiPropertyOptional({ description: 'User ID for per-user validation', type: String })
-  @IsOptional()
-  @IsString()
-  userId?: string;
-
   @ApiPropertyOptional({ description: 'Category IDs in cart', type: [String] })
   @IsOptional()
   categoryIds?: string[];

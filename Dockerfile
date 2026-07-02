@@ -15,7 +15,7 @@ COPY backend/tsconfig.json ./
 COPY backend/src ./src/
 COPY backend/templates ./templates/
 
-RUN npm run build; exit 0
+RUN ./node_modules/.bin/tsc; exit 0
 
 RUN npm prune --omit=dev
 
