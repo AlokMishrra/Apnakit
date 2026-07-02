@@ -190,43 +190,48 @@ export class OrdersService {
       this.logger.warn('Failed to create order notification', e as any);
     }
 
-    // DISABLED: Email sending causing backend crashes
-    // try {
-    //   const customerName = `${order.user.firstName || ''} ${order.user.lastName || ''}`.trim() || 'N/A';
-    //   const customerEmail = order.user.email || 'N/A';
-    //   const customerPhone = order.user.phone || 'N/A';
-    //   const paymentMethodDisplay = order.paymentMethod === 'COD' ? 'Cash on Delivery' : order.paymentMethod;
-    //   const address = order.shippingAddress;
+    // Send email to admin asynchronously to prevent backend crash
+    setTimeout(() => {
+      const run = async () => {
+        try {
+          const customerName = `${order.user.firstName || ''} ${order.user.lastName || ''}`.trim() || 'N/A';
+          const customerEmail = order.user.email || 'N/A';
+          const customerPhone = order.user.phone || 'N/A';
+          const paymentMethodDisplay = order.paymentMethod === 'COD' ? 'Cash on Delivery' : order.paymentMethod;
+          const address = order.shippingAddress;
 
-    //   await this.emailService.sendOrderNotification('apnakit.official@gmail.com', {
-    //     orderNumber: order.orderNumber,
-    //     customerName,
-    //     customerEmail,
-    //     customerPhone,
-    //     items: order.items.map((item) => ({
-    //       name: `${item.product.name}${item.variant ? ` (${item.variant.name})` : ''}`,
-    //       quantity: item.quantity,
-    //       price: Number(item.price),
-    //     })),
-    //     subtotal: Number(order.subtotal),
-    //     discount: Number(order.discount),
-    //     tax: Number(order.tax),
-    //     shippingCost: Number(order.shippingCost),
-    //     total: Number(order.total),
-    //     paymentMethod: paymentMethodDisplay,
-    //     shippingAddress: {
-    //       name: address?.name || customerName,
-    //       phone: address?.phone || customerPhone,
-    //       addressLine1: address?.addressLine1 || '',
-    //       addressLine2: address?.addressLine2,
-    //       city: address?.city || '',
-    //       state: address?.state || '',
-    //       pincode: address?.pincode || '',
-    //     },
-    //   });
-    // } catch (e) {
-    //   this.logger.warn('Failed to send order email to admin', e as any);
-    // }
+          await this.emailService.sendOrderNotification('apnakit.official@gmail.com', {
+            orderNumber: order.orderNumber,
+            customerName,
+            customerEmail,
+            customerPhone,
+            items: order.items.map((item) => ({
+              name: `${item.product.name}${item.variant ? ` (${item.variant.name})` : ''}`,
+              quantity: item.quantity,
+              price: Number(item.price),
+            })),
+            subtotal: Number(order.subtotal),
+            discount: Number(order.discount),
+            tax: Number(order.tax),
+            shippingCost: Number(order.shippingCost),
+            total: Number(order.total),
+            paymentMethod: paymentMethodDisplay,
+            shippingAddress: {
+              name: address?.name || customerName,
+              phone: address?.phone || customerPhone,
+              addressLine1: address?.addressLine1 || '',
+              addressLine2: address?.addressLine2,
+              city: address?.city || '',
+              state: address?.state || '',
+              pincode: address?.pincode || '',
+            },
+          });
+        } catch (e: any) {
+          this.logger.warn('Failed to send order email to admin: ' + e.message);
+        }
+      };
+      run();
+    }, 100);
 
     // COD auto-confirm - only if payment method is COD
     if (dto.paymentMethod === 'COD') {
