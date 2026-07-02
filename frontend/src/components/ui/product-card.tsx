@@ -20,6 +20,8 @@ interface ProductCardProps {
   onAddToWishlist?: (product: Product) => void;
   isInWishlist?: boolean;
   className?: string;
+  /** "default" shows full card with price/rating/cart. "home" shows minimal card for home page. */
+  variant?: "default" | "home";
 }
 
 function ProductCard({
@@ -28,10 +30,66 @@ function ProductCard({
   onAddToWishlist,
   isInWishlist = false,
   className,
+  variant = "default",
 }: ProductCardProps) {
   const discount = calculateDiscount(product.price, product.compareAtPrice || product.originalPrice);
   const totalStock = product.stock ?? product.totalStock ?? product.variants?.reduce((s: number, v: any) => s + (v.stock || 0), 0) ?? 0;
   const inStock = totalStock > 0;
+
+  if (variant === "home") {
+    return (
+      <div
+        className={cn(
+          "group relative flex flex-col overflow-hidden rounded-lg border bg-card transition-all hover:shadow-md",
+          className
+        )}
+      >
+        <Link
+          href={`/product/${product.slug || product._id}`}
+          className="relative block aspect-square overflow-hidden bg-muted p-4"
+        >
+          <Image
+            src={getImageUrl(product.images[0])}
+            alt={product.name}
+            fill
+            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+            className={cn(
+              "object-contain transition-transform duration-300 group-hover:scale-105",
+              !inStock && "opacity-60 grayscale"
+            )}
+            unoptimized
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = "/images/placeholder.svg";
+            }}
+          />
+          {!inStock && (
+            <div className="absolute inset-0 z-[5] flex items-center justify-center bg-black/30">
+              <Badge
+                variant="destructive"
+                className="px-3 py-1.5 text-xs font-semibold uppercase tracking-wider shadow-lg"
+              >
+                Out of Stock
+              </Badge>
+            </div>
+          )}
+        </Link>
+
+        <div className="flex flex-1 flex-col gap-1.5 p-3">
+          {product.brand && (
+            <span className="text-[10px] text-muted-foreground uppercase tracking-wider">
+              {product.brand.name}
+            </span>
+          )}
+          <Link
+            href={`/product/${product.slug || product._id}`}
+            className="line-clamp-2 text-xs font-medium text-foreground hover:text-primary transition-colors"
+          >
+            {product.name}
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div

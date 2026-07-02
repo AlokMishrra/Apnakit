@@ -62,7 +62,7 @@ export function RecentlyViewed() {
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         {products.slice(0, 4).map((product) => (
-          <ProductCard key={product._id} product={product} />
+          <ProductCard key={product._id} product={product} variant="home" />
         ))}
       </div>
     </section>
