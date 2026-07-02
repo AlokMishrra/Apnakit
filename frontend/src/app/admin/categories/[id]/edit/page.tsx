@@ -37,6 +37,9 @@ export default function EditCategoryPage() {
   });
 
   const [image, setImage] = useState<{ file: File | null; preview: string } | null>(null);
+  const [imageUrl, setImageUrl] = useState("");
+  const [imageMode, setImageMode] = useState<"upload" | "url">("upload");
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -57,6 +60,7 @@ export default function EditCategoryPage() {
         });
         if (category.image) {
           setImage({ file: null, preview: category.image });
+          setImageUrl(category.image);
         }
         setParentCategories(parentsRes?.data?.data || parentsRes?.data || []);
       } catch {
@@ -90,6 +94,20 @@ export default function EditCategoryPage() {
   const handleSave = async () => {
     setSaving(true);
     try {
+      let finalImageUrl = imageUrl;
+      if (image?.file) {
+        setUploading(true);
+        try {
+          const res = await adminService.uploadImage(image.file);
+          finalImageUrl = res?.data?.url || res?.url || imageUrl;
+        } catch {
+          toast.error("Image upload failed");
+          setUploading(false);
+          setSaving(false);
+          return;
+        }
+        setUploading(false);
+      }
       const payload = {
         name: form.name,
         slug: form.slug,
@@ -98,6 +116,7 @@ export default function EditCategoryPage() {
         metaTitle: form.metaTitle,
         metaDescription: form.metaDescription,
         isComingSoon: form.isComingSoon,
+        image: finalImageUrl,
       };
       await adminService.updateCategory(id, payload);
       toast.success("Category updated");
@@ -260,46 +279,88 @@ export default function EditCategoryPage() {
             <CardHeader>
               <CardTitle className="text-base">Category Image</CardTitle>
             </CardHeader>
-            <CardContent>
-              {image ? (
-                <div className="relative">
-                  <div className="aspect-square overflow-hidden rounded-lg bg-muted">
-                    <img
-                      src={image.preview}
-                      alt="Category"
-                      className="h-full w-full object-cover"
-                    />
-                  </div>
-                  <Button
-                    variant="destructive"
-                    size="icon"
-                    className="absolute right-2 top-2 h-8 w-8"
-                    onClick={() => setImage(null)}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
+            <CardContent className="space-y-4">
+              <div className="flex gap-2">
+                <Button
+                  variant={imageMode === "upload" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setImageMode("upload")}
+                >
+                  Upload
+                </Button>
+                <Button
+                  variant={imageMode === "url" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setImageMode("url")}
+                >
+                  Image URL
+                </Button>
+              </div>
+
+              {imageMode === "url" ? (
+                <div className="space-y-2">
+                  <Input
+                    label="Image URL"
+                    placeholder="https://example.com/image.png"
+                    value={imageUrl}
+                    onChange={(e) => setImageUrl(e.target.value)}
+                  />
+                  {imageUrl && (
+                    <div className="aspect-square overflow-hidden rounded-lg bg-muted">
+                      <img
+                        src={imageUrl}
+                        alt="Category"
+                        className="h-full w-full object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = "/images/placeholder.svg";
+                        }}
+                      />
+                    </div>
+                  )}
                 </div>
               ) : (
-                <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/25 p-8 transition-colors hover:border-primary/50 hover:bg-muted/50">
-                  <Upload className="mb-3 h-8 w-8 text-muted-foreground" />
-                  <p className="mb-1 text-sm font-medium">
-                    Upload category image
-                  </p>
-                  <p className="mb-3 text-xs text-muted-foreground">
-                    PNG, JPG up to 2MB
-                  </p>
-                  <Button variant="outline" size="sm" asChild>
-                    <label>
-                      Browse
-                      <input
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={handleImageUpload}
-                      />
-                    </label>
-                  </Button>
-                </div>
+                <>
+                  {image ? (
+                    <div className="relative">
+                      <div className="aspect-square overflow-hidden rounded-lg bg-muted">
+                        <img
+                          src={image.preview}
+                          alt="Category"
+                          className="h-full w-full object-cover"
+                        />
+                      </div>
+                      <Button
+                        variant="destructive"
+                        size="icon"
+                        className="absolute right-2 top-2 h-8 w-8"
+                        onClick={() => setImage(null)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/25 p-8 transition-colors hover:border-primary/50 hover:bg-muted/50">
+                      <Upload className="mb-3 h-8 w-8 text-muted-foreground" />
+                      <p className="mb-1 text-sm font-medium">
+                        Upload category image
+                      </p>
+                      <p className="mb-3 text-xs text-muted-foreground">
+                        PNG, JPG up to 2MB
+                      </p>
+                      <Button variant="outline" size="sm" asChild>
+                        <label>
+                          Browse
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={handleImageUpload}
+                          />
+                        </label>
+                      </Button>
+                    </div>
+                  )}
+                </>
               )}
             </CardContent>
           </Card>
@@ -316,6 +377,15 @@ export default function EditCategoryPage() {
                       src={image.preview}
                       alt="Preview"
                       className="h-full w-full object-cover"
+                    />
+                  ) : imageUrl ? (
+                    <img
+                      src={imageUrl}
+                      alt="Preview"
+                      className="h-full w-full object-cover"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = 'none';
+                      }}
                     />
                   ) : (
                     <div className="flex h-full items-center justify-center">
