@@ -188,7 +188,7 @@ export function CategoryGrid() {
             const content = (
               <div
                 className={cn(
-                  "group flex flex-col items-center gap-2.5 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm transition-all min-w-[90px] sm:min-w-0 flex-shrink-0 scroll-snap-align-start relative overflow-hidden",
+                  "group flex flex-col items-center gap-2.5 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm transition-all min-w-[90px] sm:min-w-0 flex-shrink-0 scroll-snap-align-start relative",
                   isComingSoon
                     ? "cursor-not-allowed opacity-70"
                     : "hover:shadow-md hover:-translate-y-0.5"
@@ -218,7 +218,7 @@ export function CategoryGrid() {
                   )}
                 </div>
                 <span className={cn(
-                  "text-center text-xs font-medium leading-tight whitespace-nowrap",
+                  "text-center text-xs font-medium leading-tight",
                   isComingSoon ? "text-gray-400" : "text-gray-700 group-hover:text-indigo-600"
                 )}>
                   {category.name}
