@@ -56,6 +56,39 @@ export class ProductsService {
     },
   };
 
+  async getAdminStats(userId: string, role: string) {
+    const where: Prisma.ProductWhereInput = {};
+    if (role === 'SELLER') {
+      where.sellerId = userId;
+    }
+
+    const [total, active, productsWithVariants] = await Promise.all([
+      this.prisma.product.count({ where }),
+      this.prisma.product.count({ where: { ...where, isActive: true } }),
+      this.prisma.product.findMany({
+        where,
+        select: {
+          id: true,
+          variants: {
+            where: { isActive: true },
+            select: { stock: true },
+          },
+        },
+      }),
+    ]);
+
+    let lowStock = 0;
+    let outOfStock = 0;
+
+    for (const product of productsWithVariants) {
+      const totalStock = product.variants.reduce((sum, v) => sum + v.stock, 0);
+      if (totalStock === 0) outOfStock++;
+      else if (totalStock <= 10) lowStock++;
+    }
+
+    return { data: { total, active, lowStock, outOfStock } };
+  }
+
   async findAll(query: FilterProductDto): Promise<PaginatedResult<any>> {
     const { page, limit, skip } = getPaginationParams({
       page: query.page,

@@ -41,6 +41,16 @@ import { Public } from '../../common/decorators/roles.decorator';
 export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.SELLER)
+  @ApiBearerAuth()
+  @Get('admin/stats')
+  @ApiOperation({ summary: 'Get product stats (admin/seller)' })
+  @ApiResponse({ status: 200, description: 'Product stats' })
+  getAdminStats(@CurrentUser() user: CurrentUserData) {
+    return this.productsService.getAdminStats(user.id, user.role);
+  }
+
   @Public()
   @Get()
   @ApiOperation({ summary: 'List products with filtering, sorting, and pagination' })

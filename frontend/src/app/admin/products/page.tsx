@@ -11,6 +11,7 @@ import { toast } from "sonner";
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<any[]>([]);
+  const [stats, setStats] = useState({ total: 0, active: 0, lowStock: 0, outOfStock: 0 });
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
@@ -41,16 +42,25 @@ export default function ProductsPage() {
     }
   };
 
+  const fetchStats = async () => {
+    try {
+      const res = await adminService.getProductStats();
+      const d = res?.data || res;
+      setStats({
+        total: d.total ?? 0,
+        active: d.active ?? 0,
+        lowStock: d.lowStock ?? 0,
+        outOfStock: d.outOfStock ?? 0,
+      });
+    } catch {
+      // silently fail - stats will show 0
+    }
+  };
+
   useEffect(() => {
     fetchProducts();
+    fetchStats();
   }, [page, search]);
-
-  const stats = {
-    total: products.length,
-    active: products.filter((p) => p.isActive).length,
-    lowStock: products.filter((p) => p.stockStatus === "low_stock").length,
-    outOfStock: products.filter((p) => p.stockStatus === "out_of_stock").length,
-  };
 
   const handleDelete = async (ids: string[]) => {
     try {

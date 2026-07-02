@@ -33,6 +33,11 @@ export const adminService = {
   },
 
   // Products
+  getProductStats: async (): Promise<any> => {
+    const response = await api.get('/products/admin/stats');
+    return response.data;
+  },
+
   getAllProducts: async (params?: Record<string, any>): Promise<any> => {
     const searchParams = new URLSearchParams();
     if (params) {
