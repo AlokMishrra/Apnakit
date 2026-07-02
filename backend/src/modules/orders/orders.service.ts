@@ -112,7 +112,6 @@ export class OrdersService {
           orderNumber,
           userId,
           sellerId: cart.items[0]?.product.sellerId || null,
-          couponId: cart.couponId || null,
           status: OrderStatus.PENDING,
           subtotal,
           discount,
@@ -145,7 +144,6 @@ export class OrdersService {
           },
           shippingAddress: true,
           user: { select: { firstName: true, lastName: true, email: true, phone: true } },
-          coupon: true,
         },
       });
 
@@ -162,13 +160,6 @@ export class OrdersService {
         await tx.coupon.update({
           where: { id: cart.couponId },
           data: { usedCount: { increment: 1 } },
-        });
-        await tx.couponUsage.create({
-          data: {
-            couponId: cart.couponId,
-            userId,
-            orderId: newOrder.id,
-          },
         });
       }
 
