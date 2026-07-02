@@ -136,9 +136,7 @@ export class OrdersService {
         include: {
           items: {
             include: {
-              product: {
-                include: { images: { where: { isPrimary: true }, take: 1 } },
-              },
+              product: true,
               variant: true,
             },
           },
