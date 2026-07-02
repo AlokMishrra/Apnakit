@@ -351,6 +351,7 @@ export default function CheckoutPage() {
         body: JSON.stringify({ addressId: selectedAddressId, paymentMethod: selectedPayment }),
       });
       const raw = await res.json();
+      console.log("Order response:", JSON.stringify(raw, null, 2));
       if (!res.ok) {
         const msg = raw.message || raw.data?.message || "Failed to place order";
         toast.error("Order failed", { description: msg });
@@ -359,6 +360,7 @@ export default function CheckoutPage() {
       }
       const order = raw.data;
       if (!order || (!order.id && !order._id)) {
+        console.error("Invalid order response:", order);
         toast.error("Order failed", { description: "Invalid response from server" });
         setIsPlacingOrder(false);
         return;
@@ -370,7 +372,8 @@ export default function CheckoutPage() {
       });
       router.push(`/checkout/success?orderId=${orderId}`);
     } catch (err: any) {
-      toast.error("Network error", { description: "Could not place order" });
+      console.error("Order error:", err);
+      toast.error("Network error", { description: err.message || "Could not place order" });
       setIsPlacingOrder(false);
     }
   };
