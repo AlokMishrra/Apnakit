@@ -201,13 +201,21 @@ export function CategoryGrid() {
                 )}
                 <div
                   className={cn(
-                    "flex h-14 w-14 items-center justify-center rounded-full transition-transform",
-                    config.bg,
-                    config.color,
+                    "flex h-14 w-14 items-center justify-center rounded-full transition-transform overflow-hidden",
+                    !category.image && config.bg,
+                    !category.image && config.color,
                     !isComingSoon && "group-hover:scale-110"
                   )}
                 >
-                  {config.icon}
+                  {category.image ? (
+                    <img
+                      src={category.image}
+                      alt={category.name}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    config.icon
+                  )}
                 </div>
                 <span className={cn(
                   "text-center text-xs font-medium leading-tight whitespace-nowrap",

@@ -1,6 +1,7 @@
 -- CreateFlashSale
 CREATE TABLE "FlashSale" (
     "id" TEXT NOT NULL,
+    "groupId" TEXT NOT NULL DEFAULT '',
     "productId" TEXT NOT NULL,
     "variantId" TEXT,
     "title" TEXT,
@@ -16,6 +17,9 @@ CREATE TABLE "FlashSale" (
 
     CONSTRAINT "FlashSale_pkey" PRIMARY KEY ("id")
 );
+
+-- CreateFlashSale_groupId_idx
+CREATE INDEX "FlashSale_groupId_idx" ON "FlashSale"("groupId");
 
 -- CreateFlashSale_productId_idx
 CREATE INDEX "FlashSale_productId_idx" ON "FlashSale"("productId");
