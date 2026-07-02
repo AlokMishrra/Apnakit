@@ -539,6 +539,7 @@ model Order {
   orderNumber       String      @unique
   userId            String
   sellerId          String?
+  couponId          String?
   status            OrderStatus @default(PENDING)
   subtotal          Decimal     @db.Decimal(10, 2)
   discount          Decimal     @default(0) @db.Decimal(10, 2)
@@ -555,6 +556,7 @@ model Order {
 
   user              User               @relation("CustomerOrders", fields: [userId], references: [id], onDelete: Cascade)
   seller            Seller?            @relation(fields: [sellerId], references: [id], onDelete: SetNull)
+  coupon            Coupon?            @relation(fields: [couponId], references: [id], onDelete: SetNull)
   items             OrderItem[]
   statusHistory     OrderStatusHistory[]
   payments          Payment[]
@@ -569,6 +571,7 @@ model Order {
   @@index([status])
   @@index([paymentStatus])
   @@index([createdAt])
+  @@index([couponId])
 }
 
 model OrderItem {
@@ -736,11 +739,30 @@ model Coupon {
   updatedAt           DateTime   @updatedAt
 
   carts Cart[]
+  orders Order[]
+  usages CouponUsage[]
 
   @@index([code])
   @@index([isActive])
   @@index([startsAt])
   @@index([expiresAt])
+}
+
+model CouponUsage {
+  id        String   @id @default(cuid())
+  couponId  String
+  userId    String
+  orderId   String
+  usedAt    DateTime @default(now())
+
+  coupon Coupon @relation(fields: [couponId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  order  Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@unique([couponId, userId])
+  @@index([couponId])
+  @@index([userId])
+  @@index([orderId])
 }
 
 model Banner {
