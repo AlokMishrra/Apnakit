@@ -188,7 +188,6 @@ model User {
   searchQueries       SearchQuery[]
   seller              Seller?
   deliveryPartner     DeliveryPartner?
-  couponUsages        CouponUsage[]
 
   @@index([email])
   @@index([phone])
@@ -540,7 +539,6 @@ model Order {
   orderNumber       String      @unique
   userId            String
   sellerId          String?
-  couponId          String?
   status            OrderStatus @default(PENDING)
   subtotal          Decimal     @db.Decimal(10, 2)
   discount          Decimal     @default(0) @db.Decimal(10, 2)
@@ -557,7 +555,6 @@ model Order {
 
   user              User               @relation("CustomerOrders", fields: [userId], references: [id], onDelete: Cascade)
   seller            Seller?            @relation(fields: [sellerId], references: [id], onDelete: SetNull)
-  coupon            Coupon?            @relation(fields: [couponId], references: [id], onDelete: SetNull)
   items             OrderItem[]
   statusHistory     OrderStatusHistory[]
   payments          Payment[]
@@ -565,7 +562,6 @@ model Order {
   billingAddress    Address?           @relation("BillingAddress", fields: [billingAddressId], references: [id], onDelete: SetNull)
   review            Review?
   deliveryAssignment DeliveryAssignment?
-  couponUsages      CouponUsage[]
 
   @@index([userId])
   @@index([sellerId])
@@ -573,7 +569,6 @@ model Order {
   @@index([status])
   @@index([paymentStatus])
   @@index([createdAt])
-  @@index([couponId])
 }
 
 model OrderItem {
@@ -741,8 +736,6 @@ model Coupon {
   updatedAt           DateTime   @updatedAt
 
   carts Cart[]
-  orders Order[]
-  usages CouponUsage[]
 
   @@index([code])
   @@index([isActive])
