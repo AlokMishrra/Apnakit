@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { HeroBanner } from "@/components/home/hero-banner";
 import { CategoryGrid } from "@/components/home/category-grid";
 import { FlashSale } from "@/components/home/flash-sale";
-import { FeaturedProducts } from "@/components/home/featured-products";
+import { CategoryWiseProducts } from "@/components/home/category-wise-products";
 import { RecentlyViewed } from "@/components/home/recently-viewed";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -91,7 +91,7 @@ export default function HomePage() {
 
       <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 mt-10">
         <Suspense fallback={<ProductGridSkeleton count={4} />}>
-          <FeaturedProducts />
+          <CategoryWiseProducts />
         </Suspense>
       </div>
 
