@@ -25,6 +25,9 @@ export class EmailService {
         port,
         secure: port === 465,
         auth: { user, pass },
+        connectionTimeout: 10000,
+        greetingTimeout: 10000,
+        socketTimeout: 15000,
       });
       this.logger.log(`Email service ENABLED (host: ${host})`);
     } else {
@@ -198,13 +201,17 @@ export class EmailService {
         </div>
       `;
 
-      await this.transporter.sendMail({
+      const sendPromise = this.transporter.sendMail({
         from: `"ApnaKit" <${this.fromAddress}>`,
         to: to,
         subject: `New Order #${orderData.orderNumber} - ApnaKit`,
         html,
         text: `New Order Received!\n\nOrder Number: ${orderData.orderNumber}\n\nCustomer: ${orderData.customerName}\nEmail: ${orderData.customerEmail}\nPhone: ${orderData.customerPhone}\nPayment: ${orderData.paymentMethod}\n\nItems:\n${orderData.items.map((item) => `- ${item.name} x${item.quantity} = ₹${(item.quantity * item.price).toFixed(2)}`).join('\n')}\n\nSubtotal: ₹${orderData.subtotal.toFixed(2)}\nDiscount: ₹${orderData.discount.toFixed(2)}\nTax: ₹${orderData.tax.toFixed(2)}\nShipping: ₹${orderData.shippingCost.toFixed(2)}\nTotal: ₹${orderData.total.toFixed(2)}\n\nShipping Address:\n${orderData.shippingAddress.name}\n${orderData.shippingAddress.phone}\n${orderData.shippingAddress.addressLine1}\n${orderData.shippingAddress.addressLine2 ? orderData.shippingAddress.addressLine2 + '\n' : ''}${orderData.shippingAddress.city}, ${orderData.shippingAddress.state} - ${orderData.shippingAddress.pincode}`,
       });
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('SMTP timeout after 20s')), 20000)
+      );
+      await Promise.race([sendPromise, timeoutPromise]);
       this.logger.log(`Order notification email sent to ${to} for order ${orderData.orderNumber}`);
       return { success: true, message: 'Order notification sent' };
     } catch (err: any) {

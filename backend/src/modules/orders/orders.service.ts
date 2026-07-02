@@ -190,8 +190,8 @@ export class OrdersService {
       this.logger.warn('Failed to create order notification', e as any);
     }
 
-    // Send email to admin - await with timeout to prevent crash
-    await this.sendOrderEmailAsync(order);
+    // Send email to admin - fire and forget with timeout
+    this.sendOrderEmailAsync(order).catch(() => {});
 
     // COD auto-confirm - only if payment method is COD
     if (dto.paymentMethod === 'COD') {
