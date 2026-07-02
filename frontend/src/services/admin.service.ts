@@ -447,8 +447,9 @@ export const adminService = {
   },
 
   // Dashboard stats
-  getDashboardStats: async (): Promise<any> => {
-    const response = await api.get('/analytics/dashboard');
+  getDashboardStats: async (dateRange?: string): Promise<any> => {
+    const params = dateRange ? `?dateRange=${encodeURIComponent(dateRange)}` : '';
+    const response = await api.get(`/analytics/dashboard${params}`);
     return response.data;
   },
 

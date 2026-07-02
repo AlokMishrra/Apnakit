@@ -14,8 +14,34 @@ export class AnalyticsService {
 
   async getDashboard(query: AnalyticsQueryDto) {
     const now = new Date();
-    const thirtyDaysAgo = subDays(now, 30);
-    const sixtyDaysAgo = subDays(now, 60);
+    let startDate: Date;
+    let previousStartDate: Date;
+
+    if (query.startDate && query.endDate) {
+      startDate = new Date(query.startDate);
+      previousStartDate = subDays(startDate, 30);
+    } else {
+      const range = query.dateRange || '30 days';
+      switch (range) {
+        case 'Today':
+          startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          previousStartDate = subDays(startDate, 1);
+          break;
+        case '7 days':
+          startDate = subDays(now, 7);
+          previousStartDate = subDays(now, 14);
+          break;
+        case '90 days':
+          startDate = subDays(now, 90);
+          previousStartDate = subDays(now, 180);
+          break;
+        case '30 days':
+        default:
+          startDate = subDays(now, 30);
+          previousStartDate = subDays(now, 60);
+          break;
+      }
+    }
 
     // Batch 1: simple counts and aggregates (lightweight)
     const [
@@ -28,30 +54,30 @@ export class AnalyticsService {
       totalProducts,
     ] = await Promise.all([
       this.safe(this.prisma.order.aggregate({
-        where: { createdAt: { gte: thirtyDaysAgo }, paymentStatus: 'PAID' },
+        where: { createdAt: { gte: startDate }, paymentStatus: 'PAID' },
         _sum: { total: true },
         _count: true,
       }), { _sum: { total: null }, _count: 0 }),
 
       this.safe(this.prisma.order.aggregate({
-        where: { createdAt: { gte: sixtyDaysAgo, lt: thirtyDaysAgo }, paymentStatus: 'PAID' },
+        where: { createdAt: { gte: previousStartDate, lt: startDate }, paymentStatus: 'PAID' },
         _sum: { total: true },
       }), { _sum: { total: null } }),
 
       this.safe(this.prisma.order.count({
-        where: { createdAt: { gte: thirtyDaysAgo } },
+        where: { createdAt: { gte: startDate } },
       }), 0),
 
       this.safe(this.prisma.order.count({
-        where: { createdAt: { gte: sixtyDaysAgo, lt: thirtyDaysAgo } },
+        where: { createdAt: { gte: previousStartDate, lt: startDate } },
       }), 0),
 
       this.safe(this.prisma.user.count({
-        where: { role: 'CUSTOMER', createdAt: { gte: thirtyDaysAgo } },
+        where: { role: 'CUSTOMER', createdAt: { gte: startDate } },
       }), 0),
 
       this.safe(this.prisma.user.count({
-        where: { role: 'CUSTOMER', createdAt: { gte: sixtyDaysAgo, lt: thirtyDaysAgo } },
+        where: { role: 'CUSTOMER', createdAt: { gte: previousStartDate, lt: startDate } },
       }), 0),
 
       this.safe(this.prisma.product.count({ where: { isActive: true } }), 0),
@@ -84,7 +110,7 @@ export class AnalyticsService {
       this.safe(this.prisma.orderItem.groupBy({
         by: ['productId'],
         where: {
-          order: { createdAt: { gte: thirtyDaysAgo }, paymentStatus: 'PAID' },
+          order: { createdAt: { gte: startDate }, paymentStatus: 'PAID' },
         },
         _sum: { quantity: true, total: true },
         _count: true,
@@ -94,16 +120,16 @@ export class AnalyticsService {
 
       this.safe(this.prisma.order.groupBy({
         by: ['status'],
-        where: { createdAt: { gte: thirtyDaysAgo } },
+        where: { createdAt: { gte: startDate } },
         _count: true,
       }), []),
     ]);
 
     // Batch 3: derived data (revenue by day, top categories, customer growth)
     const [revenueByDay, topCategories, customerGrowth] = await Promise.all([
-      this.safe(this.getOrderRevenueByDay(thirtyDaysAgo, now), []),
-      this.safe(this.getTopCategories(thirtyDaysAgo), []),
-      this.safe(this.getCustomerGrowth(sixtyDaysAgo, now), []),
+      this.safe(this.getOrderRevenueByDay(startDate, now), []),
+      this.safe(this.getTopCategories(startDate), []),
+      this.safe(this.getCustomerGrowth(previousStartDate, now), []),
     ]);
 
     // Batch 4: resolve product names
@@ -172,7 +198,7 @@ export class AnalyticsService {
 
   async getSellerAnalytics(sellerId: string, query: AnalyticsQueryDto) {
     const now = new Date();
-    const thirtyDaysAgo = subDays(now, 30);
+    const startDate = subDays(now, 30);
 
     const seller = await this.prisma.seller.findUnique({
       where: { id: sellerId },
@@ -193,14 +219,14 @@ export class AnalyticsService {
       this.prisma.order.aggregate({
         where: {
           sellerId,
-          createdAt: { gte: thirtyDaysAgo },
+          createdAt: { gte: startDate },
           paymentStatus: 'PAID',
         },
         _sum: { total: true },
         _count: true,
       }),
       this.prisma.order.count({
-        where: { sellerId, createdAt: { gte: thirtyDaysAgo } },
+        where: { sellerId, createdAt: { gte: startDate } },
       }),
       this.prisma.order.findMany({
         where: { sellerId },
@@ -216,7 +242,7 @@ export class AnalyticsService {
         where: {
           order: {
             sellerId,
-            createdAt: { gte: thirtyDaysAgo },
+            createdAt: { gte: startDate },
             paymentStatus: 'PAID',
           },
         },
@@ -225,10 +251,10 @@ export class AnalyticsService {
         orderBy: { _sum: { total: 'desc' } },
         take: 10,
       }),
-      this.getOrderRevenueByDay(thirtyDaysAgo, now, sellerId),
+      this.getOrderRevenueByDay(startDate, now, sellerId),
       this.prisma.order.groupBy({
         by: ['status'],
-        where: { sellerId, createdAt: { gte: thirtyDaysAgo } },
+        where: { sellerId, createdAt: { gte: startDate } },
         _count: true,
       }),
     ]);

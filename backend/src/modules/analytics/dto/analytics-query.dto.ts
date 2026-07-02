@@ -4,6 +4,11 @@ import { ApiPropertyOptional } from '@nestjs/swagger';
 export class AnalyticsQueryDto {
   @ApiPropertyOptional()
   @IsOptional()
+  @IsString()
+  dateRange?: 'Today' | '7 days' | '30 days' | '90 days' | 'Custom';
+
+  @ApiPropertyOptional()
+  @IsOptional()
   @IsDateString()
   startDate?: string;
 

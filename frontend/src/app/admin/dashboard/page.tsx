@@ -30,7 +30,7 @@ export default function AdminDashboard() {
     const fetchStats = async () => {
       try {
         setLoading(true);
-        const res = await adminService.getDashboardStats();
+        const res = await adminService.getDashboardStats(activeRange);
         setStats(res?.data?.data || res?.data || null);
       } catch {
         toast.error("Failed to load dashboard stats");
@@ -40,7 +40,7 @@ export default function AdminDashboard() {
       }
     };
     fetchStats();
-  }, []);
+  }, [activeRange]);
 
   const overview = stats?.overview || {};
 
