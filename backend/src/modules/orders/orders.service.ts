@@ -136,8 +136,12 @@ export class OrdersService {
         include: {
           items: {
             include: {
-              product: true,
-              variant: true,
+              product: {
+                select: { id: true, name: true, slug: true }
+              },
+              variant: {
+                select: { id: true, name: true, sku: true }
+              },
             },
           },
           shippingAddress: true,
