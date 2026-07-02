@@ -73,7 +73,7 @@ export function ServiceabilityBanner({ state, className, onSelectCity }: Service
               <option value="">-- Select area --</option>
               {activeCities.map((c) => (
                 <option key={c.name} value={c.name}>
-                  {c.name}{state.state ? ` · ${state.state}` : ""}
+                  {c.name}
                 </option>
               ))}
             </select>

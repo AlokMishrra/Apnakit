@@ -717,7 +717,7 @@ export function LocationModal({
                         .filter((c) => c.isActive !== false)
                         .map((c) => (
                           <option key={c.name} value={c.name}>
-                            {c.name}{banner.state ? ` · ${banner.state}` : ""}
+                            {c.name}
                           </option>
                         ))}
                     </select>
