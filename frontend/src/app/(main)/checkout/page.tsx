@@ -265,14 +265,20 @@ export default function CheckoutPage() {
         });
         const orderRaw = await orderRes.json();
         if (!orderRes.ok) {
-          toast.error(orderRaw.message || "Failed to create order");
+          toast.error(orderRaw.message || orderRaw.data?.message || "Failed to create order");
           setIsPlacingOrder(false);
           return;
         }
-        const order = orderRaw.data?.data || orderRaw.data || orderRaw;
+        const order = orderRaw.data;
+        if (!order || (!order.id && !order._id)) {
+          toast.error("Failed to create order - invalid response");
+          setIsPlacingOrder(false);
+          return;
+        }
+        const orderId = order.id || order._id;
 
         // Step 2: Create Razorpay order
-        const rzRes = await paymentService.createPaymentOrder(order.id);
+        const rzRes = await paymentService.createPaymentOrder(orderId);
         const rzData = rzRes.data?.data || rzRes.data;
         if (!rzData?.razorpayOrderId) {
           toast.error("Failed to create payment order");
@@ -288,7 +294,7 @@ export default function CheckoutPage() {
           amount: rzData.amount,
           currency: rzData.currency || "INR",
           name: "ApnaKit",
-          description: `Order #${order.orderNumber || order.id}`,
+          description: `Order #${order.orderNumber || orderId}`,
           order_id: rzData.razorpayOrderId,
           handler: async (response: { razorpay_payment_id: string; razorpay_order_id: string; razorpay_signature: string }) => {
             try {
@@ -299,8 +305,8 @@ export default function CheckoutPage() {
                 razorpaySignature: response.razorpay_signature,
               });
               if (verifyRes.data?.success || verifyRes.data?.status === "PAID") {
-                toast.success("Payment successful! 🎉", { description: `Order #${order.orderNumber || order.id} confirmed` });
-                router.push(`/checkout/success?orderId=${order.id}`);
+                toast.success("Payment successful! 🎉", { description: `Order #${order.orderNumber || orderId} confirmed` });
+                router.push(`/checkout/success?orderId=${orderId}`);
               } else {
                 toast.error("Payment verification failed");
               }
@@ -346,17 +352,23 @@ export default function CheckoutPage() {
       });
       const raw = await res.json();
       if (!res.ok) {
-        const msg = raw.message || "Failed to place order";
+        const msg = raw.message || raw.data?.message || "Failed to place order";
         toast.error("Order failed", { description: msg });
         setIsPlacingOrder(false);
         return;
       }
-      const order = raw.data?.data || raw.data || raw;
+      const order = raw.data;
+      if (!order || (!order.id && !order._id)) {
+        toast.error("Order failed", { description: "Invalid response from server" });
+        setIsPlacingOrder(false);
+        return;
+      }
+      const orderId = order.id || order._id;
       toast.success("Order placed successfully! 🎉", {
-        description: `Order #${order.orderNumber || order.id} confirmed`,
+        description: `Order #${order.orderNumber || orderId} confirmed`,
         duration: 3000,
       });
-      router.push(`/checkout/success?orderId=${order.id}`);
+      router.push(`/checkout/success?orderId=${orderId}`);
     } catch (err: any) {
       toast.error("Network error", { description: "Could not place order" });
       setIsPlacingOrder(false);
