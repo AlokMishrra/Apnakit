@@ -86,7 +86,7 @@ export class ProductsService {
       else if (totalStock <= 10) lowStock++;
     }
 
-    return { data: { total, active, lowStock, outOfStock } };
+    return { total, active, lowStock, outOfStock };
   }
 
   async findAll(query: FilterProductDto): Promise<PaginatedResult<any>> {
