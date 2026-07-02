@@ -743,23 +743,6 @@ model Coupon {
   @@index([expiresAt])
 }
 
-model CouponUsage {
-  id        String   @id @default(cuid())
-  couponId  String
-  userId    String
-  orderId   String
-  usedAt    DateTime @default(now())
-
-  coupon Coupon @relation(fields: [couponId], references: [id], onDelete: Cascade)
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  order  Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
-
-  @@unique([couponId, userId])
-  @@index([couponId])
-  @@index([userId])
-  @@index([orderId])
-}
-
 model Banner {
   id           String         @id @default(cuid())
   title        String
