@@ -228,13 +228,14 @@ export class OrdersService {
     //   this.logger.warn('Failed to send order email to admin', e as any);
     // }
 
-    if (dto.paymentMethod === 'COD') {
-      try {
-        await this.updateStatus(order.id, { status: OrderStatus.CONFIRMED, notes: 'COD order confirmed' });
-      } catch (e) {
-        this.logger.warn('Failed to auto-confirm COD order', e as any);
-      }
-    }
+    // TEMPORARILY DISABLED: auto-confirm causing issues
+    // if (dto.paymentMethod === 'COD') {
+    //   try {
+    //     await this.updateStatus(order.id, { status: OrderStatus.CONFIRMED, notes: 'COD order confirmed' });
+    //   } catch (e) {
+    //     this.logger.warn('Failed to auto-confirm COD order', e as any);
+    //   }
+    // }
 
     return order;
   }
