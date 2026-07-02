@@ -351,7 +351,7 @@ export default function CheckoutPage() {
         body: JSON.stringify({ addressId: selectedAddressId, paymentMethod: selectedPayment }),
       });
       const raw = await res.json();
-      console.log("Order response:", JSON.stringify(raw, null, 2));
+      console.log("Order response status:", res.status, "body:", JSON.stringify(raw, null, 2).substring(0, 500));
       if (!res.ok) {
         const msg = raw.message || raw.data?.message || "Failed to place order";
         toast.error("Order failed", { description: msg });
@@ -359,13 +359,19 @@ export default function CheckoutPage() {
         return;
       }
       const order = raw.data;
-      if (!order || (!order.id && !order._id)) {
-        console.error("Invalid order response:", order);
+      if (!order) {
+        console.error("No order data in response:", raw);
         toast.error("Order failed", { description: "Invalid response from server" });
         setIsPlacingOrder(false);
         return;
       }
       const orderId = order.id || order._id;
+      if (!orderId) {
+        console.error("No order ID in order:", order);
+        toast.error("Order failed", { description: "Missing order ID" });
+        setIsPlacingOrder(false);
+        return;
+      }
       toast.success("Order placed successfully! 🎉", {
         description: `Order #${order.orderNumber || orderId} confirmed`,
         duration: 3000,
@@ -373,7 +379,7 @@ export default function CheckoutPage() {
       router.push(`/checkout/success?orderId=${orderId}`);
     } catch (err: any) {
       console.error("Order error:", err);
-      toast.error("Network error", { description: err.message || "Could not place order" });
+      toast.error("Error", { description: err.message || "Could not place order" });
       setIsPlacingOrder(false);
     }
   };
