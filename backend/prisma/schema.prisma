@@ -188,6 +188,7 @@ model User {
   searchQueries       SearchQuery[]
   seller              Seller?
   deliveryPartner     DeliveryPartner?
+  couponUsages        CouponUsage[]
 
   @@index([email])
   @@index([phone])
@@ -564,6 +565,7 @@ model Order {
   billingAddress    Address?           @relation("BillingAddress", fields: [billingAddressId], references: [id], onDelete: SetNull)
   review            Review?
   deliveryAssignment DeliveryAssignment?
+  couponUsages      CouponUsage[]
 
   @@index([userId])
   @@index([sellerId])
