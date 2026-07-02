@@ -147,7 +147,29 @@ export class AuthService {
       },
     });
 
-    const tokens = await this.generateTokens(user.id, user.role, user.email);
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7);
+
+    const tempSession = await this.prisma.session.create({
+      data: {
+        userId: user.id,
+        token: 'temp',
+        refreshToken: 'temp',
+        deviceInfo: null,
+        ip: null,
+        expiresAt,
+      },
+    });
+
+    const tokens = await this.generateTokens(user.id, user.role, user.email, tempSession.id);
+
+    await this.prisma.session.update({
+      where: { id: tempSession.id },
+      data: {
+        token: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+      },
+    });
 
     this.logger.log(`User registered: ${user.id}`);
 
