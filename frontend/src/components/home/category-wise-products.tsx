@@ -106,6 +106,16 @@ function CategorySection({ category }: { category: CategoryWithProducts }) {
 
   if (category.products.length === 0) return null;
 
+  const sortedProducts = [...category.products].sort((a, b) => {
+    const aStock = a.stock ?? a.totalStock ?? a.variants?.reduce((s: number, v: any) => s + (v.stock || 0), 0) ?? 0;
+    const bStock = b.stock ?? b.totalStock ?? b.variants?.reduce((s: number, v: any) => s + (v.stock || 0), 0) ?? 0;
+    const aInStock = aStock > 0;
+    const bInStock = bStock > 0;
+    if (aInStock && !bInStock) return -1;
+    if (!aInStock && bInStock) return 1;
+    return 0;
+  });
+
   return (
     <section className="py-4">
       <div className="mb-4 flex items-center justify-between">
@@ -142,7 +152,7 @@ function CategorySection({ category }: { category: CategoryWithProducts }) {
           className="flex gap-3 overflow-x-auto no-scrollbar pb-2"
           style={{ scrollSnapType: "x mandatory", WebkitOverflowScrolling: "touch" }}
         >
-          {category.products.map((product) => (
+          {sortedProducts.map((product) => (
             <div key={product._id} className="flex-shrink-0 w-[160px] sm:w-[200px] scroll-snap-align-start">
               <ProductCard product={product} variant="home" />
             </div>
