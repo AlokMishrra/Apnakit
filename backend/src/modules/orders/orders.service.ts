@@ -190,8 +190,8 @@ export class OrdersService {
       this.logger.warn('Failed to create order notification', e as any);
     }
 
-    // Send email to admin - fire and forget (do not block the response)
-    this.sendOrderEmailAsync(order);
+    // Send email to admin - await with timeout to prevent crash
+    await this.sendOrderEmailAsync(order);
 
     // COD auto-confirm - only if payment method is COD
     if (dto.paymentMethod === 'COD') {
@@ -616,49 +616,45 @@ export class OrdersService {
     return `ORD-${timestamp}-${random}`;
   }
 
-  private sendOrderEmailAsync(order: any): void {
-    // Fire and forget - runs after response is sent
-    // Uses setImmediate to ensure it runs in the same event loop tick after response
-    setImmediate(async () => {
-      try {
-        const customerName = `${order.user.firstName || ''} ${order.user.lastName || ''}`.trim() || 'N/A';
-        const customerEmail = order.user.email || 'N/A';
-        const customerPhone = order.user.phone || 'N/A';
-        const paymentMethodDisplay = order.paymentMethod === 'COD' ? 'Cash on Delivery' : order.paymentMethod;
-        const address = order.shippingAddress;
+  private async sendOrderEmailAsync(order: any): Promise<void> {
+    try {
+      const customerName = `${order.user.firstName || ''} ${order.user.lastName || ''}`.trim() || 'N/A';
+      const customerEmail = order.user.email || 'N/A';
+      const customerPhone = order.user.phone || 'N/A';
+      const paymentMethodDisplay = order.paymentMethod === 'COD' ? 'Cash on Delivery' : order.paymentMethod;
+      const address = order.shippingAddress;
 
-        this.logger.log(`[ORDER EMAIL] Sending email for order ${order.orderNumber}`);
-        const result = await this.emailService.sendOrderNotification('apnakit.official@gmail.com', {
-          orderNumber: order.orderNumber,
-          customerName,
-          customerEmail,
-          customerPhone,
-          items: order.items.map((item: any) => ({
-            name: `${item.product?.name || 'Item'}${item.variant ? ` (${item.variant.name})` : ''}`,
-            quantity: item.quantity,
-            price: Number(item.price),
-          })),
-          subtotal: Number(order.subtotal),
-          discount: Number(order.discount),
-          tax: Number(order.tax),
-          shippingCost: Number(order.shippingCost),
-          total: Number(order.total),
-          paymentMethod: paymentMethodDisplay,
-          shippingAddress: {
-            name: address?.name || customerName,
-            phone: address?.phone || customerPhone,
-            addressLine1: address?.addressLine1 || '',
-            addressLine2: address?.addressLine2,
-            city: address?.city || '',
-            state: address?.state || '',
-            pincode: address?.pincode || '',
-          },
-        });
-        this.logger.log(`[ORDER EMAIL] Result for ${order.orderNumber}: ${JSON.stringify(result)}`);
-      } catch (e: any) {
-        this.logger.error(`[ORDER EMAIL] Failed for ${order.orderNumber}: ${e.message}`);
-      }
-    });
+      this.logger.log(`[ORDER EMAIL] Sending email for order ${order.orderNumber}`);
+      const result = await this.emailService.sendOrderNotification('apnakit.official@gmail.com', {
+        orderNumber: order.orderNumber,
+        customerName,
+        customerEmail,
+        customerPhone,
+        items: order.items.map((item: any) => ({
+          name: `${item.product?.name || 'Item'}${item.variant ? ` (${item.variant.name})` : ''}`,
+          quantity: item.quantity,
+          price: Number(item.price),
+        })),
+        subtotal: Number(order.subtotal),
+        discount: Number(order.discount),
+        tax: Number(order.tax),
+        shippingCost: Number(order.shippingCost),
+        total: Number(order.total),
+        paymentMethod: paymentMethodDisplay,
+        shippingAddress: {
+          name: address?.name || customerName,
+          phone: address?.phone || customerPhone,
+          addressLine1: address?.addressLine1 || '',
+          addressLine2: address?.addressLine2,
+          city: address?.city || '',
+          state: address?.state || '',
+          pincode: address?.pincode || '',
+        },
+      });
+      this.logger.log(`[ORDER EMAIL] Result for ${order.orderNumber}: ${JSON.stringify(result)}`);
+    } catch (e: any) {
+      this.logger.error(`[ORDER EMAIL] Failed for ${order.orderNumber}: ${e.message}`);
+    }
   }
 
   private getEstimatedDelivery(createdAt: Date): Date {
