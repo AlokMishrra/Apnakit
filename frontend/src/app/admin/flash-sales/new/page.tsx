@@ -15,8 +15,8 @@ export default function NewFlashSalePage() {
     setLoading(true);
     try {
       const payload = {
-        productId: form.productId,
-        variantId: form.variantId || undefined,
+        productIds: form.productIds,
+        variantIds: form.variantIds.length > 0 ? form.variantIds : undefined,
         title: form.title || undefined,
         salePrice: form.salePrice,
         originalPrice: form.originalPrice,

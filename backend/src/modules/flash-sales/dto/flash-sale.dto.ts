@@ -5,18 +5,32 @@ import {
   IsBoolean,
   IsDateString,
   IsPositive,
+  IsArray,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateFlashSaleDto {
-  @ApiProperty()
+  @ApiPropertyOptional({ description: 'Single product ID (for backward compatibility)' })
+  @IsOptional()
   @IsString()
-  productId: string;
+  productId?: string;
+
+  @ApiPropertyOptional({ description: 'Array of product IDs for multi-product flash sale' })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  productIds?: string[];
 
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
   variantId?: string;
+
+  @ApiPropertyOptional({ description: 'Array of variant IDs corresponding to productIds' })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  variantIds?: string[];
 
   @ApiPropertyOptional()
   @IsOptional()

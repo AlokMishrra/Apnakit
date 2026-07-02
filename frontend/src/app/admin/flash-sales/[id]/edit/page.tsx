@@ -39,9 +39,12 @@ export default function EditFlashSalePage({ params }: { params: Promise<{ id: st
         const data = res?.data || res;
         const sale = data?.data || data;
         if (!sale) throw new Error("Flash sale not found");
+        const productIds = (sale.products || [])
+          .map((p: any) => p.id)
+          .filter(Boolean);
         setInitial({
-          productId: sale.productId,
-          variantId: sale.variantId || "",
+          productIds,
+          variantIds: [],
           title: sale.title || "",
           salePrice: Number(sale.salePrice) || 0,
           originalPrice: Number(sale.originalPrice) || 0,

@@ -71,31 +71,30 @@ interface FlashSaleCardProps {
   onTimeUp?: () => void;
 }
 
-function FlashSaleCard({ sale }: FlashSaleCardProps) {
+function FlashSaleCard({ sale, onTimeUp }: FlashSaleCardProps) {
   const { hours, minutes, seconds, expired } = useCountdown(sale.expiresAt);
-  const product = sale.product || {};
-  const image = getImageUrl(product.image);
+  const products = sale.products || (sale.product ? [sale.product] : []);
   const soldPercent = sale.soldPercent || 0;
   const stockLeft = sale.stockLeft || 0;
   const isLowStock = stockLeft > 0 && stockLeft <= Math.max(1, Math.floor((sale.totalStock || 1) * 0.2));
   const isOutOfStock = stockLeft <= 0;
-  const link = `/product/${product.slug || product.id}`;
+  const firstProduct = products[0] || {};
+  const link = `/product/${firstProduct.slug || firstProduct.id}`;
 
-  // Map flash-sale product to our Product type for the cart
   const productForCart: Product = {
-    _id: product.id || sale.productId,
-    name: product.name || sale.title || "Flash deal",
-    slug: product.slug || "",
-    description: product.description || "",
-    price: Number(sale.salePrice ?? product.price ?? 0),
-    originalPrice: Number(sale.originalPrice ?? product.price ?? 0),
-    sku: product.sku || "",
+    _id: firstProduct.id || sale.productId || sale.id,
+    name: firstProduct.name || sale.title || "Flash deal",
+    slug: firstProduct.slug || "",
+    description: "",
+    price: Number(sale.salePrice ?? 0),
+    originalPrice: Number(sale.originalPrice ?? 0),
+    sku: firstProduct.sku || "",
     stock: stockLeft,
-    images: product.image
-      ? [{ url: product.image, alt: product.name || "", isPrimary: true }]
+    images: firstProduct.image
+      ? [{ url: firstProduct.image, alt: firstProduct.name || "", isPrimary: true }]
       : [],
     category: { _id: "", name: "", slug: "", productCount: 0, isActive: true, createdAt: "", updatedAt: "" },
-    brand: { _id: "", name: product.brand || "", slug: "", productCount: 0, isActive: true },
+    brand: { _id: "", name: firstProduct.brand || "", slug: "", productCount: 0, isActive: true },
     variants: [],
     tags: [],
     specifications: [],
@@ -111,22 +110,54 @@ function FlashSaleCard({ sale }: FlashSaleCardProps) {
   return (
     <div className="flex min-w-[240px] flex-col overflow-hidden rounded-xl border bg-white shadow-sm transition-shadow hover:shadow-md">
       <Link href={link} className="relative block bg-gray-50 p-4">
-        {image ? (
-          <img
-            src={image}
-            alt={product.name}
-            className={cn(
-              "mx-auto h-36 w-36 object-contain transition-transform hover:scale-105",
-              isOutOfStock && "opacity-50 grayscale"
+        {products.length > 1 ? (
+          <div className="flex flex-wrap gap-1 justify-center">
+            {products.slice(0, 4).map((p: any, i: number) => {
+              const img = getImageUrl(p.image);
+              return img ? (
+                <div key={i} className="relative h-16 w-16 overflow-hidden rounded bg-white">
+                  <img
+                    src={img}
+                    alt={p.name}
+                    className={cn(
+                      "h-full w-full object-contain transition-transform hover:scale-105",
+                      isOutOfStock && "opacity-50 grayscale"
+                    )}
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = "/images/placeholder.svg";
+                    }}
+                  />
+                </div>
+              ) : (
+                <div key={i} className="flex h-16 w-16 items-center justify-center rounded bg-gray-200 text-xl text-gray-400">
+                  📦
+                </div>
+              );
+            })}
+            {products.length > 4 && (
+              <div className="flex h-16 w-16 items-center justify-center rounded bg-gray-100 text-xs font-medium text-gray-500">
+                +{products.length - 4}
+              </div>
             )}
-            onError={(e) => {
-              (e.target as HTMLImageElement).src = "/images/placeholder.svg";
-            }}
-          />
-        ) : (
-          <div className="mx-auto flex h-36 w-36 items-center justify-center text-4xl text-gray-300">
-            📦
           </div>
+        ) : (
+          firstProduct.image ? (
+            <img
+              src={getImageUrl(firstProduct.image)}
+              alt={firstProduct.name}
+              className={cn(
+                "mx-auto h-36 w-36 object-contain transition-transform hover:scale-105",
+                isOutOfStock && "opacity-50 grayscale"
+              )}
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = "/images/placeholder.svg";
+              }}
+            />
+          ) : (
+            <div className="mx-auto flex h-36 w-36 items-center justify-center text-4xl text-gray-300">
+              📦
+            </div>
+          )
         )}
         {sale.discount > 0 && !isOutOfStock && (
           <Badge variant="destructive" className="absolute left-2 top-2">
@@ -149,10 +180,10 @@ function FlashSaleCard({ sale }: FlashSaleCardProps) {
           href={link}
           className="line-clamp-2 text-sm font-medium text-gray-900 hover:text-indigo-600"
         >
-          {sale.title || product.name}
+          {sale.title || firstProduct.name}
         </Link>
-        {product.brand && (
-          <p className="text-xs text-muted-foreground">{product.brand}</p>
+        {firstProduct.brand && (
+          <p className="text-xs text-muted-foreground">{firstProduct.brand}</p>
         )}
         <div className="flex items-baseline gap-2">
           <span className="text-base font-bold text-foreground">

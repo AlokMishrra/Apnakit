@@ -23,8 +23,8 @@ import { toast } from "sonner";
 import { getSafeErrorMessage } from "@/lib/safe-error";
 
 export interface FlashSaleFormData {
-  productId: string;
-  variantId: string;
+  productIds: string[];
+  variantIds: string[];
   title: string;
   salePrice: number;
   originalPrice: number;
@@ -65,8 +65,8 @@ export function FlashSaleForm({
   pageDescription,
 }: FlashSaleFormProps) {
   const [form, setForm] = useState<FlashSaleFormData>({
-    productId: initial?.productId || "",
-    variantId: initial?.variantId || "",
+    productIds: initial?.productIds || [],
+    variantIds: initial?.variantIds || [],
     title: initial?.title || "",
     salePrice: initial?.salePrice || 0,
     originalPrice: initial?.originalPrice || 0,
@@ -78,7 +78,6 @@ export function FlashSaleForm({
 
   const [products, setProducts] = useState<any[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
-  const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
@@ -89,9 +88,18 @@ export function FlashSaleForm({
         const data = res?.data || res;
         const list = Array.isArray(data) ? data : (data?.data || []);
         setProducts(list);
-        if (initial?.productId) {
-          const p = list.find((x: any) => x.id === initial.productId || x._id === initial.productId);
-          if (p) setSelectedProduct(p);
+        if (initial?.productIds && initial.productIds.length > 0) {
+          const selected = list.filter((x: any) => initial.productIds.includes(x.id || x._id));
+          if (selected.length > 0) {
+            const prices = selected.map((p: any) => p.variants?.[0]?.price || p.price || 0);
+            const minPrice = Math.min(...prices);
+            const maxComparePrice = Math.max(...prices);
+            setForm((prev) => ({
+              ...prev,
+              originalPrice: maxComparePrice || minPrice,
+              salePrice: minPrice,
+            }));
+          }
         }
       } catch (err) {
         toast.error("Failed to load products", { description: getSafeErrorMessage(err) });
@@ -100,7 +108,7 @@ export function FlashSaleForm({
       }
     };
     fetchProducts();
-  }, [initial?.productId]);
+  }, [initial?.productIds]);
 
   const filteredProducts = products.filter((p) => {
     if (!searchTerm) return true;
@@ -111,28 +119,29 @@ export function FlashSaleForm({
     );
   });
 
-  const handleProductSelect = (productId: string) => {
+  const handleProductToggle = (productId: string) => {
     const p = products.find((x: any) => x.id === productId);
-    if (p) {
-      setSelectedProduct(p);
-      const firstVariant = p.variants?.[0];
-      const price = firstVariant
-        ? Number(firstVariant.price)
-        : Number(p.minPrice || 0);
-      const comparePrice = firstVariant
-        ? Number(firstVariant.compareAtPrice || firstVariant.price)
-        : Number(p.maxPrice || price);
+    const currentIds = form.productIds;
+    const isSelected = currentIds.includes(productId);
+
+    let newProductIds: string[];
+    if (isSelected) {
+      newProductIds = currentIds.filter((id) => id !== productId);
+    } else {
+      newProductIds = [...currentIds, productId];
+    }
+
+    const selectedProducts = products.filter((x: any) => newProductIds.includes(x.id));
+    if (selectedProducts.length > 0) {
+      const prices = selectedProducts.map((sp: any) => sp.variants?.[0]?.price || sp.price || 0);
+      const minPrice = Math.min(...prices);
       setForm((prev) => ({
         ...prev,
-        productId,
-        originalPrice: comparePrice || price,
-        salePrice: price,
-        variantId: firstVariant?.id || "",
-        title: prev.title || p.name,
+        productIds: newProductIds,
+        title: prev.title || selectedProducts[0]?.name + (selectedProducts.length > 1 ? ` +${selectedProducts.length - 1} more` : ''),
       }));
     } else {
-      setSelectedProduct(null);
-      setForm((prev) => ({ ...prev, productId: "", variantId: "" }));
+      setForm((prev) => ({ ...prev, productIds: newProductIds }));
     }
   };
 
@@ -140,10 +149,12 @@ export function FlashSaleForm({
     ? Math.round(((form.originalPrice - form.salePrice) / form.originalPrice) * 100)
     : 0;
 
+  const selectedProducts = products.filter((p: any) => form.productIds.includes(p.id));
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.productId) {
-      toast.error("Please select a product");
+    if (form.productIds.length === 0) {
+      toast.error("Please select at least one product");
       return;
     }
     if (form.salePrice <= 0) {
@@ -170,12 +181,8 @@ export function FlashSaleForm({
       toast.error("End date must be after start date");
       return;
     }
-    await onSubmit(form);
+    await onSubmit(form as any);
   };
-
-  const productImage = selectedProduct
-    ? getImageUrl(selectedProduct.images?.[0]?.url || selectedProduct.images?.[0])
-    : "";
 
   return (
     <div className="space-y-6">
@@ -198,7 +205,7 @@ export function FlashSaleForm({
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">
                   <Package className="h-5 w-5" />
-                  Select Product *
+                  Select Products *
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
@@ -220,7 +227,7 @@ export function FlashSaleForm({
                       </p>
                     ) : (
                       filteredProducts.slice(0, 50).map((p: any) => {
-                        const isSelected = form.productId === p.id;
+                        const isSelected = form.productIds.includes(p.id);
                         const firstVariant = p.variants?.[0];
                         const price = firstVariant ? Number(firstVariant.price) : 0;
                         const comparePrice = firstVariant ? Number(firstVariant.compareAtPrice || firstVariant.price) : 0;
@@ -229,11 +236,17 @@ export function FlashSaleForm({
                           <button
                             key={p.id}
                             type="button"
-                            onClick={() => handleProductSelect(p.id)}
+                            onClick={() => handleProductToggle(p.id)}
                             className={`flex w-full items-center gap-3 border-b p-3 text-left last:border-b-0 transition-colors ${
                               isSelected ? "bg-indigo-50" : "hover:bg-gray-50"
                             }`}
                           >
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={() => {}}
+                              className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                            />
                             <div className="h-12 w-12 flex-shrink-0 overflow-hidden rounded bg-gray-100">
                               {img ? (
                                 <img src={img} alt={p.name} className="h-full w-full object-cover" />
@@ -259,10 +272,13 @@ export function FlashSaleForm({
                     )}
                   </div>
                 )}
-                {form.productId && selectedProduct && (
+                {form.productIds.length > 0 && (
                   <div className="rounded-md border border-indigo-200 bg-indigo-50 p-3 text-sm">
                     <span className="font-medium text-indigo-900">Selected: </span>
-                    <span className="text-indigo-700">{selectedProduct.name}</span>
+                    <span className="text-indigo-700">
+                      {selectedProducts.map((p: any) => p.name).join(', ')}
+                      {selectedProducts.length > 3 && ` +${selectedProducts.length - 3} more`}
+                    </span>
                   </div>
                 )}
               </CardContent>
@@ -373,12 +389,29 @@ export function FlashSaleForm({
               <CardContent>
                 <div className="overflow-hidden rounded-lg border bg-white">
                   <div className="relative bg-gray-50 p-4">
-                    {productImage ? (
-                      <img
-                        src={productImage}
-                        alt={selectedProduct?.name || "Preview"}
-                        className="mx-auto h-32 w-32 object-contain"
-                      />
+                    {selectedProducts.length > 0 ? (
+                      <div className="flex flex-wrap gap-2 justify-center">
+                        {selectedProducts.slice(0, 4).map((p: any) => {
+                          const img = getImageUrl(p.images?.[0]?.url || p.images?.[0]);
+                          return img ? (
+                            <img
+                              key={p.id}
+                              src={img}
+                              alt={p.name}
+                              className="h-16 w-16 object-contain rounded"
+                            />
+                          ) : (
+                            <div key={p.id} className="flex h-16 w-16 items-center justify-center rounded bg-gray-200 text-xl text-gray-400">
+                              📦
+                            </div>
+                          );
+                        })}
+                        {selectedProducts.length > 4 && (
+                          <div className="flex h-16 w-16 items-center justify-center rounded bg-gray-200 text-sm font-medium text-gray-500">
+                            +{selectedProducts.length - 4}
+                          </div>
+                        )}
+                      </div>
                     ) : (
                       <div className="mx-auto flex h-32 w-32 items-center justify-center text-4xl text-gray-300">
                         📦
@@ -392,7 +425,7 @@ export function FlashSaleForm({
                   </div>
                   <div className="p-3">
                     <p className="line-clamp-2 text-sm font-medium">
-                      {form.title || selectedProduct?.name || "Flash Sale"}
+                      {form.title || (selectedProducts.length > 0 ? `${selectedProducts[0]?.name}${selectedProducts.length > 1 ? ` +${selectedProducts.length - 1} more` : ''}` : "Flash Sale")}
                     </p>
                     <div className="mt-2 flex items-baseline gap-2">
                       <span className="text-base font-bold">

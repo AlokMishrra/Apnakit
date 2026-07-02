@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../config/database.config';
 import { CreateFlashSaleDto, UpdateFlashSaleDto } from './dto/flash-sale.dto';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class FlashSalesService {
@@ -10,6 +11,7 @@ export class FlashSalesService {
 
   /**
    * Public listing — only active flash sales within their time window
+   * Groups multiple products from the same flash sale (same groupId) together
    */
   async findActive() {
     const now = new Date();
@@ -31,11 +33,11 @@ export class FlashSalesService {
       orderBy: { startsAt: 'asc' },
     });
 
-    return sales.map((s) => this.formatSale(s));
+    return this.groupSales(sales);
   }
 
   /**
-   * Admin listing — all flash sales (any status)
+   * Admin listing — all flash sales (any status), grouped by groupId
    */
   async findAllAdmin() {
     const sales = await this.prisma.flashSale.findMany({
@@ -50,7 +52,7 @@ export class FlashSalesService {
       },
       orderBy: { createdAt: 'desc' },
     });
-    return sales.map((s) => this.formatSale(s));
+    return this.groupSales(sales);
   }
 
   async findOne(id: string) {
@@ -69,36 +71,43 @@ export class FlashSalesService {
     if (!sale) {
       throw new NotFoundException('Flash sale not found');
     }
-    return this.formatSale(sale);
+    // Return grouped format for consistency
+    const groupSales = await this.prisma.flashSale.findMany({
+      where: { groupId: sale.groupId },
+      include: {
+        product: {
+          include: {
+            images: { take: 1, orderBy: [{ isPrimary: 'desc' }, { sortOrder: 'asc' }] },
+            brand: { select: { name: true } },
+          },
+        },
+        variant: true,
+      },
+    });
+    const grouped = this.groupSales(groupSales);
+    return grouped[0] || this.formatSale(sale);
   }
 
   async create(dto: CreateFlashSaleDto) {
-    // Validate product exists
-    const product = await this.prisma.product.findUnique({
-      where: { id: dto.productId },
-    });
-    if (!product) {
-      throw new BadRequestException('Product not found');
-    }
-
-    // Validate dates
     if (new Date(dto.expiresAt) <= new Date(dto.startsAt)) {
       throw new BadRequestException('expiresAt must be after startsAt');
     }
 
-    if (dto.variantId) {
-      const variant = await this.prisma.productVariant.findUnique({
-        where: { id: dto.variantId },
-      });
-      if (!variant || variant.productId !== dto.productId) {
-        throw new BadRequestException('Variant not found for this product');
-      }
+    const groupId = new Date().toISOString().slice(0, 10) + '-' + Math.random().toString(36).slice(2, 10);
+
+    const productIds = dto.productIds || (dto.productId ? [dto.productId] : []);
+    if (productIds.length === 0) {
+      throw new BadRequestException('At least one product is required');
     }
 
-    const sale = await this.prisma.flashSale.create({
-      data: {
-        productId: dto.productId,
-        variantId: dto.variantId,
+    const variantIds = dto.variantIds || (dto.variantId ? [dto.variantId] : []);
+
+    const saleData = productIds.map((pid, index) => {
+      const variantId = variantIds[index] || null;
+      return {
+        groupId,
+        productId: pid,
+        variantId,
         title: dto.title,
         salePrice: dto.salePrice,
         originalPrice: dto.originalPrice,
@@ -107,7 +116,15 @@ export class FlashSalesService {
         startsAt: new Date(dto.startsAt),
         expiresAt: new Date(dto.expiresAt),
         isActive: dto.isActive ?? true,
-      },
+      };
+    });
+
+    const results = await this.prisma.flashSale.createMany({
+      data: saleData,
+    });
+
+    const created = await this.prisma.flashSale.findMany({
+      where: { groupId },
       include: {
         product: {
           include: {
@@ -118,12 +135,17 @@ export class FlashSalesService {
         variant: true,
       },
     });
-    this.logger.log(`Flash sale created: ${sale.id} for product ${dto.productId}`);
-    return this.formatSale(sale);
+
+    this.logger.log(`Flash sale created: ${results.count} products in group ${groupId}`);
+    const grouped = this.groupSales(created);
+    return grouped[0];
   }
 
   async update(id: string, dto: UpdateFlashSaleDto) {
-    await this.findOne(id);
+    const existing = await this.prisma.flashSale.findUnique({ where: { id } });
+    if (!existing) {
+      throw new NotFoundException('Flash sale not found');
+    }
 
     if (dto.startsAt && dto.expiresAt) {
       if (new Date(dto.expiresAt) <= new Date(dto.startsAt)) {
@@ -131,18 +153,32 @@ export class FlashSalesService {
       }
     }
 
+    if (dto.salePrice !== undefined || dto.originalPrice !== undefined || dto.totalStock !== undefined) {
+      await this.prisma.flashSale.updateMany({
+        where: { groupId: existing.groupId },
+        data: {
+          ...(dto.salePrice !== undefined ? { salePrice: dto.salePrice } : {}),
+          ...(dto.originalPrice !== undefined ? { originalPrice: dto.originalPrice } : {}),
+          ...(dto.totalStock !== undefined ? { totalStock: dto.totalStock } : {}),
+        },
+      });
+    }
+
     const updateData: any = {};
     if (dto.title !== undefined) updateData.title = dto.title;
-    if (dto.salePrice !== undefined) updateData.salePrice = dto.salePrice;
-    if (dto.originalPrice !== undefined) updateData.originalPrice = dto.originalPrice;
-    if (dto.totalStock !== undefined) updateData.totalStock = dto.totalStock;
     if (dto.startsAt) updateData.startsAt = new Date(dto.startsAt);
     if (dto.expiresAt) updateData.expiresAt = new Date(dto.expiresAt);
     if (dto.isActive !== undefined) updateData.isActive = dto.isActive;
 
-    const sale = await this.prisma.flashSale.update({
-      where: { id },
-      data: updateData,
+    if (Object.keys(updateData).length > 0) {
+      await this.prisma.flashSale.updateMany({
+        where: { groupId: existing.groupId },
+        data: updateData,
+      });
+    }
+
+    const updated = await this.prisma.flashSale.findMany({
+      where: { groupId: existing.groupId },
       include: {
         product: {
           include: {
@@ -153,14 +189,23 @@ export class FlashSalesService {
         variant: true,
       },
     });
-    this.logger.log(`Flash sale updated: ${id}`);
-    return this.formatSale(sale);
+
+    this.logger.log(`Flash sale updated: group ${existing.groupId}`);
+    const grouped = this.groupSales(updated);
+    return grouped[0];
   }
 
   async remove(id: string) {
-    await this.findOne(id);
-    await this.prisma.flashSale.delete({ where: { id } });
-    this.logger.log(`Flash sale deleted: ${id}`);
+    const existing = await this.prisma.flashSale.findUnique({ where: { id } });
+    if (!existing) {
+      throw new NotFoundException('Flash sale not found');
+    }
+
+    await this.prisma.flashSale.deleteMany({
+      where: { groupId: existing.groupId },
+    });
+
+    this.logger.log(`Flash sale deleted: group ${existing.groupId}`);
     return { message: 'Flash sale deleted successfully' };
   }
 
@@ -176,11 +221,52 @@ export class FlashSalesService {
     });
   }
 
+  private groupSales(sales: any[]) {
+    const grouped = new Map<string, any[]>();
+    for (const sale of sales) {
+      const key = sale.groupId;
+      if (!grouped.has(key)) {
+        grouped.set(key, []);
+      }
+      grouped.get(key)!.push(sale);
+    }
+
+    return Array.from(grouped.values()).map((groupSales) => {
+      const first = groupSales[0];
+      const products = groupSales.map((s) => this.formatProduct(s));
+
+      const totalStock = groupSales.reduce((sum, s) => sum + s.totalStock, 0);
+      const totalSold = groupSales.reduce((sum, s) => sum + s.soldCount, 0);
+
+      return {
+        id: first.id,
+        groupId: first.groupId,
+        title: first.title || products[0]?.name || 'Flash Sale',
+        salePrice: Number(first.salePrice),
+        originalPrice: Number(first.originalPrice),
+        discount: Number(first.originalPrice) > 0
+          ? Math.round(((Number(first.originalPrice) - Number(first.salePrice)) / Number(first.originalPrice)) * 100)
+          : 0,
+        totalStock,
+        soldCount: totalSold,
+        stockLeft: Math.max(0, totalStock - totalSold),
+        soldPercent: totalStock > 0 ? Math.round((totalSold / totalStock) * 100) : 0,
+        startsAt: first.startsAt,
+        expiresAt: first.expiresAt,
+        isActive: first.isActive,
+        products,
+        createdAt: first.createdAt,
+        updatedAt: first.updatedAt,
+      };
+    });
+  }
+
   private formatSale(sale: any) {
     const product = sale.product || {};
     const productImage = product.images?.[0]?.url || product.images?.[0] || '';
     return {
       id: sale.id,
+      groupId: sale.groupId,
       productId: sale.productId,
       variantId: sale.variantId,
       title: sale.title || product.name,
@@ -210,8 +296,35 @@ export class FlashSalesService {
             }
           : null,
       },
+      products: [{
+        id: product.id,
+        name: product.name,
+        slug: product.slug,
+        image: productImage,
+        brand: product.brand?.name || null,
+      }],
       createdAt: sale.createdAt,
       updatedAt: sale.updatedAt,
+    };
+  }
+
+  private formatProduct(sale: any) {
+    const product = sale.product || {};
+    const productImage = product.images?.[0]?.url || product.images?.[0] || '';
+    return {
+      id: product.id,
+      name: product.name,
+      slug: product.slug,
+      image: productImage,
+      brand: product.brand?.name || null,
+      variant: sale.variantId ? {
+        id: sale.variant?.id,
+        name: sale.variant?.name,
+        sku: sale.variant?.sku,
+      } : null,
+      salePrice: Number(sale.salePrice),
+      originalPrice: Number(sale.originalPrice),
+      stockLeft: Math.max(0, sale.totalStock - sale.soldCount),
     };
   }
 }
