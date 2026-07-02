@@ -46,6 +46,20 @@ export class CouponsService {
       throw new BadRequestException('Coupon usage limit reached');
     }
 
+    if (dto.userId) {
+      const existingUsage = await this.prisma.couponUsage.findUnique({
+        where: {
+          couponId_userId: {
+            couponId: coupon.id,
+            userId: dto.userId,
+          },
+        },
+      });
+      if (existingUsage) {
+        throw new BadRequestException('You have already used this coupon');
+      }
+    }
+
     if (coupon.minimumOrder && dto.cartTotal < Number(coupon.minimumOrder)) {
       throw new BadRequestException(
         `Minimum order amount of ₹${coupon.minimumOrder} required`,
