@@ -1,9 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { useState } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import {
   Search,
   ShoppingCart,
@@ -40,7 +39,6 @@ import { useSelector, useDispatch } from "react-redux";
 import { logout } from "@/store/slices/authSlice";
 import { clearAuthCookies } from "@/lib/utils";
 
-import { CATEGORIES } from "@/constants";
 import { SearchBar } from "@/components/search/search-bar";
 import { LocationSelector } from "@/components/layout/location-selector";
 import { LocationModal } from "@/components/layout/location-modal";
@@ -55,66 +53,7 @@ interface HeaderProps {
   wishlistCount?: number;
 }
 
-function CategoryNav({ pathname }: { pathname: string }) {
-  const [apiCategories, setApiCategories] = useState<any[]>([]);
-
-  React.useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        const res = await import("@/services/api").then((m) => m.default.get("/categories"));
-        const data = res?.data?.data;
-        if (Array.isArray(data) && data.length > 0) {
-          setApiCategories(data);
-        }
-      } catch {
-        // fallback to static CATEGORIES
-      }
-    };
-    fetchCategories();
-  }, []);
-
-  const categories = apiCategories.length > 0
-    ? apiCategories.map((c: any) => ({ name: c.name, slug: c.slug, isComingSoon: c.isComingSoon }))
-    : CATEGORIES;
-
-  return (
-    <nav className="hidden border-b bg-white lg:block">
-      <div className="mx-auto flex h-10 max-w-7xl items-center gap-1 px-4 overflow-x-auto scrollbar-none">
-        {categories.map((cat: any) => {
-          if (cat.isComingSoon) {
-            return (
-              <span
-                key={cat.slug}
-                className="whitespace-nowrap rounded-md px-3 py-1.5 text-sm text-gray-400 cursor-not-allowed relative"
-                title="Coming Soon"
-              >
-                {cat.name}
-                <span className="ml-1 inline-block rounded bg-emerald-100 px-1 py-0.5 text-[9px] font-bold text-emerald-700 uppercase leading-none">Soon</span>
-              </span>
-            );
-          }
-          return (
-            <Link
-              key={cat.slug}
-              href={`/category/${cat.slug}`}
-              className={cn(
-                "whitespace-nowrap rounded-md px-3 py-1.5 text-sm transition-colors hover:bg-primary/10 hover:text-primary",
-                pathname === `/category/${cat.slug}`
-                  ? "bg-primary/10 font-medium text-primary"
-                  : "text-gray-700"
-              )}
-            >
-              {cat.name}
-            </Link>
-          );
-        })}
-      </div>
-    </nav>
-  );
-}
-
 function Header({ user: userProp, cartCount = 0, wishlistCount = 0 }: HeaderProps) {
-  const pathname = usePathname();
   const router = useRouter();
   const dispatch = useDispatch();
   const reduxUser = useSelector((state: RootState) => state.auth.user);
@@ -314,9 +253,6 @@ function Header({ user: userProp, cartCount = 0, wishlistCount = 0 }: HeaderProp
           </div>
         </div>
       </div>
-
-      {/* Category Navigation - Desktop */}
-      <CategoryNav pathname={pathname} />
 
       <LocationModal
         open={locationModalOpen}

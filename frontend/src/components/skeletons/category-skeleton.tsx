@@ -2,35 +2,6 @@
 
 import { Skeleton } from "@/components/ui/skeleton";
 
-function FilterSidebarSkeleton() {
-  return (
-    <div className="space-y-6">
-      <div className="space-y-3">
-        <Skeleton className="h-4 w-24" />
-        <div className="flex items-center gap-2">
-          <Skeleton className="h-9 w-full" />
-          <Skeleton className="h-4 w-4" />
-          <Skeleton className="h-9 w-full" />
-        </div>
-        <Skeleton className="h-9 w-full rounded-md" />
-      </div>
-      <div className="space-y-3">
-        <Skeleton className="h-4 w-32" />
-        {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="flex items-center gap-2">
-            <div className="flex gap-0.5">
-              {Array.from({ length: 5 }).map((__, j) => (
-                <Skeleton key={j} variant="circular" className="h-3.5 w-3.5" />
-              ))}
-            </div>
-            <Skeleton className="h-3 w-12" />
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 function ProductCardSkeleton() {
   return (
     <div className="rounded-xl border bg-white p-3 shadow-sm">
@@ -52,42 +23,34 @@ function ProductCardSkeleton() {
 
 export function CategoryPageSkeleton() {
   return (
-    <main className="min-h-screen bg-white">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
-        {/* Breadcrumb */}
-        <div className="mb-4 flex items-center gap-1 sm:mb-6">
-          <Skeleton className="h-4 w-10" />
-          <Skeleton variant="circular" className="h-3 w-3" />
-          <Skeleton className="h-4 w-24" />
+    <div className="flex gap-0">
+      {/* Sidebar */}
+      <div className="w-28 sm:w-36 lg:w-48 flex-shrink-0 border-r bg-white">
+        <div className="sticky top-0 h-[calc(100vh-80px)] overflow-y-auto p-2 sm:p-3">
+          <Skeleton className="mb-3 h-3 w-20" />
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="flex items-center gap-2 sm:gap-3 rounded-lg px-1.5 sm:px-2 py-2 sm:py-2.5">
+              <Skeleton className="h-9 w-9 sm:h-12 sm:w-12 flex-shrink-0 rounded-lg" />
+              <Skeleton className="h-3 w-16 sm:w-20" />
+            </div>
+          ))}
         </div>
-        {/* Title */}
-        <Skeleton className="mb-4 h-8 w-48 sm:mb-8" />
-        <div className="flex gap-6">
-          {/* Sidebar */}
-          <div className="hidden w-60 flex-shrink-0 lg:block">
-            <FilterSidebarSkeleton />
-          </div>
-          {/* Products */}
-          <div className="flex-1">
-            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-              <div className="flex items-center gap-2">
-                <Skeleton className="h-9 w-20 sm:hidden" />
-                <Skeleton variant="rounded" className="hidden h-8 w-8 lg:block" />
-                <Skeleton variant="rounded" className="hidden h-8 w-8 lg:block" />
-              </div>
-              <div className="flex items-center gap-2">
-                <Skeleton className="hidden h-4 w-24 sm:block" />
-                <Skeleton className="h-9 w-32" />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-3">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <ProductCardSkeleton key={i} />
-              ))}
-            </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="flex-1 min-w-0">
+        <div className="bg-white border-b px-4 py-3 flex items-center justify-between">
+          <Skeleton className="h-4 w-24" />
+          <Skeleton className="h-9 w-32" />
+        </div>
+        <div className="p-4">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <ProductCardSkeleton key={i} />
+            ))}
           </div>
         </div>
       </div>
-    </main>
+    </div>
   );
 }

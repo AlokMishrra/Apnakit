@@ -80,30 +80,14 @@ function getConfigForCategory(slug: string): CategoryConfig {
   return categoryConfig.find((c) => c.slug === slug) || { ...defaultConfig, slug };
 }
 
-const fallbackCategories: Category[] = [
-  { id: "1", name: "Electronics", slug: "electronics" },
-  { id: "2", name: "Fashion", slug: "fashion" },
-  { id: "3", name: "Home & Kitchen", slug: "home-decor" },
-  { id: "4", name: "Beauty", slug: "beauty" },
-  { id: "5", name: "Books", slug: "books" },
-  { id: "6", name: "Sports", slug: "sports" },
-  { id: "7", name: "Grocery", slug: "grocery" },
-  { id: "8", name: "Toys", slug: "toys" },
-  { id: "9", name: "Laptops", slug: "laptops" },
-  { id: "10", name: "Headphones", slug: "headphones" },
-  { id: "11", name: "Cameras", slug: "cameras" },
-  { id: "12", name: "Furniture", slug: "furniture" },
-  { id: "13", name: "Kitchen", slug: "kitchen" },
-  { id: "14", name: "Watches", slug: "watches" },
-  { id: "15", name: "Gaming", slug: "gaming" },
-  { id: "16", name: "Kids", slug: "kids" },
-];
+const fallbackCategories: Category[] = [];
 
 export function CategoryGrid() {
-  const [categories, setCategories] = useState<Category[]>(fallbackCategories);
+  const [categories, setCategories] = useState<Category[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -114,7 +98,9 @@ export function CategoryGrid() {
           setCategories(data);
         }
       } catch {
-        // keep fallback
+        // keep empty
+      } finally {
+        setLoading(false);
       }
     };
     fetchCategories();
@@ -146,6 +132,8 @@ export function CategoryGrid() {
     const amount = direction === "left" ? -200 : 200;
     el.scrollBy({ left: amount, behavior: "smooth" });
   };
+
+  if (!loading && categories.length === 0) return null;
 
   return (
     <section className="py-4 sm:py-6">

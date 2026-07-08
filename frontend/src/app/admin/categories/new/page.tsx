@@ -27,7 +27,13 @@ export default function NewCategoryPage() {
     const fetchParents = async () => {
       try {
         const res = await adminService.getCategories();
-        setParentCategories(res?.data?.data || res?.data || []);
+        const cats = res?.data?.data || res?.data || [];
+        const seen = new Set();
+        setParentCategories(cats.filter((c: any) => {
+          if (seen.has(c.id)) return false;
+          seen.add(c.id);
+          return true;
+        }));
       } catch {
         toast.error("Failed to load categories");
       }
@@ -203,8 +209,8 @@ export default function NewCategoryPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">None (Top Level)</SelectItem>
-                  {parentCategories.map((cat) => (
-                    <SelectItem key={cat._id} value={cat._id}>
+                  {parentCategories.map((cat, i) => (
+                    <SelectItem key={cat.id || i} value={cat.id}>
                       {cat.name}
                     </SelectItem>
                   ))}
