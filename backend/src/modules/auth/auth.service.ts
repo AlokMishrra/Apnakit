@@ -657,9 +657,15 @@ export class AuthService {
     });
     if (!tokenRes.ok) {
       const text = await tokenRes.text();
-      this.logger.error(`Google token exchange failed: ${tokenRes.status} ${text}`);
+      this.logger.error(
+        `Google token exchange failed (${tokenRes.status}): ${text} | redirect_uri used: ${callbackUrl}`,
+      );
+      let hint = 'Please try again.';
+      if (text.includes('redirect_uri_mismatch')) {
+        hint = `The redirect URI "${callbackUrl}" is not registered in Google Cloud Console. Add it under APIs & Services > Credentials > OAuth 2.0 Client > Authorized redirect URIs.`;
+      }
       throw new UnauthorizedException(
-        'Google rejected the authorization code. Please try again.',
+        `Google rejected the authorization code (${tokenRes.status}). ${hint}`,
       );
     }
     const tokenJson: any = await tokenRes.json();

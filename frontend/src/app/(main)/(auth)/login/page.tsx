@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Mail, ArrowLeft, Loader2 } from "lucide-react";
 import { useDispatch } from "react-redux";
 import { setUser, setTokens } from "@/store/slices/authSlice";
@@ -53,7 +53,7 @@ function mapUser(user: any) {
 
 export default function LoginPage() {
   const router = useRouter();
-  const dispatch = useDispatch();
+  const searchParams = useSearchParams();
   const [step, setStep] = React.useState<Step>("choose");
   const [showPassword, setShowPassword] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
@@ -61,6 +61,16 @@ export default function LoginPage() {
   const [error, setError] = React.useState("");
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
+
+  React.useEffect(() => {
+    const urlError = searchParams.get("error");
+    if (urlError) {
+      const decoded = decodeURIComponent(urlError);
+      setError(decoded);
+      toast.error("Google sign-in failed", { description: decoded });
+      router.replace("/login", { scroll: false });
+    }
+  }, [searchParams, router]);
 
   const [otpCode, setOtpCode] = React.useState("");
   const [otpSentTo, setOtpSentTo] = React.useState("");
