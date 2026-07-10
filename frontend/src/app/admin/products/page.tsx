@@ -11,6 +11,7 @@ import { toast } from "sonner";
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<any[]>([]);
+  const [allCategories, setAllCategories] = useState<any[]>([]);
   const [stats, setStats] = useState({ total: 0, active: 0, lowStock: 0, outOfStock: 0 });
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -19,7 +20,7 @@ export default function ProductsPage() {
   const fetchProducts = async () => {
     try {
       setLoading(true);
-      const res = await adminService.getAllProducts({ page, limit: 20, search });
+      const res = await adminService.getAllProductsUnlimited({ page, search });
       const raw = res?.data?.data || res?.data || [];
       const data = Array.isArray(raw) ? raw.map((p: any) => {
         const totalStock = p.totalStock ?? p.variants?.reduce((s: number, v: any) => s + (v.stock || 0), 0) ?? p.stock ?? p.variants?.[0]?.stock ?? 0;
@@ -32,6 +33,7 @@ export default function ProductsPage() {
           sku: p.sku ?? p.variants?.[0]?.sku ?? '',
           totalStock,
           stockStatus,
+          seller: typeof p.seller === "string" ? p.seller : p.seller?.businessName || "—",
         };
       }) : [];
       setProducts(data);
@@ -61,6 +63,20 @@ export default function ProductsPage() {
     fetchProducts();
     fetchStats();
   }, [page, search]);
+
+  const fetchAllCategories = async () => {
+    try {
+      const res = await adminService.getCategories();
+      const data = res?.data?.data || res?.data || [];
+      setAllCategories(Array.isArray(data) ? data : []);
+    } catch {
+      // silently fail
+    }
+  };
+
+  useEffect(() => {
+    fetchAllCategories();
+  }, []);
 
   const handleDelete = async (ids: string[]) => {
     try {
@@ -157,6 +173,7 @@ export default function ProductsPage() {
           products={products}
           onDelete={handleDelete}
           onStatusChange={handleStatusChange}
+          allCategories={allCategories}
         />
       )}
     </div>

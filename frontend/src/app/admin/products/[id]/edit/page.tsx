@@ -28,7 +28,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { slugify } from "@/lib/utils";
+import { slugify, cn } from "@/lib/utils";
 import { adminService } from "@/services/admin.service";
 import api from "@/services/api";
 import { toast } from "sonner";
@@ -46,6 +46,7 @@ interface Variant {
   sku: string;
   price: string;
   comparePrice: string;
+  discountPercent: string;
   stock: string;
   attributes: { key: string; value: string }[];
 }
@@ -74,6 +75,7 @@ export default function EditProductPage() {
     description: "",
     shortDescription: "",
     categoryId: "",
+    additionalCategoryIds: [] as string[],
     brandId: "",
     sku: "",
     barcode: "",
@@ -115,6 +117,7 @@ export default function EditProductPage() {
             slug: found.slug || "",
             description: found.description || "",
             shortDescription: found.shortDescription || "",
+            additionalCategoryIds: (found.productCategories || []).map((pc: any) => pc.categoryId || pc.category?.id).filter(Boolean),
             categoryId: found.categoryId || found.category?.id || "",
             brandId: found.brandId || found.brand?.id || "",
             sku: variant?.sku || found.sku || "",
@@ -130,17 +133,25 @@ export default function EditProductPage() {
           });
 
           setVariants(
-            (found.variants || []).map((v: any) => ({
-              name: v.name || "",
-              sku: v.sku || "",
-              price: v.price?.toString() || "",
-              comparePrice: v.compareAtPrice?.toString() || "",
-              stock: v.stock?.toString() || "",
-              attributes: v.attributes ? Object.entries(v.attributes).map(([key, value]) => ({
-                key,
-                value: value as string,
-              })) : [],
-            }))
+            (found.variants || []).map((v: any) => {
+              const price = Number(v.price) || 0;
+              const compare = Number(v.compareAtPrice) || 0;
+              const discountPct = price > 0 && compare > 0 && compare > price
+                ? Math.round(((compare - price) / compare) * 100).toString()
+                : "";
+              return {
+                name: v.name || "",
+                sku: v.sku || "",
+                price: v.price?.toString() || "",
+                comparePrice: v.compareAtPrice?.toString() || "",
+                discountPercent: discountPct,
+                stock: v.stock?.toString() || "",
+                attributes: v.attributes ? Object.entries(v.attributes).map(([key, value]) => ({
+                  key,
+                  value: value as string,
+                })) : [],
+              };
+            })
           );
 
           setSpecs(
@@ -197,7 +208,7 @@ export default function EditProductPage() {
   const addVariant = () => {
     setVariants((prev) => [
       ...prev,
-      { name: "", sku: "", price: "", comparePrice: "", stock: "", attributes: [] },
+      { name: "", sku: "", price: "", comparePrice: "", discountPercent: "", stock: "", attributes: [] },
     ]);
   };
 
@@ -304,6 +315,7 @@ export default function EditProductPage() {
         description: form.description || undefined,
         shortDescription: form.shortDescription || undefined,
         categoryId: form.categoryId || undefined,
+        additionalCategoryIds: form.additionalCategoryIds.length > 0 ? form.additionalCategoryIds : undefined,
         brandId: form.brandId || undefined,
         sku: form.sku || undefined,
         barcode: form.barcode || undefined,
@@ -446,6 +458,86 @@ export default function EditProductPage() {
               </Select>
             </div>
 
+            {/* Additional Categories (multi-select) */}
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-foreground">
+                Additional Categories & Subcategories
+                <span className="ml-1 text-xs font-normal text-muted-foreground">
+                  (product will also appear in these categories)
+                </span>
+              </label>
+              <div className="rounded-lg border bg-white p-3">
+                {form.additionalCategoryIds.length > 0 && (
+                  <div className="mb-2 flex flex-wrap gap-1.5">
+                    {form.additionalCategoryIds.map((id) => {
+                      const cat = categories.find((c: any) => (c._id || c.id) === id);
+                      if (!cat) return null;
+                      return (
+                        <Badge key={id} variant="secondary" className="gap-1 pr-1">
+                          {cat.name}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setForm((p) => ({
+                                ...p,
+                                additionalCategoryIds: p.additionalCategoryIds.filter((x) => x !== id),
+                              }));
+                            }}
+                            className="ml-1 rounded hover:bg-muted"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </Badge>
+                      );
+                    })}
+                  </div>
+                )}
+                <div className="grid max-h-48 grid-cols-1 gap-1.5 overflow-y-auto sm:grid-cols-2 md:grid-cols-3">
+                  {categories
+                    .filter((c: any) => (c._id || c.id) !== form.categoryId)
+                    .map((cat: any) => {
+                      const id = cat._id || cat.id;
+                      const isSelected = form.additionalCategoryIds.includes(id);
+                      const isParent = !cat.parentId;
+                      return (
+                        <label
+                          key={id}
+                          className={cn(
+                            "flex cursor-pointer items-center gap-2 rounded-md border px-2.5 py-1.5 text-sm transition-colors",
+                            isSelected
+                              ? "border-primary bg-primary/10 text-primary"
+                              : "hover:bg-muted"
+                          )}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={(e) => {
+                              setForm((p) => ({
+                                ...p,
+                                additionalCategoryIds: e.target.checked
+                                  ? [...p.additionalCategoryIds, id]
+                                  : p.additionalCategoryIds.filter((x) => x !== id),
+                              }));
+                            }}
+                            className="h-3.5 w-3.5 rounded border-gray-300"
+                          />
+                          <span className="flex-1 truncate">
+                            {isParent && <span className="font-medium">📁 </span>}
+                            {cat.name}
+                          </span>
+                        </label>
+                      );
+                    })}
+                </div>
+                {form.additionalCategoryIds.length === 0 && (
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    No additional categories selected. Tick the boxes above to add the product to more categories.
+                  </p>
+                )}
+              </div>
+            </div>
+
             <div className="grid gap-6 md:grid-cols-3">
               <Input
                 label="SKU"
@@ -557,13 +649,32 @@ export default function EditProductPage() {
                       placeholder="0.00"
                     />
                     <Input
+                      label="Discount %"
+                      type="number"
+                      min="0"
+                      max="90"
+                      value={variant.discountPercent}
+                      onChange={(e) => {
+                        const pct = e.target.value;
+                        updateVariant(index, "discountPercent", pct);
+                        if (pct && variant.price) {
+                          const price = Number(variant.price);
+                          const compare = Math.round(price / (1 - Number(pct) / 100));
+                          updateVariant(index, "comparePrice", compare.toString());
+                        } else if (!pct) {
+                          updateVariant(index, "comparePrice", "");
+                        }
+                      }}
+                      placeholder="e.g., 10"
+                    />
+                    <Input
                       label="Compare Price (₹)"
                       type="number"
                       value={variant.comparePrice}
                       onChange={(e) =>
                         updateVariant(index, "comparePrice", e.target.value)
                       }
-                      placeholder="0.00"
+                      placeholder="Auto-filled from discount"
                     />
                     <Input
                       label="Stock"

@@ -22,6 +22,7 @@ import {
   Loader2,
   LogOut,
   AlertCircle,
+  Trash2,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -297,6 +298,13 @@ export default function AccountPage() {
                   ))}
                 </nav>
                 <Separator className="my-4" />
+                <Link
+                  href="/delete-my-account"
+                  className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Delete Account
+                </Link>
                 <button
                   onClick={handleLogout}
                   className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
@@ -412,14 +420,26 @@ export default function AccountPage() {
                         <h3 className="text-sm font-semibold text-foreground">Signed in as {displayName}</h3>
                         <p className="text-xs text-muted-foreground">{displayEmail}</p>
                       </div>
-                      <Button
-                        variant="outline"
-                        onClick={handleLogout}
-                        className="gap-2 text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 sm:w-auto w-full"
-                      >
-                        <LogOut className="h-4 w-4" />
-                        Sign out
-                      </Button>
+                      <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+                        <Button
+                          variant="outline"
+                          asChild
+                          className="gap-2 text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700"
+                        >
+                          <Link href="/delete-my-account">
+                            <Trash2 className="h-4 w-4" />
+                            Delete Account
+                          </Link>
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={handleLogout}
+                          className="gap-2 text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700"
+                        >
+                          <LogOut className="h-4 w-4" />
+                          Sign out
+                        </Button>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>

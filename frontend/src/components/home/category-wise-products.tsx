@@ -107,13 +107,16 @@ function CategorySection({ category }: { category: CategoryWithProducts }) {
   if (category.products.length === 0) return null;
 
   const sortedProducts = [...category.products].sort((a, b) => {
-    const aStock = a.stock ?? a.totalStock ?? a.variants?.reduce((s: number, v: any) => s + (v.stock || 0), 0) ?? 0;
-    const bStock = b.stock ?? b.totalStock ?? b.variants?.reduce((s: number, v: any) => s + (v.stock || 0), 0) ?? 0;
+    const aStock = Number(a.totalStock ?? a.stock ?? (a.variants || []).reduce((s: number, v: any) => s + (Number(v.stock) || 0), 0) ?? 0);
+    const bStock = Number(b.totalStock ?? b.stock ?? (b.variants || []).reduce((s: number, v: any) => s + (Number(v.stock) || 0), 0) ?? 0);
     const aInStock = aStock > 0;
     const bInStock = bStock > 0;
     if (aInStock && !bInStock) return -1;
     if (!aInStock && bInStock) return 1;
-    return 0;
+    if (aInStock && bInStock && aStock !== bStock) return bStock - aStock;
+    const aDate = new Date(a.createdAt || 0).getTime();
+    const bDate = new Date(b.createdAt || 0).getTime();
+    return bDate - aDate;
   });
 
   return (
@@ -183,7 +186,7 @@ export function CategoryWiseProducts() {
         function flatten(cats: Category[]) {
           for (const cat of cats) {
             if (!cat.isComingSoon) {
-              flatCategories.push(cat);
+              flatCategories.push({ ...cat, children: [] });
             }
             if (cat.children && cat.children.length > 0) {
               flatten(cat.children);
@@ -193,18 +196,28 @@ export function CategoryWiseProducts() {
 
         flatten(catData);
 
-        const categoriesWithProducts = await Promise.all(
-          flatCategories.slice(0, 8).map(async (cat) => {
-            try {
-              const prodRes = await api.get(`/products?category=${cat.slug}&limit=10`);
-              const prodData = prodRes?.data?.data;
-              const products = (prodData?.items || prodData || []).map(mapBackendProduct);
-              return { ...cat, products };
-            } catch {
-              return { ...cat, products: [] };
-            }
-          })
-        );
+        const BATCH_SIZE = 3;
+        const categoriesWithProducts: CategoryWithProducts[] = [];
+
+        for (let i = 0; i < flatCategories.length; i += BATCH_SIZE) {
+          const batch = flatCategories.slice(i, i + BATCH_SIZE);
+          const results = await Promise.all(
+            batch.map(async (cat) => {
+              try {
+                const prodRes = await api.get(`/products?category=${cat.slug}&limit=8`);
+                const prodData = prodRes?.data?.data;
+                const products = (prodData?.items || prodData || []).map(mapBackendProduct);
+                return { ...cat, products };
+              } catch {
+                return { ...cat, products: [] };
+              }
+            })
+          );
+          categoriesWithProducts.push(...results);
+          if (i + BATCH_SIZE < flatCategories.length) {
+            await new Promise((r) => setTimeout(r, 200));
+          }
+        }
 
         setCategories(categoriesWithProducts.filter(c => c.products.length > 0));
       } catch (err) {

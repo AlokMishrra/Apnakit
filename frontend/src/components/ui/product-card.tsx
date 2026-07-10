@@ -74,15 +74,15 @@ function ProductCard({
           )}
         </Link>
 
-        <div className="flex flex-1 flex-col gap-1.5 p-3">
+        <div className="flex flex-1 flex-col gap-1 p-2.5">
           {product.brand && (
-            <span className="text-[10px] text-muted-foreground uppercase tracking-wider">
+            <span className="text-[10px] text-muted-foreground uppercase tracking-wider truncate">
               {product.brand.name}
             </span>
           )}
           <Link
             href={`/product/${product.slug || product._id}`}
-            className="line-clamp-2 text-xs font-medium text-foreground hover:text-primary transition-colors"
+            className="line-clamp-3 text-[11px] font-medium leading-tight text-foreground hover:text-primary transition-colors"
           >
             {product.name}
           </Link>
@@ -117,8 +117,8 @@ function ProductCard({
           }}
         />
         {discount > 0 && (
-          <Badge variant="destructive" className="absolute left-2 top-2 z-10">
-            -{discount}%
+          <Badge variant="destructive" className="absolute left-0 top-0 z-10 rounded-none rounded-br-lg px-2 py-1 text-[10px] font-bold text-white">
+            {discount}% OFF
           </Badge>
         )}
         {product.isDeal && (

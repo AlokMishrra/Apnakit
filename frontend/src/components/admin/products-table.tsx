@@ -60,6 +60,7 @@ interface ProductsTableProps {
   onDelete?: (ids: string[]) => void;
   onStatusChange?: (ids: string[], active: boolean) => void;
   loading?: boolean;
+  allCategories?: any[];
 }
 
 type SortField = "name" | "price" | "stock" | "createdAt";
@@ -70,6 +71,7 @@ export function ProductsTable({
   onDelete,
   onStatusChange,
   loading = false,
+  allCategories = [],
 }: ProductsTableProps) {
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
@@ -84,12 +86,25 @@ export function ProductsTable({
   const itemsPerPage = 8;
 
   const categories = useMemo(() => {
+    if (allCategories.length > 0) {
+      const collectNames = (cats: any[]): string[] => {
+        const names: string[] = [];
+        cats.forEach((c: any) => {
+          if (c.name) names.push(c.name);
+          if (c.children && c.children.length > 0) {
+            names.push(...collectNames(c.children));
+          }
+        });
+        return names;
+      };
+      return collectNames(allCategories);
+    }
     const cats = new Set<string>();
     products.forEach((p) => {
       if (p.category?.name) cats.add(p.category.name);
     });
     return Array.from(cats);
-  }, [products]);
+  }, [products, allCategories]);
 
   const filteredProducts = useMemo(() => {
     let result = [...products];
@@ -104,7 +119,10 @@ export function ProductsTable({
     }
 
     if (categoryFilter !== "all") {
-      result = result.filter((p) => p.category?.name === categoryFilter);
+      result = result.filter((p) => {
+        if (p.category?.name === categoryFilter) return true;
+        return (p.productCategories || []).some((pc: any) => pc.category?.name === categoryFilter);
+      });
     }
 
     if (statusFilter !== "all") {
@@ -157,6 +175,11 @@ export function ProductsTable({
     setSelectedIds((prev) =>
       prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
     );
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const handleSort = (field: SortField) => {
@@ -473,7 +496,25 @@ export function ProductsTable({
                         </span>
                       </td>
                       <td className="px-4 py-3">
-                        <span className="text-sm">{product.category?.name || "—"}</span>
+                        <div className="flex max-w-[200px] flex-wrap gap-1">
+                          {product.category?.name && (
+                            <Badge variant="default" className="text-[10px]">
+                              {product.category.name}
+                            </Badge>
+                          )}
+                          {(product.productCategories || []).map((pc: any) => {
+                            const cat = pc.category;
+                            if (!cat) return null;
+                            return (
+                              <Badge key={pc.id || cat.id} variant="secondary" className="text-[10px]">
+                                {cat.name}
+                              </Badge>
+                            );
+                          })}
+                          {!product.category?.name && (!product.productCategories || product.productCategories.length === 0) && (
+                            <span className="text-sm text-muted-foreground">—</span>
+                          )}
+                        </div>
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex flex-col">
@@ -502,7 +543,9 @@ export function ProductsTable({
                       </td>
                       <td className="px-4 py-3">
                         <span className="text-sm text-muted-foreground line-clamp-1 max-w-[120px]">
-                          {product.seller}
+                          {typeof product.seller === "string"
+                            ? product.seller
+                            : product.seller?.businessName || "—"}
                         </span>
                       </td>
                       <td className="px-4 py-3">
@@ -555,7 +598,7 @@ export function ProductsTable({
                   variant="outline"
                   size="icon"
                   className="h-8 w-8"
-                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
                   disabled={currentPage === 1}
                 >
                   <ChevronLeft className="h-4 w-4" />
@@ -571,7 +614,7 @@ export function ProductsTable({
                       variant={currentPage === page ? "default" : "outline"}
                       size="icon"
                       className="h-8 w-8"
-                      onClick={() => setCurrentPage(page)}
+                      onClick={() => handlePageChange(page)}
                     >
                       {page}
                     </Button>
@@ -582,7 +625,7 @@ export function ProductsTable({
                   size="icon"
                   className="h-8 w-8"
                   onClick={() =>
-                    setCurrentPage((p) => Math.min(totalPages, p + 1))
+                    handlePageChange(Math.min(totalPages, currentPage + 1))
                   }
                   disabled={currentPage === totalPages}
                 >

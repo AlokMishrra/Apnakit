@@ -89,6 +89,66 @@ export class ProductsService {
     return { total, active, lowStock, outOfStock };
   }
 
+  async findAllForAdmin(query: FilterProductDto, userId: string, role: string) {
+    const where: Prisma.ProductWhereInput = {};
+    if (role === 'SELLER') {
+      where.sellerId = userId;
+    }
+
+    if (query.search) {
+      where.OR = [
+        { name: { contains: query.search, mode: 'insensitive' } },
+        { description: { contains: query.search, mode: 'insensitive' } },
+        { sku: { contains: query.search, mode: 'insensitive' } },
+      ];
+    }
+
+    if (query.category) {
+      where.OR = [
+        { category: { slug: query.category } },
+        { category: { parent: { slug: query.category } } },
+        { categoryId: query.category },
+      ];
+    }
+
+    if (query.brand) {
+      where.brand = {
+        OR: [
+          { id: query.brand },
+          { slug: query.brand },
+        ],
+      };
+    }
+
+    const products = await this.prisma.product.findMany({
+      where,
+      include: {
+        category: { select: { id: true, name: true, slug: true } },
+        brand: { select: { id: true, name: true, slug: true } },
+        seller: { select: { id: true, businessName: true } },
+        images: { where: { isPrimary: true }, take: 1 },
+        variants: { where: { isActive: true } },
+        productCategories: { include: { category: { select: { id: true, name: true, slug: true } } } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const enriched = products.map((p: any) => ({
+      ...p,
+      totalStock: (p.variants || []).reduce((s: number, v: any) => s + (v.stock || 0), 0),
+    }));
+
+    enriched.sort((a: any, b: any) => {
+      const aInStock = (a.totalStock ?? 0) > 0;
+      const bInStock = (b.totalStock ?? 0) > 0;
+      if (aInStock && !bInStock) return -1;
+      if (!aInStock && bInStock) return 1;
+      return 0;
+    });
+
+    return { data: enriched, total: enriched.length };
+  }
+
   async findAll(query: FilterProductDto): Promise<PaginatedResult<any>> {
     const { page, limit, skip } = getPaginationParams({
       page: query.page,
@@ -213,6 +273,14 @@ export class ProductsService {
           : null,
         totalStock: product.variants.reduce((sum, v) => sum + v.stock, 0),
       };
+    });
+
+    enriched.sort((a: any, b: any) => {
+      const aInStock = (a.totalStock ?? 0) > 0;
+      const bInStock = (b.totalStock ?? 0) > 0;
+      if (aInStock && !bInStock) return -1;
+      if (!aInStock && bInStock) return 1;
+      return 0;
     });
 
     return paginatedResponse(enriched, total, page, limit);
@@ -608,6 +676,11 @@ export class ProductsService {
             })),
           },
         }),
+        ...(dto.additionalCategoryIds && dto.additionalCategoryIds.length > 0 && {
+          productCategories: {
+            create: dto.additionalCategoryIds.map((categoryId) => ({ categoryId })),
+          },
+        }),
       },
       include: {
         brand: true,
@@ -616,6 +689,7 @@ export class ProductsService {
         images: true,
         specifications: true,
         faqs: true,
+        productCategories: { include: { category: true } },
       },
     });
 
@@ -668,8 +742,18 @@ export class ProductsService {
         images: true,
         specifications: true,
         faqs: true,
+        productCategories: { include: { category: true } },
       },
     });
+
+    if (dto.additionalCategoryIds !== undefined) {
+      await this.prisma.productCategory.deleteMany({ where: { productId: id } });
+      if (dto.additionalCategoryIds.length > 0) {
+        await this.prisma.productCategory.createMany({
+          data: dto.additionalCategoryIds.map((categoryId) => ({ productId: id, categoryId })),
+        });
+      }
+    }
 
     if (dto.variants && dto.variants.length > 0) {
       const existingVariants = await this.prisma.productVariant.findMany({

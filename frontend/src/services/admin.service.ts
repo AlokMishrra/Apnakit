@@ -51,6 +51,19 @@ export const adminService = {
     return response.data;
   },
 
+  getAllProductsUnlimited: async (params?: Record<string, any>): Promise<any> => {
+    const searchParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+          searchParams.append(key, String(value));
+        }
+      });
+    }
+    const response = await api.get(`/products/admin/all?${searchParams.toString()}`);
+    return response.data;
+  },
+
   createProduct: async (data: any): Promise<any> => {
     const response = await api.post('/products', data);
     return response.data;

@@ -100,6 +100,15 @@ export default function CategoryPage() {
   const [ratingFilter, setRatingFilter] = React.useState<number | null>(null);
   const [totalPages, setTotalPages] = React.useState(1);
   const itemsPerPage = 12;
+  const productsTopRef = React.useRef<HTMLDivElement>(null);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    if (productsTopRef.current) {
+      const top = productsTopRef.current.getBoundingClientRect().top + window.scrollY - 100;
+      window.scrollTo({ top, behavior: "smooth" });
+    }
+  };
 
   const fetchData = React.useCallback(async () => {
     if (!slug) return;
@@ -188,6 +197,15 @@ export default function CategoryPage() {
         );
         break;
     }
+    result.sort((a, b) => {
+      const aStock = a.countInStock ?? a.totalStock ?? (a.variants || []).reduce((s: number, v: any) => s + (v.stock || 0), 0) ?? 0;
+      const bStock = b.countInStock ?? b.totalStock ?? (b.variants || []).reduce((s: number, v: any) => s + (v.stock || 0), 0) ?? 0;
+      const aInStock = aStock > 0;
+      const bInStock = bStock > 0;
+      if (aInStock && !bInStock) return -1;
+      if (!aInStock && bInStock) return 1;
+      return 0;
+    });
     return result;
   }, [products, sortBy, ratingFilter, minPrice, maxPrice]);
 
@@ -200,7 +218,7 @@ export default function CategoryPage() {
     setRatingFilter(null);
     setMinPrice("0");
     setMaxPrice("60000");
-    setCurrentPage(1);
+    handlePageChange(1);
   };
 
   const FilterSidebar = ({ mobile = false }: { mobile?: boolean }) => (
@@ -224,7 +242,7 @@ export default function CategoryPage() {
             className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
           />
         </div>
-        <Button variant="outline" size="sm" className="w-full" onClick={() => setCurrentPage(1)}>
+        <Button variant="outline" size="sm" className="w-full" onClick={() => handlePageChange(1)}>
           Apply
         </Button>
       </div>
@@ -327,7 +345,7 @@ export default function CategoryPage() {
           <div className="flex gap-0">
             {/* Left Sidebar - Subcategories */}
             {subCategories.length > 0 && (
-              <div className="w-28 sm:w-36 lg:w-48 flex-shrink-0 border-r bg-white">
+              <div className="w-20 sm:w-24 lg:w-28 flex-shrink-0 border-r bg-white">
                 <div className="sticky top-0 h-[calc(100vh-80px)] overflow-y-auto">
                   <div className="p-2 sm:p-3">
                     <h2 className="mb-2 px-1 sm:px-2 text-[10px] sm:text-xs font-bold uppercase tracking-wider text-muted-foreground">
@@ -341,15 +359,15 @@ export default function CategoryPage() {
                           key={sub.id}
                           href={`/category/${sub.slug}`}
                           className={cn(
-                            "group flex items-center gap-2 sm:gap-3 rounded-lg px-1.5 sm:px-2 py-2 sm:py-2.5 transition-colors",
+                            "group flex flex-col items-center gap-1 rounded-md p-1 transition-colors",
                             isActive
-                              ? "bg-indigo-50 border-l-2 sm:border-l-3 border-indigo-600"
+                              ? "bg-indigo-50 border border-indigo-600"
                               : "hover:bg-gray-50"
                           )}
                         >
                           <div className={cn(
-                            "h-9 w-9 sm:h-12 sm:w-12 flex-shrink-0 overflow-hidden rounded-lg",
-                            isActive ? "ring-2 ring-indigo-600" : "bg-gray-100"
+                            "h-14 w-14 sm:h-16 sm:w-16 overflow-hidden rounded-lg",
+                            isActive ? "ring-1 ring-indigo-600" : "bg-gray-100"
                           )}>
                             {sub.image ? (
                               <img
@@ -361,13 +379,13 @@ export default function CategoryPage() {
                                 }}
                               />
                             ) : (
-                              <div className="flex h-full items-center justify-center text-sm sm:text-lg text-muted-foreground/40">
+                              <div className="flex h-full items-center justify-center text-sm text-muted-foreground/40">
                                 📂
                               </div>
                             )}
                           </div>
                           <span className={cn(
-                            "text-xs sm:text-sm font-medium line-clamp-2",
+                            "text-[9px] sm:text-[10px] font-medium text-center line-clamp-2 w-full leading-tight",
                             isActive
                               ? "text-indigo-700"
                               : "text-foreground group-hover:text-indigo-600"
@@ -455,7 +473,7 @@ export default function CategoryPage() {
               )}
 
               {/* Products Grid */}
-              <div className="p-4">
+              <div ref={productsTopRef} className="p-4">
                 {filteredProducts.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-16 text-center">
                     <PackageOpen className="mb-4 h-16 w-16 text-muted-foreground/50" />
@@ -543,6 +561,7 @@ export default function CategoryPage() {
                         createdAt: product.createdAt || "",
                         updatedAt: product.createdAt || "",
                       } as ProductType;
+                      const unit = product.variants?.[0]?.name || (totalStock > 0 ? `${product.variants?.[0]?.stock || 1} pcs` : "1 pc");
                       return (
                         <div
                           key={product.id}
@@ -554,7 +573,7 @@ export default function CategoryPage() {
                                 <img
                                   src={getImageUrl(typeof img === "string" ? img : img.url)}
                                   alt={product.name}
-                                  className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                                  className="h-full w-full object-contain p-2 transition-transform group-hover:scale-105"
                                   onError={(e) => {
                                     (e.target as HTMLImageElement).src = "/images/placeholder.svg";
                                   }}
@@ -565,34 +584,36 @@ export default function CategoryPage() {
                                 </div>
                               )}
                               {discount > 0 && (
-                                <Badge variant="destructive" className="absolute left-2 top-2 text-xs">
-                                  -{discount}%
+                                <Badge
+                                  variant="destructive"
+                                  className="absolute left-0 top-0 rounded-none rounded-br-lg px-2 py-1 text-[10px] font-bold text-white"
+                                >
+                                  {discount}% OFF
                                 </Badge>
                               )}
                             </div>
-                            <div className="mt-2 flex flex-col flex-1">
-                              <h3 className="text-xs sm:text-sm font-medium line-clamp-1 group-hover:text-indigo-600">
-                                {product.name}
-                              </h3>
-                              <div className="mt-1 flex items-baseline gap-1.5">
-                                <span className="text-sm sm:text-base font-bold text-gray-900">
-                                  ₹{Number(price).toLocaleString("en-IN")}
+                            <div className="mt-2 flex items-center gap-1 text-[10px] sm:text-xs font-semibold text-gray-700">
+                              <span className="inline-flex h-3.5 w-3.5 items-center justify-center rounded-full bg-amber-400 text-white text-[8px]">⚡</span>
+                              <span>18 MINS</span>
+                            </div>
+                            <h3 className="mt-1.5 text-xs sm:text-sm font-semibold text-gray-900 line-clamp-2 leading-snug group-hover:text-indigo-600">
+                              {product.name}
+                            </h3>
+                            <p className="mt-0.5 text-[10px] sm:text-xs text-gray-500">
+                              {unit}
+                            </p>
+                            <div className="mt-1.5 flex items-baseline gap-1.5">
+                              <span className="text-sm sm:text-base font-bold text-gray-900">
+                                ₹{Number(price).toLocaleString("en-IN")}
+                              </span>
+                              {discount > 0 && originalPrice ? (
+                                <span className="text-[10px] sm:text-xs text-muted-foreground line-through">
+                                  ₹{Number(originalPrice).toLocaleString("en-IN")}
                                 </span>
-                                {discount > 0 && originalPrice ? (
-                                  <span className="text-[10px] sm:text-xs text-muted-foreground line-through">
-                                    ₹{Number(originalPrice).toLocaleString("en-IN")}
-                                  </span>
-                                ) : null}
-                              </div>
-                              {rating > 0 && (
-                                <div className="mt-0.5 flex items-center gap-1">
-                                  <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
-                                  <span className="text-[10px] sm:text-xs text-muted-foreground">{rating}</span>
-                                </div>
-                              )}
+                              ) : null}
                             </div>
                           </Link>
-                          <div className="mt-auto pt-2">
+                          <div className="mt-2 pt-1">
                             <AddToCartButton product={productForCart} size="sm" label="ADD" />
                           </div>
                         </div>
@@ -605,7 +626,7 @@ export default function CategoryPage() {
                     <Pagination
                       currentPage={currentPage}
                       totalPages={totalPages}
-                      onPageChange={setCurrentPage}
+                      onPageChange={handlePageChange}
                     />
                   </div>
                 )}

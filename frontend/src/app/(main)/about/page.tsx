@@ -44,9 +44,8 @@ const values = [
 ];
 
 const stats = [
-  { label: "Happy Customers", value: "10M+" },
-  { label: "Products", value: "50L+" },
-  { label: "Sellers", value: "50K+" },
+  { label: "Happy Customers", value: "1K+" },
+  { label: "Products", value: "1K+" },
   { label: "Cities Served", value: "1000+" },
 ];
 
@@ -60,14 +59,14 @@ export default function AboutPage() {
         </h1>
         <p className="mx-auto max-w-3xl text-lg text-muted-foreground">
           We&apos;re on a mission to make online shopping accessible, affordable,
-          and enjoyable for every Indian. Founded in 2024, ApnaKit has grown
+          and enjoyable for every Indian. Founded in 2026, ApnaKit has grown
           from a small startup to one of India&apos;s most trusted ecommerce
           platforms.
         </p>
       </div>
 
       {/* Stats */}
-      <div className="mb-16 grid grid-cols-2 gap-6 md:grid-cols-4">
+      <div className="mb-16 grid grid-cols-1 gap-6 sm:grid-cols-3">
         {stats.map((stat) => (
           <div
             key={stat.label}

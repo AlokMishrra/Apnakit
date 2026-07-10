@@ -248,12 +248,27 @@ model Category {
 
   parent   Category?  @relation("CategoryTree", fields: [parentId], references: [id], onDelete: SetNull)
   children Category[] @relation("CategoryTree")
-  products Product[]
+  products Product[] @relation("ProductPrimaryCategory")
+  productCategories ProductCategory[]
 
   @@index([slug])
   @@index([parentId])
   @@index([isActive])
   @@index([sortOrder])
+}
+
+model ProductCategory {
+  id         String   @id @default(cuid())
+  productId  String
+  categoryId String
+  createdAt  DateTime @default(now())
+
+  product  Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, categoryId])
+  @@index([productId])
+  @@index([categoryId])
 }
 
 model Brand {
@@ -295,7 +310,7 @@ model Product {
   updatedAt       DateTime  @updatedAt
 
   brand          Brand?               @relation(fields: [brandId], references: [id], onDelete: SetNull)
-  category       Category?            @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  category       Category?            @relation("ProductPrimaryCategory", fields: [categoryId], references: [id], onDelete: SetNull)
   seller         Seller?              @relation(fields: [sellerId], references: [id], onDelete: SetNull)
   variants       ProductVariant[]
   images         ProductImage[]
@@ -309,6 +324,7 @@ model Product {
   analytics      ProductAnalytics?
   searchClicks   SearchQuery[]
   flashSales     FlashSale[]
+  productCategories ProductCategory[]
 
   @@index([slug])
   @@index([sku])

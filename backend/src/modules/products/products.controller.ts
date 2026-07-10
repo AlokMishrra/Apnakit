@@ -51,6 +51,16 @@ export class ProductsController {
     return this.productsService.getAdminStats(user.id, user.role);
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.SELLER)
+  @ApiBearerAuth()
+  @Get('admin/all')
+  @ApiOperation({ summary: 'Get all products without pagination (admin/seller)' })
+  @ApiResponse({ status: 200, description: 'All products' })
+  getAllForAdmin(@Query() query: FilterProductDto, @CurrentUser() user: CurrentUserData) {
+    return this.productsService.findAllForAdmin(query, user.id, user.role);
+  }
+
   @Public()
   @Get()
   @ApiOperation({ summary: 'List products with filtering, sorting, and pagination' })

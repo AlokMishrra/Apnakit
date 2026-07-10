@@ -142,6 +142,12 @@ export class CreateProductDto {
   @IsString()
   categoryId?: string;
 
+  @ApiPropertyOptional({ type: [String] })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  additionalCategoryIds?: string[];
+
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
