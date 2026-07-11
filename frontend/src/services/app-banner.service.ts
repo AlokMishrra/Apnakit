@@ -49,6 +49,10 @@ export interface AppBannerConfig {
   showDownloadSection: boolean;
   showGooglePlay: boolean;
   showAppStore: boolean;
+  popupEnabled: boolean;
+  popupFrequency: string;
+  popupTitle: string;
+  popupSubtitle: string | null;
   createdAt: string;
   updatedAt: string;
 }

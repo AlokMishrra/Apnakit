@@ -1176,6 +1176,10 @@ model AppBannerConfig {
   showDownloadSection Boolean  @default(true)
   showGooglePlay      Boolean  @default(true)
   showAppStore        Boolean  @default(true)
+  popupEnabled        Boolean  @default(false)
+  popupFrequency      String   @default("once_per_device")
+  popupTitle          String   @default("Get the ApnaKit App")
+  popupSubtitle       String?  @default("Shop faster, get exclusive deals & track orders in real-time")
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 }

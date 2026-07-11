@@ -108,4 +108,20 @@ export class UpdateAppBannerConfigDto {
   @IsOptional()
   @IsBoolean()
   showAppStore?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  popupEnabled?: boolean;
+
+  @IsOptional()
+  @IsString()
+  popupFrequency?: string;
+
+  @IsOptional()
+  @IsString()
+  popupTitle?: string;
+
+  @IsOptional()
+  @IsString()
+  popupSubtitle?: string;
 }

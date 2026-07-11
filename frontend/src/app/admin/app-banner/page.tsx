@@ -20,6 +20,9 @@ import {
   AlertCircle,
   Copy,
   Check,
+  Zap,
+  Shield,
+  ShoppingBag,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -113,6 +116,10 @@ export default function AdminAppBannerPage() {
         showDownloadSection: config.showDownloadSection,
         showGooglePlay: config.showGooglePlay,
         showAppStore: config.showAppStore,
+        popupEnabled: config.popupEnabled,
+        popupFrequency: config.popupFrequency,
+        popupTitle: config.popupTitle,
+        popupSubtitle: config.popupSubtitle,
       });
       setConfig(updated);
       try {
@@ -276,10 +283,11 @@ export default function AdminAppBannerPage() {
         {/* Left: editor */}
         <div className="space-y-6 lg:col-span-2">
           <Tabs defaultValue="content" className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
+              <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="content">Content</TabsTrigger>
               <TabsTrigger value="style">Style</TabsTrigger>
               <TabsTrigger value="downloads">Downloads</TabsTrigger>
+              <TabsTrigger value="popup">Popup</TabsTrigger>
               <TabsTrigger value="behavior">Behavior</TabsTrigger>
             </TabsList>
 
@@ -852,6 +860,143 @@ export default function AdminAppBannerPage() {
                   </div>
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            {/* Popup tab */}
+            <TabsContent value="popup" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Smartphone className="h-5 w-5 text-indigo-600" />
+                    Fullscreen Download Popup
+                  </CardTitle>
+                  <CardDescription>
+                    A premium fullscreen popup that appears when visitors open the site. Encourages them to download the app.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-5">
+                  <div className="flex items-center justify-between rounded-lg border border-indigo-200 bg-indigo-50/50 p-4">
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">Enable Popup</p>
+                      <p className="text-xs text-muted-foreground">
+                        Show the fullscreen popup to visitors
+                      </p>
+                    </div>
+                    <Switch
+                      checked={config.popupEnabled}
+                      onCheckedChange={(v) => setConfig({ ...config, popupEnabled: v })}
+                    />
+                  </div>
+
+                  {config.popupEnabled && (
+                    <>
+                      <div>
+                        <Label htmlFor="popup-frequency">Show Frequency</Label>
+                        <select
+                          id="popup-frequency"
+                          value={config.popupFrequency || "once_per_device"}
+                          onChange={(e) => setConfig({ ...config, popupFrequency: e.target.value })}
+                          className="mt-1.5 flex h-10 w-full rounded-lg border border-border bg-card px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        >
+                          <option value="every_visit">Every visit (shows on every page load)</option>
+                          <option value="once_per_day">Once per day (shows once every 24 hours)</option>
+                          <option value="once_per_device">Once per device (shows only for new visitors)</option>
+                        </select>
+                        <p className="mt-1.5 text-xs text-muted-foreground">
+                          {config.popupFrequency === "every_visit"
+                            ? "Popup will show every time the visitor opens the site."
+                            : config.popupFrequency === "once_per_day"
+                              ? "Popup will show once, then hide for 24 hours after dismissal."
+                              : "Popup will show once per device. Uses browser storage to remember."}
+                        </p>
+                      </div>
+
+                      <div>
+                        <Label htmlFor="popup-title">Popup Title</Label>
+                        <Input
+                          id="popup-title"
+                          value={config.popupTitle || ""}
+                          onChange={(e) => setConfig({ ...config, popupTitle: e.target.value })}
+                          placeholder="Get the ApnaKit App"
+                          className="mt-1.5"
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor="popup-subtitle">Popup Subtitle</Label>
+                        <Input
+                          id="popup-subtitle"
+                          value={config.popupSubtitle || ""}
+                          onChange={(e) => setConfig({ ...config, popupSubtitle: e.target.value })}
+                          placeholder="Shop faster, get exclusive deals & track orders in real-time"
+                          className="mt-1.5"
+                        />
+                      </div>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+
+              {config.popupEnabled && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Popup Preview</CardTitle>
+                    <CardDescription>How the popup looks to visitors.</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="overflow-hidden rounded-2xl border border-gray-200 bg-black/60 p-6">
+                      <div className="mx-auto max-w-[280px] overflow-hidden rounded-2xl bg-white shadow-xl">
+                        <div className="bg-gradient-to-br from-indigo-600 via-purple-600 to-indigo-700 px-4 pt-6 pb-14 text-center">
+                          <div
+                            className="mx-auto mb-3 flex h-14 w-14 items-center justify-center overflow-hidden rounded-xl border border-white/20"
+                            style={{
+                              backgroundColor: config.iconBgColor || "#FACC15",
+                              color: config.iconFgColor || "#7C3AED",
+                            }}
+                          >
+                            {config.iconImage ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img src={config.iconImage} alt="icon" className="h-full w-full object-cover" />
+                            ) : (
+                              <Sparkles className="h-7 w-7" />
+                            )}
+                          </div>
+                          <h3 className="text-base font-bold text-white">
+                            {config.popupTitle || "Get the ApnaKit App"}
+                          </h3>
+                          <p className="mt-1 text-[11px] text-white/70">
+                            {config.popupSubtitle || "Shop faster, get exclusive deals"}
+                          </p>
+                        </div>
+                        <div className="relative -mt-8 space-y-2 px-4 pb-4">
+                          <div className="flex h-10 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-xs font-bold text-white shadow-md">
+                            <Download className="h-3.5 w-3.5" />
+                            {config.buttonText || "Download App"}
+                          </div>
+                          <div className="flex h-9 items-center justify-center gap-1 rounded-xl border border-gray-200 bg-gray-50 text-[11px] font-medium text-gray-500">
+                            Continue on Website
+                            <ChevronRight className="h-3 w-3" />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-3 gap-2 border-t border-gray-100 px-4 py-3">
+                          {[
+                            { icon: Zap, label: "Fast Delivery", color: "text-amber-500 bg-amber-50" },
+                            { icon: Shield, label: "Secure Pay", color: "text-emerald-500 bg-emerald-50" },
+                            { icon: ShoppingBag, label: "Best Deals", color: "text-indigo-500 bg-indigo-50" },
+                          ].map(({ icon: I, label, color }) => (
+                            <div key={label} className="flex flex-col items-center gap-1">
+                              <div className={cn("flex h-6 w-6 items-center justify-center rounded-md", color)}>
+                                <I className="h-3 w-3" />
+                              </div>
+                              <span className="text-[9px] font-medium text-gray-500">{label}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
             </TabsContent>
 
             {/* Behavior tab */}
