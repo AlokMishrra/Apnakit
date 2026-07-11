@@ -4,6 +4,7 @@ export interface CurrentUserData {
   id: string;
   email: string;
   role: string;
+  sessionId?: string;
   iat?: number;
   exp?: number;
 }

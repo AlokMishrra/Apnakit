@@ -665,7 +665,7 @@ export class AuthService {
         hint = `The redirect URI "${callbackUrl}" is not registered in Google Cloud Console. Add it under APIs & Services > Credentials > OAuth 2.0 Client > Authorized redirect URIs.`;
       }
       throw new UnauthorizedException(
-        `Google rejected the authorization code (${tokenRes.status}). ${hint}`,
+        `Google rejected the authorization code (${tokenRes.status}). ${hint}\nGoogle response: ${text}\nRedirect URI used: ${callbackUrl}`,
       );
     }
     const tokenJson: any = await tokenRes.json();
@@ -872,6 +872,88 @@ export class AuthService {
     });
     this.logger.log(`Password changed for user: ${userId}`);
     return { message: 'Password updated successfully' };
+  }
+
+  async forgotPassword(email: string) {
+    const user = await this.prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      return { message: 'If an account exists with that email, a reset link has been sent.' };
+    }
+    if (!user.isActive) {
+      return { message: 'If an account exists with that email, a reset link has been sent.' };
+    }
+
+    const crypto = await import('crypto');
+    const token = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
+
+    await this.prisma.passwordReset.deleteMany({ where: { userId: user.id } });
+    await this.prisma.passwordReset.create({
+      data: { userId: user.id, token, expiresAt },
+    });
+
+    const frontendUrl = this.configService.get<string>('PUBLIC_FRONTEND_URL') || 'https://www.apnakit.in';
+    const resetUrl = `${frontendUrl}/reset-password?token=${token}`;
+
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="background: linear-gradient(135deg, #4f46e5, #7c3aed); border-radius: 12px; padding: 30px; text-align: center;">
+          <h1 style="color: white; margin: 0; font-size: 24px;">ApnaKit</h1>
+        </div>
+        <div style="padding: 30px; background: #f9fafb; border-radius: 0 0 12px 12px;">
+          <h2 style="color: #1f2937; margin-top: 0;">Reset Your Password</h2>
+          <p style="color: #4b5563; line-height: 1.6;">
+            Hi ${user.firstName}, we received a request to reset your password.
+          </p>
+          <p style="color: #4b5563; line-height: 1.6;">
+            Click the button below to set a new password. This link expires in 1 hour.
+          </p>
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${resetUrl}" style="background: #4f46e5; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; display: inline-block;">
+              Reset Password
+            </a>
+          </div>
+          <p style="color: #9ca3af; font-size: 13px;">
+            If you didn't request this, you can safely ignore this email.
+          </p>
+          <p style="color: #9ca3af; font-size: 13px;">
+            Or copy this link: <a href="${resetUrl}" style="color: #4f46e5;">${resetUrl}</a>
+          </p>
+        </div>
+      </div>
+    `;
+
+    try {
+      await this.emailService.sendEmail(user.email, 'Reset Your ApnaKit Password', html, `Reset your password using this link: ${resetUrl}`);
+    } catch (err) {
+      this.logger.error(`Failed to send reset email: ${err}`);
+    }
+
+    return { message: 'If an account exists with that email, a reset link has been sent.' };
+  }
+
+  async resetPassword(token: string, newPassword: string) {
+    if (!newPassword || newPassword.length < 8) {
+      throw new BadRequestException('Password must be at least 8 characters');
+    }
+
+    const resetRecord = await this.prisma.passwordReset.findUnique({ where: { token } });
+    if (!resetRecord || resetRecord.used || resetRecord.expiresAt < new Date()) {
+      throw new BadRequestException('Invalid or expired reset token');
+    }
+
+    const hashed = await bcrypt.hash(newPassword, 12);
+    await this.prisma.user.update({
+      where: { id: resetRecord.userId },
+      data: { password: hashed },
+    });
+    await this.prisma.passwordReset.update({
+      where: { id: resetRecord.id },
+      data: { used: true },
+    });
+
+    this.logger.log(`Password reset via token for user: ${resetRecord.userId}`);
+    return { message: 'Password reset successful. You can now log in with your new password.' };
   }
 
   /**

@@ -126,12 +126,9 @@ export class Msg91Service {
 
       const url = `${this.baseUrl}/sendhttp.php?${params.toString()}`;
       const response = await axios.get(url, { timeout: 15000 });
-      const data = typeof response.data === 'string' ? response.data : JSON.stringify(response.data);
+      const data: string = typeof response.data === 'string' ? response.data : JSON.stringify(response.data);
       this.logger.log(`MSG91 sms response: ${data}`);
-      if (
-        (typeof data === 'string' && data.toLowerCase().includes('success')) ||
-        (typeof data === 'object' && data.type === 'success')
-      ) {
+      if (data.toLowerCase().includes('success')) {
         return { success: true, message: 'SMS sent via MSG91' };
       }
       return { success: false, message: `MSG91: ${data}` };

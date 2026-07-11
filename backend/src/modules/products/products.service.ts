@@ -15,7 +15,7 @@ import {
   PaginatedResult,
 } from '../../common/helpers/pagination.helper';
 import { generateSlug } from '../../common/helpers/slug.helper';
-import { Prisma, ProductStatus } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { UploadService } from '../upload/upload.service';
 
 @Injectable()
@@ -108,6 +108,8 @@ export class ProductsService {
         { category: { slug: query.category } },
         { category: { parent: { slug: query.category } } },
         { categoryId: query.category },
+        { productCategories: { some: { category: { slug: query.category } } } },
+        { productCategories: { some: { category: { parent: { slug: query.category } } } } },
       ];
     }
 
@@ -173,6 +175,8 @@ export class ProductsService {
         { category: { slug: query.category } },
         { category: { parent: { slug: query.category } } },
         { categoryId: query.category },
+        { productCategories: { some: { category: { slug: query.category } } } },
+        { productCategories: { some: { category: { parent: { slug: query.category } } } } },
       ];
     }
 

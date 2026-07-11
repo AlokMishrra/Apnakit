@@ -245,7 +245,7 @@ export class PaymentsService {
         const refundRecord = await tx.refund.create({
           data: {
             paymentId: dto.paymentId,
-          amount: amount,
+            amount: dto.amount,
             reason: dto.reason,
             status: RefundStatus.PROCESSING,
             transactionId: refund.id,

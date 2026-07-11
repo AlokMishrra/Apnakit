@@ -62,6 +62,11 @@ function ProductCard({
               (e.target as HTMLImageElement).src = "/images/placeholder.svg";
             }}
           />
+          {discount > 0 && (
+            <span className="absolute left-0 top-0 z-10 rounded-br-lg bg-red-600 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-sm">
+              {discount}% OFF
+            </span>
+          )}
           {!inStock && (
             <div className="absolute inset-0 z-[5] flex items-center justify-center bg-black/30">
               <Badge

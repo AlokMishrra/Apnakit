@@ -54,6 +54,7 @@ function mapUser(user: any) {
 export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const dispatch = useDispatch();
   const [step, setStep] = React.useState<Step>("choose");
   const [showPassword, setShowPassword] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
@@ -134,7 +135,7 @@ export default function LoginPage() {
       } else {
         throw new Error("Invalid response from server");
       }
-    } catch (err) {
+    } catch (err: any) {
       const msg = getSafeErrorMessage(err, "Login failed. Please check your credentials.");
       if (msg.toLowerCase().includes("no account found") || msg.toLowerCase().includes("register first")) {
         toast.info("Account not found", { description: "Redirecting to register page..." });
@@ -323,6 +324,15 @@ export default function LoginPage() {
               <Button type="submit" className="w-full" size="lg" loading={loading}>
                 Sign In
               </Button>
+
+              <div className="text-center">
+                <Link
+                  href="/forgot-password"
+                  className="text-sm font-medium text-indigo-600 hover:text-indigo-500 hover:underline"
+                >
+                  Forgot Password?
+                </Link>
+              </div>
 
               {/* Small OTP option */}
               <p className="text-center text-sm text-muted-foreground">
