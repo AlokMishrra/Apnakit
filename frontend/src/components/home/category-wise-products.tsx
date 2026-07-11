@@ -183,18 +183,11 @@ export function CategoryWiseProducts() {
 
         const flatCategories: Category[] = [];
 
-        function flatten(cats: Category[]) {
-          for (const cat of cats) {
-            if (!cat.isComingSoon) {
-              flatCategories.push({ ...cat, children: [] });
-            }
-            if (cat.children && cat.children.length > 0) {
-              flatten(cat.children);
-            }
+        for (const cat of catData) {
+          if (!cat.isComingSoon) {
+            flatCategories.push({ ...cat, children: [] });
           }
         }
-
-        flatten(catData);
 
         const BATCH_SIZE = 3;
         const categoriesWithProducts: CategoryWithProducts[] = [];
