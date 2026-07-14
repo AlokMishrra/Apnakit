@@ -184,6 +184,7 @@ model User {
   assignedTickets     SupportTicket[]      @relation("TicketAssignee")
   ticketMessages      TicketMessage[]
   notifications       Notification[]
+  couponUsages        CouponUsage[]
   pageViews           PageView[]
   searchQueries       SearchQuery[]
   seller              Seller?
@@ -593,6 +594,7 @@ model Order {
   billingAddress    Address?           @relation("BillingAddress", fields: [billingAddressId], references: [id], onDelete: SetNull)
   review            Review?
   deliveryAssignment DeliveryAssignment?
+  couponUsages      CouponUsage[]
 
   @@index([userId])
   @@index([sellerId])
@@ -767,11 +769,28 @@ model Coupon {
   updatedAt           DateTime   @updatedAt
 
   carts Cart[]
+  usages CouponUsage[]
 
   @@index([code])
   @@index([isActive])
   @@index([startsAt])
   @@index([expiresAt])
+}
+
+model CouponUsage {
+  id        String   @id @default(cuid())
+  userId    String
+  couponId  String
+  orderId   String
+  createdAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  coupon Coupon @relation(fields: [couponId], references: [id], onDelete: Cascade)
+  order  Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, couponId])
+  @@index([userId])
+  @@index([couponId])
 }
 
 model Banner {

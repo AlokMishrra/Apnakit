@@ -29,8 +29,8 @@ export class CouponsController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Validate and apply coupon' })
-  validate(@Body() dto: ValidateCouponDto) {
-    return this.couponsService.validate(dto);
+  validate(@Body() dto: ValidateCouponDto, @CurrentUser() user: CurrentUserData) {
+    return this.couponsService.validate({ ...dto, userId: user.id });
   }
 
   @Get()

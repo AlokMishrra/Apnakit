@@ -46,20 +46,19 @@ export class CouponsService {
       throw new BadRequestException('Coupon usage limit reached');
     }
 
-    // TEMPORARILY DISABLED: CouponUsage model removed from schema
-    // if (dto.userId) {
-    //   const existingUsage = await this.prisma.couponUsage.findUnique({
-    //     where: {
-    //       couponId_userId: {
-    //         couponId: coupon.id,
-    //         userId: dto.userId,
-    //       },
-    //     },
-    //   });
-    //   if (existingUsage) {
-    //     throw new BadRequestException('You have already used this coupon');
-    //   }
-    // }
+    if (dto.userId) {
+      const existingUsage = await this.prisma.couponUsage.findUnique({
+        where: {
+          userId_couponId: {
+            couponId: coupon.id,
+            userId: dto.userId,
+          },
+        },
+      });
+      if (existingUsage) {
+        throw new BadRequestException('You have already used this coupon');
+      }
+    }
 
     if (coupon.minimumOrder && dto.cartTotal < Number(coupon.minimumOrder)) {
       throw new BadRequestException(

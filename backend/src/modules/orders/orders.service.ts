@@ -163,6 +163,14 @@ export class OrdersService {
           where: { id: cart.couponId },
           data: { usedCount: { increment: 1 } },
         });
+
+        await tx.couponUsage.create({
+          data: {
+            userId: userId,
+            couponId: cart.couponId,
+            orderId: newOrder.id,
+          },
+        });
       }
 
       await tx.orderStatusHistory.create({
