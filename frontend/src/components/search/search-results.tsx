@@ -5,7 +5,6 @@ import { useSearchParams, useRouter } from "next/navigation";
 import {
   Search,
   X,
-  TrendingUp,
   Clock,
   ArrowRight,
   PackageOpen,
@@ -19,16 +18,16 @@ import { ProductCard } from "@/components/ui/product-card";
 import api from "@/services/api";
 import type { Product } from "@/types";
 
-const POPULAR_SEARCHES = [
-  "Wireless Earbuds",
-  "Running Shoes",
-  "Laptop Stand",
-  "Coffee Maker",
-  "Yoga Mat",
-  "Winter Jacket",
-  "Bluetooth Speaker",
-  "Phone Case",
-];
+const RECENT_SEARCHES_KEY = "apnakit:recent-searches";
+
+function getRecentSearches(): string[] {
+  if (typeof window === "undefined") return [];
+  try {
+    return JSON.parse(localStorage.getItem(RECENT_SEARCHES_KEY) || "[]");
+  } catch {
+    return [];
+  }
+}
 
 interface SearchResultsProps {
   className?: string;
@@ -46,6 +45,11 @@ function SearchBar({ initialQuery }: { initialQuery: string }) {
     e.preventDefault();
     const q = value.trim();
     if (!q) return;
+    try {
+      const searches = getRecentSearches().filter((s) => s !== q);
+      searches.unshift(q);
+      localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(searches.slice(0, 8)));
+    } catch {}
     router.push(`/search?q=${encodeURIComponent(q)}`);
   };
 
@@ -96,6 +100,11 @@ function SearchResults({ className }: SearchResultsProps) {
   const [products, setProducts] = React.useState<Product[]>([]);
   const [loading, setLoading] = React.useState(false);
   const [total, setTotal] = React.useState(0);
+  const [recentSearches, setRecentSearches] = React.useState<string[]>([]);
+
+  React.useEffect(() => {
+    setRecentSearches(getRecentSearches());
+  }, []);
 
   React.useEffect(() => {
     if (!urlQuery) {
@@ -170,20 +179,23 @@ function SearchResults({ className }: SearchResultsProps) {
               <p className="mt-2 max-w-md text-sm text-muted-foreground">
                 We couldn&apos;t find any products matching &quot;{urlQuery}&quot;. Try a different keyword.
               </p>
-              <div className="mt-6">
-                <p className="mb-3 text-sm font-medium text-muted-foreground">Popular Searches</p>
-                <div className="flex flex-wrap justify-center gap-2">
-                  {POPULAR_SEARCHES.slice(0, 6).map((term) => (
-                    <a
-                      key={term}
-                      href={`/search?q=${encodeURIComponent(term)}`}
-                      className="rounded-full border px-4 py-2 text-sm transition-colors hover:bg-primary/10 hover:text-primary"
-                    >
-                      {term}
-                    </a>
-                  ))}
+              {recentSearches.length > 0 && (
+                <div className="mt-6">
+                  <p className="mb-3 text-sm font-medium text-muted-foreground">Recent Searches</p>
+                  <div className="flex flex-wrap justify-center gap-2">
+                    {recentSearches.slice(0, 6).map((term) => (
+                      <a
+                        key={term}
+                        href={`/search?q=${encodeURIComponent(term)}`}
+                        className="flex items-center gap-1.5 rounded-full border px-4 py-2 text-sm transition-colors hover:bg-primary/10 hover:text-primary"
+                      >
+                        <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                        {term}
+                      </a>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           )}
         </div>
@@ -194,22 +206,25 @@ function SearchResults({ className }: SearchResultsProps) {
           <p className="mt-2 max-w-md text-sm text-muted-foreground">
             Find the best deals on electronics, fashion, home essentials, and more.
           </p>
-          <div className="mt-6 w-full max-w-2xl">
-            <p className="mb-3 flex items-center justify-center gap-2 text-sm font-medium text-muted-foreground">
-              <TrendingUp className="h-4 w-4" /> Popular Searches
-            </p>
-            <div className="flex flex-wrap justify-center gap-2">
-              {POPULAR_SEARCHES.map((term) => (
-                <a
-                  key={term}
-                  href={`/search?q=${encodeURIComponent(term)}`}
-                  className="rounded-full border px-4 py-2 text-sm transition-colors hover:bg-primary/10 hover:text-primary"
-                >
-                  {term}
-                </a>
-              ))}
+          {recentSearches.length > 0 && (
+            <div className="mt-6 w-full max-w-2xl">
+              <p className="mb-3 flex items-center justify-center gap-2 text-sm font-medium text-muted-foreground">
+                <Clock className="h-4 w-4" /> Recent Searches
+              </p>
+              <div className="flex flex-wrap justify-center gap-2">
+                {recentSearches.map((term) => (
+                  <a
+                    key={term}
+                    href={`/search?q=${encodeURIComponent(term)}`}
+                    className="flex items-center gap-1.5 rounded-full border px-4 py-2 text-sm transition-colors hover:bg-primary/10 hover:text-primary"
+                  >
+                    <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                    {term}
+                  </a>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       )}
     </div>

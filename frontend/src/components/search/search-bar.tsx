@@ -2,12 +2,11 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { Search, X, TrendingUp, Loader2, Search as SearchIcon } from "lucide-react";
+import { Search, X, Clock, Loader2, Search as SearchIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { CATEGORIES } from "@/constants";
 import { productService } from "@/services/product.service";
 import { getImageUrl } from "@/lib/utils";
 
@@ -18,14 +17,32 @@ interface SearchBarProps {
   initialQuery?: string;
 }
 
-const POPULAR_SEARCHES = [
-  "Wireless Earbuds",
-  "Running Shoes",
-  "Laptop Stand",
-  "Coffee Maker",
-  "Yoga Mat",
-  "Winter Jacket",
-];
+const RECENT_SEARCHES_KEY = "apnakit:recent-searches";
+const MAX_RECENT = 8;
+
+function getRecentSearches(): string[] {
+  if (typeof window === "undefined") return [];
+  try {
+    return JSON.parse(localStorage.getItem(RECENT_SEARCHES_KEY) || "[]");
+  } catch {
+    return [];
+  }
+}
+
+function saveRecentSearch(query: string) {
+  try {
+    const searches = getRecentSearches().filter((s) => s !== query);
+    searches.unshift(query);
+    localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(searches.slice(0, MAX_RECENT)));
+  } catch {}
+}
+
+function removeRecentSearch(query: string) {
+  try {
+    const searches = getRecentSearches().filter((s) => s !== query);
+    localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(searches));
+  } catch {}
+}
 
 interface Suggestion {
   id: string;
@@ -109,6 +126,7 @@ function SearchBar({ compact = false, className, onSearch, initialQuery = "" }: 
 
   const handleSearch = (searchQuery: string) => {
     if (!searchQuery.trim()) return;
+    saveRecentSearch(searchQuery.trim());
     setIsOpen(false);
     if (onSearch) {
       onSearch(searchQuery.trim());
@@ -132,6 +150,7 @@ function SearchBar({ compact = false, className, onSearch, initialQuery = "" }: 
   const showEmptyState = query.trim().length === 0;
   const showResultsState = query.trim().length >= 2;
   const hasResults = productResults.length > 0 || categoryResults.length > 0;
+  const recentSearches = showEmptyState ? getRecentSearches() : [];
 
   return (
     <div ref={containerRef} className={cn("relative w-full", className)}>
@@ -189,53 +208,66 @@ function SearchBar({ compact = false, className, onSearch, initialQuery = "" }: 
           <ScrollArea className="max-h-[70vh]">
             {showEmptyState && (
               <>
-                {/* Popular Searches */}
-                <div className="px-5 pb-4 pt-5">
-                  <p className="mb-3 text-sm font-semibold text-foreground">
-                    Popular Searches
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {POPULAR_SEARCHES.map((term) => (
-                      <button
-                        key={term}
-                        type="button"
-                        onClick={() => handleSearch(term)}
-                        className="group flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-3.5 py-1.5 text-sm font-medium text-foreground transition-all hover:border-indigo-300 hover:bg-indigo-50/50 hover:text-indigo-700"
-                      >
-                        <TrendingUp className="h-3.5 w-3.5 text-muted-foreground transition-colors group-hover:text-indigo-600" />
-                        <span>{term}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
+                {recentSearches.length > 0 && (
+                  <>
+                    <div className="px-5 pb-4 pt-5">
+                      <div className="mb-3 flex items-center justify-between">
+                        <p className="text-sm font-semibold text-foreground">
+                          Recent Searches
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            localStorage.removeItem(RECENT_SEARCHES_KEY);
+                            setIsOpen(false);
+                          }}
+                          className="text-xs font-medium text-muted-foreground hover:text-foreground"
+                        >
+                          Clear all
+                        </button>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {recentSearches.map((term) => (
+                          <div
+                            key={term}
+                            className="group flex items-center gap-1.5 rounded-full border border-gray-200 bg-white"
+                          >
+                            <button
+                              type="button"
+                              onClick={() => handleSearch(term)}
+                              className="flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-medium text-foreground transition-all hover:text-indigo-700"
+                            >
+                              <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                              <span>{term}</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                removeRecentSearch(term);
+                                setIsOpen(false);
+                              }}
+                              className="mr-1 flex h-5 w-5 items-center justify-center rounded-full text-muted-foreground/50 transition-colors hover:bg-gray-100 hover:text-foreground"
+                              aria-label={`Remove ${term}`}
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="h-px bg-gray-100" />
+                  </>
+                )}
 
-                {/* Divider */}
-                <div className="h-px bg-gray-100" />
-
-                {/* Browse Categories */}
-                <div className="px-5 pb-5 pt-4">
-                  <p className="mb-2 text-sm font-semibold text-foreground">
-                    Browse Categories
-                  </p>
-                  <div className="grid grid-cols-2 gap-x-2">
-                    {CATEGORIES.map((cat) => (
-                      <button
-                        key={cat.slug}
-                        type="button"
-                        onClick={() => {
-                          router.push(`/category/${cat.slug}`);
-                          setIsOpen(false);
-                        }}
-                        className="group flex items-center justify-between rounded-md px-3 py-2.5 text-left text-sm font-medium text-foreground transition-colors hover:bg-gray-50 hover:text-indigo-700"
-                      >
-                        <span className="truncate">{cat.name}</span>
-                        <span className="text-base text-muted-foreground/40 transition-all group-hover:translate-x-0.5 group-hover:text-indigo-600">
-                          →
-                        </span>
-                      </button>
-                    ))}
+                {recentSearches.length === 0 && (
+                  <div className="px-5 py-8 text-center">
+                    <Search className="mx-auto mb-3 h-10 w-10 text-muted-foreground/30" />
+                    <p className="text-sm text-muted-foreground">
+                      Start typing to search products, brands & more
+                    </p>
                   </div>
-                </div>
+                )}
               </>
             )}
 
