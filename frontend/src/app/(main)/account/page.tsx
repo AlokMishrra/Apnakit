@@ -342,14 +342,29 @@ export default function AccountPage() {
                           <p className="text-sm text-muted-foreground">{displayPhone}</p>
                         )}
                       </div>
-                      <div
-                        className="flex-shrink-0 cursor-not-allowed rounded-lg bg-indigo-50 p-4 text-center opacity-70 sm:text-right"
-                        title="Wallet feature coming soon"
-                      >
-                        <p className="text-xs text-muted-foreground">Wallet</p>
-                        <p className="text-sm font-semibold text-indigo-600">
-                          Coming Soon
-                        </p>
+                      <div className="flex flex-col gap-2 sm:text-right">
+                        {(user?.role === "admin" || user?.role === "ADMIN" || user?.role === "delivery" || user?.role === "DELIVERY" || user?.role === "seller" || user?.role === "SELLER") ? (
+                          <Link
+                            href={
+                              (user?.role === "admin" || user?.role === "ADMIN") ? "/admin/dashboard" :
+                              (user?.role === "delivery" || user?.role === "DELIVERY") ? "/delivery/dashboard" :
+                              "/seller/dashboard"
+                            }
+                            className="flex-shrink-0 rounded-lg bg-indigo-600 px-4 py-2 text-center text-sm font-medium text-white hover:bg-indigo-700 transition-colors"
+                          >
+                            Go to {(user?.role === "admin" || user?.role === "ADMIN") ? "Admin" : (user?.role === "delivery" || user?.role === "DELIVERY") ? "Delivery" : "Seller"} Panel
+                          </Link>
+                        ) : (
+                          <div
+                            className="flex-shrink-0 cursor-not-allowed rounded-lg bg-indigo-50 p-4 text-center opacity-70"
+                            title="Wallet feature coming soon"
+                          >
+                            <p className="text-xs text-muted-foreground">Wallet</p>
+                            <p className="text-sm font-semibold text-indigo-600">
+                              Coming Soon
+                            </p>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </CardContent>
@@ -412,8 +427,24 @@ export default function AccountPage() {
                   ))}
                 </div>
 
-                {/* Delivery Panel Access - only for DELIVERY role */}
-                {user?.role === "DELIVERY" && (
+                {/* Portal Access - based on role */}
+                {(user?.role === "admin" || user?.role === "ADMIN") && (
+                  <Card className="mb-4 sm:mb-6 border-violet-200 bg-violet-50/50">
+                    <CardContent className="p-4">
+                      <Link href="/admin/dashboard" className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-violet-600 text-white">
+                          <Settings className="h-5 w-5" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm font-semibold text-foreground">Admin Panel</p>
+                          <p className="text-xs text-muted-foreground">Manage store, orders, products & more</p>
+                        </div>
+                        <ChevronRight className="h-5 w-5 text-violet-600" />
+                      </Link>
+                    </CardContent>
+                  </Card>
+                )}
+                {(user?.role === "delivery" || user?.role === "DELIVERY" || user?.role === "admin" || user?.role === "ADMIN") && (
                   <Card className="mb-4 sm:mb-6 border-indigo-200 bg-indigo-50/50">
                     <CardContent className="p-4">
                       <Link href="/delivery/dashboard" className="flex items-center gap-3">
@@ -422,9 +453,25 @@ export default function AccountPage() {
                         </div>
                         <div className="flex-1">
                           <p className="text-sm font-semibold text-foreground">Delivery Panel</p>
-                          <p className="text-xs text-muted-foreground">View your delivery assignments, earnings & routes</p>
+                          <p className="text-xs text-muted-foreground">View delivery assignments, earnings & routes</p>
                         </div>
                         <ChevronRight className="h-5 w-5 text-indigo-600" />
+                      </Link>
+                    </CardContent>
+                  </Card>
+                )}
+                {(user?.role === "seller" || user?.role === "SELLER") && (
+                  <Card className="mb-4 sm:mb-6 border-emerald-200 bg-emerald-50/50">
+                    <CardContent className="p-4">
+                      <Link href="/seller/dashboard" className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white">
+                          <ShoppingBag className="h-5 w-5" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm font-semibold text-foreground">Seller Panel</p>
+                          <p className="text-xs text-muted-foreground">Manage your products, orders & earnings</p>
+                        </div>
+                        <ChevronRight className="h-5 w-5 text-emerald-600" />
                       </Link>
                     </CardContent>
                   </Card>

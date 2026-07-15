@@ -31,7 +31,7 @@ export class RolesGuard implements CanActivate {
       throw new ForbiddenException('Access denied: No user context');
     }
 
-    const userRole = user.role as Role;
+    const userRole = (user.role as string)?.toUpperCase() as Role;
     const hasRole = requiredRoles.some((role) => userRole === role);
 
     if (!hasRole) {
