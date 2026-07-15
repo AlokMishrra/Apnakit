@@ -49,6 +49,11 @@ export class CreateCategoryDto {
   @IsBoolean()
   isComingSoon?: boolean;
 
+  @ApiPropertyOptional({ default: true })
+  @IsOptional()
+  @IsBoolean()
+  codEnabled?: boolean;
+
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()

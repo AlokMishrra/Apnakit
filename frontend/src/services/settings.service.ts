@@ -19,6 +19,10 @@ export interface StoreSettings {
   storePhone: string;
   storeDescription: string;
   currency: string;
+  storeOpen: boolean;
+  openTime: string;
+  closeTime: string;
+  storeOpenDays: string[];
 }
 
 export interface PaymentMethodSetting {
@@ -79,6 +83,11 @@ export const settingsService = {
 
   async updatePaymentSettings(payment: Partial<PaymentSettings>): Promise<PaymentSettings> {
     const res = await api.put("/settings/payment", payment);
+    return res.data.data;
+  },
+
+  async getStoreStatus() {
+    const res = await api.get("/settings/store-status");
     return res.data.data;
   },
 };

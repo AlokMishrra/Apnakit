@@ -243,6 +243,7 @@ model Category {
   isActive        Boolean   @default(true)
   sortOrder       Int       @default(0)
   isComingSoon    Boolean   @default(false)
+  codEnabled      Boolean   @default(true)
   metaTitle       String?
   metaDescription String?
   createdAt       DateTime  @default(now())

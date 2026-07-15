@@ -49,6 +49,7 @@ export default function NewCategoryPage() {
     metaTitle: "",
     metaDescription: "",
     isComingSoon: false,
+    codEnabled: true,
   });
 
   const [image, setImage] = useState<{ file: File | null; preview: string } | null>(null);
@@ -99,6 +100,7 @@ export default function NewCategoryPage() {
         metaTitle: form.metaTitle,
         metaDescription: form.metaDescription,
         isComingSoon: form.isComingSoon,
+        codEnabled: form.codEnabled,
         image: finalImageUrl,
       };
       await adminService.createCategory(payload);
@@ -195,6 +197,30 @@ export default function NewCategoryPage() {
                     className={cn(
                       "pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow-lg ring-0 transition-transform",
                       form.isComingSoon ? "translate-x-[22px]" : "translate-x-[2px]"
+                    )}
+                  />
+                </button>
+              </div>
+
+              <div className="flex items-center justify-between gap-4 rounded-lg border p-4">
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium">COD Enabled</p>
+                  <p className="text-xs text-muted-foreground">Allow Cash on Delivery for products in this category</p>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={form.codEnabled}
+                  onClick={() => setForm((p) => ({ ...p, codEnabled: !p.codEnabled }))}
+                  className={cn(
+                    "relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer items-center rounded-full transition-colors",
+                    form.codEnabled ? "bg-emerald-600" : "bg-gray-300"
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow-lg ring-0 transition-transform",
+                      form.codEnabled ? "translate-x-[22px]" : "translate-x-[2px]"
                     )}
                   />
                 </button>

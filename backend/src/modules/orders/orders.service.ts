@@ -43,6 +43,11 @@ export class OrdersService {
   };
 
   async create(userId: string, dto: CreateOrderDto) {
+    const storeStatus = await this.settingsService.getStoreStatus();
+    if (!storeStatus.isOpen) {
+      throw new BadRequestException('Store is currently closed. Please try again during business hours.');
+    }
+
     const cart = await this.prisma.cart.findFirst({
       where: { userId },
       include: {
@@ -709,5 +714,38 @@ export class OrdersService {
     this.logger.log(
       `Auto-assigned delivery partner ${bestPartner.id} to order ${orderId}`,
     );
+  }
+
+  async deleteOrder(id: string) {
+    const order = await this.prisma.order.findUnique({
+      where: { id },
+      include: {
+        deliveryAssignment: true,
+      },
+    });
+
+    if (!order) {
+      throw new NotFoundException('Order not found');
+    }
+
+    if (order.status === 'DELIVERED') {
+      throw new BadRequestException('Cannot delete a delivered order');
+    }
+
+    if (order.deliveryAssignment) {
+      await this.prisma.deliveryAssignment.delete({
+        where: { orderId: id },
+      });
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.orderStatusHistory.deleteMany({ where: { orderId: id } });
+      await tx.orderItem.deleteMany({ where: { orderId: id } });
+      await tx.couponUsage.deleteMany({ where: { orderId: id } });
+      await tx.order.delete({ where: { id } });
+    });
+
+    this.logger.log(`Order ${order.orderNumber || id} deleted by admin`);
+    return { success: true, message: 'Order deleted successfully' };
   }
 }

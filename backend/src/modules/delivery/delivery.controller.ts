@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Patch,
+  Delete,
   Post,
   Body,
   Param,
@@ -47,6 +48,38 @@ export class DeliveryController {
     @Query('search') search?: string,
   ) {
     return this.deliveryService.findAll({ page, limit, search });
+  }
+
+  @Get(':id')
+  @UseGuards(RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: 'Get delivery partner by ID (Admin)' })
+  findOne(@Param('id') id: string) {
+    return this.deliveryService.findOne(id);
+  }
+
+  @Patch(':id/suspend')
+  @UseGuards(RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: 'Suspend/unsuspend delivery partner (Admin)' })
+  suspend(@Param('id') id: string, @Body('suspended') suspended: boolean) {
+    return this.deliveryService.suspend(id, suspended);
+  }
+
+  @Patch(':id/password')
+  @UseGuards(RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: 'Reset delivery partner password (Admin)' })
+  resetPassword(@Param('id') id: string, @Body('password') password: string) {
+    return this.deliveryService.resetPassword(id, password);
+  }
+
+  @Delete(':id')
+  @UseGuards(RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: 'Delete delivery partner (Admin)' })
+  remove(@Param('id') id: string) {
+    return this.deliveryService.remove(id);
   }
 
   @Get('assignments')

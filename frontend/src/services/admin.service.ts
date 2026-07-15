@@ -464,6 +464,32 @@ export const adminService = {
     return response.data;
   },
 
+  getDeliveryPartner: async (id: string): Promise<any> => {
+    const response = await api.get(`/delivery/${id}`);
+    return response.data;
+  },
+
+  suspendDeliveryPartner: async (id: string, suspended: boolean): Promise<any> => {
+    const response = await api.patch(`/delivery/${id}/suspend`, { suspended });
+    return response.data;
+  },
+
+  resetDeliveryPartnerPassword: async (id: string, password: string): Promise<any> => {
+    const response = await api.patch(`/delivery/${id}/password`, { password });
+    return response.data;
+  },
+
+  deleteDeliveryPartner: async (id: string): Promise<any> => {
+    const response = await api.delete(`/delivery/${id}`);
+    return response.data;
+  },
+
+  // Orders (admin)
+  deleteOrder: async (id: string): Promise<any> => {
+    const response = await api.delete(`/orders/admin/${id}`);
+    return response.data;
+  },
+
   // Dashboard stats
   getDashboardStats: async (dateRange?: string): Promise<any> => {
     const params = dateRange ? `?dateRange=${encodeURIComponent(dateRange)}` : '';

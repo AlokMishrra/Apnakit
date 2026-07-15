@@ -82,6 +82,7 @@ const navItems: NavItem[] = [
     href: "/admin/delivery",
     icon: Truck,
     children: [
+      { label: "All Partners", href: "/admin/delivery/partners" },
       { label: "Add Delivery Person", href: "/admin/delivery/new" },
     ],
   },

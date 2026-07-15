@@ -9,6 +9,7 @@ import {
   Loader2,
   Save,
   Globe,
+  Clock,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -37,7 +38,7 @@ const PAYMENT_METHODS = [
 const DEFAULTS: AllSettings = {
   delivery: { deliveryCharge: 99, freeDeliveryThreshold: 999, enableFreeDelivery: true },
   tax: { gstRate: 18, gstEnabled: true, gstNumber: "", companyName: "ApnaKit" },
-  store: { storeName: "ApnaKit", storeEmail: "support@apnakit.in", storePhone: "+91 1800-123-4567", storeDescription: "Your trusted online shopping destination.", currency: "INR" },
+  store: { storeName: "ApnaKit", storeEmail: "support@apnakit.in", storePhone: "+91 1800-123-4567", storeDescription: "Your trusted online shopping destination.", currency: "INR", storeOpen: true, openTime: "09:00", closeTime: "22:00", storeOpenDays: ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"] },
   payment: {
     cod: { enabled: true },
     razorpay: { enabled: true },
@@ -217,6 +218,95 @@ export default function SettingsPage() {
                       className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                     />
                   </div>
+
+                  <div className="rounded-lg border p-4 space-y-4">
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-4 w-4 text-muted-foreground" />
+                      <p className="text-sm font-medium">Store Timing</p>
+                    </div>
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium">Store Open</p>
+                        <p className="text-xs text-muted-foreground">Toggle to open/close your store. When closed, customers cannot place orders.</p>
+                      </div>
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-checked={settings.store.storeOpen}
+                        onClick={() =>
+                          setSettings((prev) => ({
+                            ...prev,
+                            store: { ...prev.store, storeOpen: !prev.store.storeOpen },
+                          }))
+                        }
+                        className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer items-center rounded-full transition-colors ${
+                          settings.store.storeOpen ? "bg-emerald-600" : "bg-gray-300"
+                        }`}
+                      >
+                        <span
+                          className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow-lg ring-0 transition-transform ${
+                            settings.store.storeOpen ? "translate-x-[22px]" : "translate-x-[2px]"
+                          }`}
+                        />
+                      </button>
+                    </div>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <Input
+                        label="Opening Time"
+                        type="time"
+                        value={settings.store.openTime}
+                        onChange={(e) =>
+                          setSettings((prev) => ({
+                            ...prev,
+                            store: { ...prev.store, openTime: e.target.value },
+                          }))
+                        }
+                      />
+                      <Input
+                        label="Closing Time"
+                        type="time"
+                        value={settings.store.closeTime}
+                        onChange={(e) =>
+                          setSettings((prev) => ({
+                            ...prev,
+                            store: { ...prev.store, closeTime: e.target.value },
+                          }))
+                        }
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Open Days</label>
+                      <div className="flex flex-wrap gap-2">
+                        {["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"].map((day) => {
+                          const isSelected = settings.store.storeOpenDays?.includes(day);
+                          return (
+                            <button
+                              key={day}
+                              type="button"
+                              onClick={() => {
+                                const current = settings.store.storeOpenDays || [];
+                                const updated = isSelected
+                                  ? current.filter((d) => d !== day)
+                                  : [...current, day];
+                                setSettings((prev) => ({
+                                  ...prev,
+                                  store: { ...prev.store, storeOpenDays: updated },
+                                }));
+                              }}
+                              className={`px-3 py-1.5 text-xs font-medium rounded-full border transition-colors ${
+                                isSelected
+                                  ? "bg-indigo-600 text-white border-indigo-600"
+                                  : "bg-white text-muted-foreground border-gray-200 hover:border-gray-300"
+                              }`}
+                            >
+                              {day.charAt(0).toUpperCase() + day.slice(1, 3)}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+
                   <div className="flex justify-end">
                     <Button onClick={handleSaveStore} disabled={saving}>
                       {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}

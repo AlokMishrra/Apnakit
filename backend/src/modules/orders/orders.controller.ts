@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Patch,
+  Delete,
   Body,
   Param,
   Query,
@@ -106,5 +107,13 @@ export class OrdersController {
     @Body() dto: RequestReturnDto,
   ) {
     return this.ordersService.requestReturn(id, user.id, dto);
+  }
+
+  @Delete('admin/:id')
+  @UseGuards(RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: 'Delete order (Admin)' })
+  deleteOrder(@Param('id') id: string) {
+    return this.ordersService.deleteOrder(id);
   }
 }

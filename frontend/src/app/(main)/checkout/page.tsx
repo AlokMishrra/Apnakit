@@ -25,6 +25,7 @@ import {
   Loader2,
   ExternalLink,
   Tag,
+  Store,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -41,6 +42,8 @@ import { paymentService } from "@/services/payment.service";
 import { useSettings } from "@/hooks/use-settings";
 import { loadRazorpayScript } from "@/lib/razorpay";
 import { toast } from "sonner";
+
+import { settingsService } from "@/services/settings.service";
 
 const steps = [
   { id: 1, label: "Address", icon: MapPin },
@@ -60,6 +63,7 @@ export default function CheckoutPage() {
   const [showNewAddress, setShowNewAddress] = useState(false);
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
   const [savingAddress, setSavingAddress] = useState(false);
+  const [storeOpen, setStoreOpen] = useState(true);
   // Form key to reset the AddressForm when reopened
   const [newAddressKey, setNewAddressKey] = useState(0);
 
@@ -69,11 +73,15 @@ export default function CheckoutPage() {
     (async () => {
       try {
         setLoading(true);
-        const [cartRes, addrRes] = await Promise.all([
+        const [cartRes, addrRes, storeRes] = await Promise.all([
           cartService.getCart(),
           userService.getAddresses().catch(() => null),
+          settingsService.getStoreStatus().catch(() => null),
         ]);
         if (!mounted) return;
+        if (storeRes && !storeRes.isOpen) {
+          setStoreOpen(false);
+        }
         const cartData =
           (cartRes as any)?.data?.data ||
           (cartRes as any)?.data ||
@@ -132,6 +140,15 @@ export default function CheckoutPage() {
 
   // Computed values
   const cartItems = useMemo(() => cart?.items || [], [cart]);
+  const isCodAllowedForCart = useMemo(() => {
+    return cartItems.every((item: any) => {
+      const product = item.product || item;
+      if (product.codEnabled === false) return false;
+      const cat = product.category;
+      if (cat && cat.codEnabled === false) return false;
+      return true;
+    });
+  }, [cartItems]);
   const subtotal = useMemo(
     () => cartItems.reduce((sum: number, item: any) => sum + (item.price || 0) * (item.quantity || 1), 0),
     [cartItems]
@@ -155,7 +172,7 @@ export default function CheckoutPage() {
   const totalAmount = subtotal + shippingCharge + taxAmount - couponDiscount;
 
   const paymentMethods = [
-    { id: "COD", label: "Cash on Delivery", icon: Banknote, description: "Pay when you receive", available: settings?.payment?.cod?.enabled ?? true },
+    { id: "COD", label: "Cash on Delivery", icon: Banknote, description: "Pay when you receive", available: (settings?.payment?.cod?.enabled ?? true) && isCodAllowedForCart },
     { id: "RAZORPAY", label: "Razorpay", icon: CreditCard, description: "Credit/Debit Card, UPI, Net Banking", available: settings?.payment?.razorpay?.enabled ?? true },
     { id: "UPI", label: "UPI", icon: Smartphone, description: "Google Pay, PhonePe, Paytm", available: settings?.payment?.upi?.enabled ?? false },
     { id: "CARD", label: "Credit/Debit Card", icon: CreditCard, description: "Visa, Mastercard, RuPay", available: settings?.payment?.card?.enabled ?? false },
@@ -250,6 +267,18 @@ export default function CheckoutPage() {
       toast.error("Your cart is empty");
       router.push("/cart");
       return;
+    }
+    try {
+      const status = await settingsService.getStoreStatus();
+      if (!status.isOpen) {
+        setStoreOpen(false);
+        toast.error("Store is currently closed", {
+          description: "Please try again during business hours.",
+        });
+        return;
+      }
+    } catch {
+      // proceed if check fails — backend will block anyway
     }
 
     if (selectedPayment === "RAZORPAY") {
@@ -409,6 +438,27 @@ export default function CheckoutPage() {
               <Package className="mx-auto mb-4 h-16 w-16 text-muted-foreground/50" />
               <h2 className="text-xl font-semibold text-foreground">Your cart is empty</h2>
               <p className="mt-2 text-sm text-muted-foreground">Add items to cart before checkout</p>
+              <Link href="/">
+                <Button className="mt-6 bg-indigo-600 hover:bg-indigo-700">Continue Shopping</Button>
+              </Link>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  if (!storeOpen) {
+    return (
+      <div className="min-h-[60vh]">
+        <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+          <Card>
+            <CardContent className="py-16 text-center">
+              <Store className="mx-auto mb-4 h-16 w-16 text-red-400" />
+              <h2 className="text-xl font-semibold text-foreground">Store is Currently Closed</h2>
+              <p className="mt-2 text-sm text-muted-foreground">
+                We&apos;re not taking orders right now. Please try again during our business hours.
+              </p>
               <Link href="/">
                 <Button className="mt-6 bg-indigo-600 hover:bg-indigo-700">Continue Shopping</Button>
               </Link>
@@ -600,6 +650,13 @@ export default function CheckoutPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
+                  {!isCodAllowedForCart && (
+                    <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+                      <p className="text-xs font-medium text-amber-800">
+                        Cash on Delivery is not available for some items in your cart (category restriction)
+                      </p>
+                    </div>
+                  )}
                   {paymentMethods.map((method) => (
                     <div
                       key={method.id}
@@ -628,7 +685,7 @@ export default function CheckoutPage() {
                             <p className="text-sm font-medium text-foreground">{method.label}</p>
                             {!method.available && (
                               <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-700">
-                                Coming Soon
+                                {method.id === "COD" && !isCodAllowedForCart ? "Not Available" : "Coming Soon"}
                               </span>
                             )}
                           </div>

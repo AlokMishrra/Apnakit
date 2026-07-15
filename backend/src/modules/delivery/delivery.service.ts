@@ -136,6 +136,111 @@ export class DeliveryService {
     return paginatedResponse(partners, total, page, limit);
   }
 
+  async findOne(id: string) {
+    const partner = await this.prisma.deliveryPartner.findUnique({
+      where: { id },
+      include: {
+        user: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            phone: true,
+            isActive: true,
+            isVerified: true,
+            createdAt: true,
+          },
+        },
+      },
+    });
+
+    if (!partner) {
+      throw new NotFoundException('Delivery partner not found');
+    }
+
+    return partner;
+  }
+
+  async suspend(id: string, suspended: boolean) {
+    const partner = await this.prisma.deliveryPartner.findUnique({
+      where: { id },
+      include: { user: true },
+    });
+
+    if (!partner) {
+      throw new NotFoundException('Delivery partner not found');
+    }
+
+    await this.prisma.$transaction([
+      this.prisma.deliveryPartner.update({
+        where: { id },
+        data: { isAvailable: !suspended },
+      }),
+      this.prisma.user.update({
+        where: { id: partner.userId },
+        data: { isActive: !suspended },
+      }),
+    ]);
+
+    this.logger.log(`Delivery partner ${id} ${suspended ? 'suspended' : 'unsuspended'}`);
+    return { success: true, message: `Partner ${suspended ? 'suspended' : 'activated'} successfully` };
+  }
+
+  async resetPassword(id: string, newPassword: string) {
+    if (!newPassword || newPassword.length < 6) {
+      throw new BadRequestException('Password must be at least 6 characters');
+    }
+
+    const partner = await this.prisma.deliveryPartner.findUnique({
+      where: { id },
+      include: { user: true },
+    });
+
+    if (!partner) {
+      throw new NotFoundException('Delivery partner not found');
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 12);
+    await this.prisma.user.update({
+      where: { id: partner.userId },
+      data: { password: hashedPassword },
+    });
+
+    this.logger.log(`Password reset for delivery partner ${id}`);
+    return { success: true, message: 'Password updated successfully' };
+  }
+
+  async remove(id: string) {
+    const partner = await this.prisma.deliveryPartner.findUnique({
+      where: { id },
+      include: {
+        assignments: {
+          where: {
+            status: { in: ['ASSIGNED', 'PICKED_UP', 'IN_TRANSIT'] as any[] },
+          },
+        },
+      },
+    });
+
+    if (!partner) {
+      throw new NotFoundException('Delivery partner not found');
+    }
+
+    if (partner.assignments.length > 0) {
+      throw new BadRequestException('Cannot delete partner with active assignments. Complete or reassign deliveries first.');
+    }
+
+    await this.prisma.$transaction([
+      this.prisma.deliveryAssignment.deleteMany({ where: { deliveryPartnerId: id } }),
+      this.prisma.deliveryPartner.delete({ where: { id } }),
+      this.prisma.user.delete({ where: { id: partner.userId } }),
+    ]);
+
+    this.logger.log(`Delivery partner ${id} deleted`);
+    return { success: true, message: 'Partner deleted successfully' };
+  }
+
   async resolvePartnerId(userId: string): Promise<string> {
     let partner = await this.prisma.deliveryPartner.findUnique({
       where: { userId },

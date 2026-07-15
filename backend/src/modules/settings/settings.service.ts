@@ -20,6 +20,10 @@ export interface StoreSettings {
   storePhone: string;
   storeDescription: string;
   currency: string;
+  storeOpen: boolean;
+  openTime: string;
+  closeTime: string;
+  storeOpenDays: string[];
 }
 
 export interface PaymentMethodSetting {
@@ -60,6 +64,10 @@ const DEFAULTS: AllSettings = {
     storePhone: '+91 1800-123-4567',
     storeDescription: 'ApnaKit - Your trusted online shopping destination.',
     currency: 'INR',
+    storeOpen: true,
+    openTime: '09:00',
+    closeTime: '22:00',
+    storeOpenDays: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'],
   },
   payment: {
     cod: { enabled: true },
@@ -145,5 +153,31 @@ export class SettingsService {
     const updated = { ...current, ...payment };
     await this.updateSettings('payment', updated);
     return updated;
+  }
+
+  async getStoreStatus() {
+    const settings = await this.getSettings();
+    const { storeOpen, openTime, closeTime, storeOpenDays } = settings.store;
+    const now = new Date();
+    const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+    const currentDay = days[now.getDay()];
+    const istTime = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
+    const hours = istTime.getHours();
+    const minutes = istTime.getMinutes();
+    const currentTime = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+    const isDayOpen = storeOpenDays.includes(currentDay);
+    const isTimeOpen = currentTime >= openTime && currentTime < closeTime;
+    const isOpen = storeOpen && isDayOpen && isTimeOpen;
+    return {
+      isOpen,
+      storeOpen,
+      isDayOpen,
+      isTimeOpen,
+      currentDay,
+      currentTime,
+      openTime,
+      closeTime,
+      storeOpenDays,
+    };
   }
 }

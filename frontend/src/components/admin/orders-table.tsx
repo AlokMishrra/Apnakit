@@ -12,6 +12,7 @@ import {
   RotateCcw,
   MoreHorizontal,
   Loader2,
+  Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -20,8 +21,19 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
   DropdownMenuContent,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { adminService } from "@/services/admin.service";
+import { toast } from "sonner";
 
 const statusStyles: Record<string, string> = {
   PENDING: "bg-amber-100 text-amber-800 border-amber-200",
@@ -50,6 +62,9 @@ interface OrdersTableProps {
 }
 
 export function OrdersTable({ orders }: OrdersTableProps) {
+  const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; order: any }>({ open: false, order: null });
+  const [deleting, setDeleting] = useState(false);
+
   if (!orders || orders.length === 0) {
     return (
       <div className="overflow-hidden rounded-lg border bg-white shadow-sm">
@@ -60,7 +75,23 @@ export function OrdersTable({ orders }: OrdersTableProps) {
     );
   }
 
+  const handleDelete = async () => {
+    if (!deleteDialog.order) return;
+    setDeleting(true);
+    try {
+      await adminService.deleteOrder(deleteDialog.order.id || deleteDialog.order._id);
+      toast.success("Order deleted successfully");
+      setDeleteDialog({ open: false, order: null });
+      window.location.reload();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || "Failed to delete order");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   return (
+    <>
     <div className="overflow-hidden rounded-lg border bg-white shadow-sm">
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
@@ -139,6 +170,14 @@ export function OrdersTable({ orders }: OrdersTableProps) {
                             View Details
                           </Link>
                         </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onClick={() => setDeleteDialog({ open: true, order })}
+                          className="text-red-600"
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete Order
+                        </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </td>
@@ -149,5 +188,24 @@ export function OrdersTable({ orders }: OrdersTableProps) {
         </table>
       </div>
     </div>
+
+    <Dialog open={deleteDialog.open} onOpenChange={(open) => setDeleteDialog({ open, order: null })}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Delete Order</DialogTitle>
+          <DialogDescription>
+            Are you sure you want to delete order <strong>{deleteDialog.order?.orderNumber || `#${(deleteDialog.order?.id || deleteDialog.order?._id)?.slice(-6)}`}</strong>? This action cannot be undone.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setDeleteDialog({ open: false, order: null })}>Cancel</Button>
+          <Button variant="destructive" onClick={handleDelete} disabled={deleting}>
+            {deleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Delete Order
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }

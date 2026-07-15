@@ -16,6 +16,12 @@ export class SettingsController {
     return this.settingsService.getSettings();
   }
 
+  @Get('store-status')
+  @ApiOperation({ summary: 'Get current store open/close status (public)' })
+  async getStoreStatus() {
+    return this.settingsService.getStoreStatus();
+  }
+
   @Get('delivery')
   @ApiOperation({ summary: 'Get delivery settings' })
   async getDeliverySettings() {

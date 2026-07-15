@@ -412,6 +412,24 @@ export default function AccountPage() {
                   ))}
                 </div>
 
+                {/* Delivery Panel Access - only for DELIVERY role */}
+                {user?.role === "DELIVERY" && (
+                  <Card className="mb-4 sm:mb-6 border-indigo-200 bg-indigo-50/50">
+                    <CardContent className="p-4">
+                      <Link href="/delivery/dashboard" className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-white">
+                          <Truck className="h-5 w-5" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm font-semibold text-foreground">Delivery Panel</p>
+                          <p className="text-xs text-muted-foreground">View your delivery assignments, earnings & routes</p>
+                        </div>
+                        <ChevronRight className="h-5 w-5 text-indigo-600" />
+                      </Link>
+                    </CardContent>
+                  </Card>
+                )}
+
                 {/* Logout button — visible on all screen sizes */}
                 <Card className="mt-4 sm:mt-6">
                   <CardContent className="p-4 sm:p-6">
