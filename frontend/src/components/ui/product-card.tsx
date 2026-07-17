@@ -11,7 +11,7 @@ import { Rating } from "./rating";
 import { Button } from "./button";
 import { AddToCartButton } from "@/components/cart/add-to-cart-button";
 import { VegNonVeg } from "@/components/ui/veg-non-veg";
-import { getImageUrl, calculateDiscount } from "@/lib/utils";
+import { getImageUrl, calculateDiscount, isFoodCategory } from "@/lib/utils";
 import type { Product } from "@/types";
 
 interface ProductCardProps {
@@ -92,7 +92,7 @@ function ProductCard({
           >
             {product.name}
           </Link>
-          {product.isVeg !== null && (
+          {product.isVeg !== null && isFoodCategory(product.category) && (
             <div className="mt-0.5">
               <VegNonVeg isVeg={product.isVeg} size="sm" />
             </div>
@@ -188,7 +188,7 @@ function ProductCard({
         >
           {product.name}
         </Link>
-        {product.isVeg !== null && (
+        {product.isVeg !== null && isFoodCategory(product.category) && (
           <div className="flex items-center gap-1.5">
             <VegNonVeg isVeg={product.isVeg} size="sm" />
             <span className="text-[10px] font-medium" style={{ color: product.isVeg ? "#16a34a" : "#8B4513" }}>

@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { Heart, Share2, ShoppingCart, Zap, Check, Loader2 } from "lucide-react";
-import { cn, calculateDiscount } from "@/lib/utils";
+import { cn, calculateDiscount, isFoodCategory } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Rating } from "@/components/ui/rating";
@@ -145,7 +145,7 @@ function ProductInfo({ product, className }: ProductInfoProps) {
                 <span className="text-lg font-semibold text-muted-foreground"> — {selectedVariantData.name}</span>
               ) : ""}
             </h1>
-            {product.isVeg !== null && (
+            {product.isVeg !== null && isFoodCategory(product.category) && (
               <div className="flex items-center gap-2 mt-1">
                 <VegNonVeg isVeg={product.isVeg} size="md" />
                 <span className={cn(

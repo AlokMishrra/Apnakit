@@ -138,3 +138,18 @@ export function clearAuthCookies() {
   deleteCookie("accessToken");
   deleteCookie("refreshToken");
 }
+
+const FOOD_CATEGORY_KEYWORDS = [
+  "food", "snack", "grocery", "fruit", "vegetable", "dairy",
+  "beverage", "bakery", "meat", "fish", "spice", "grain",
+  "fast food", "junk food", "namkeen", "chips", "biscuit",
+];
+
+export function isFoodCategory(category?: { name?: string; slug?: string } | null): boolean {
+  if (!category) return false;
+  const name = (category.name || "").toLowerCase();
+  const slug = (category.slug || "").toLowerCase();
+  return FOOD_CATEGORY_KEYWORDS.some(
+    (kw) => name.includes(kw) || slug.includes(kw)
+  );
+}
