@@ -5,6 +5,9 @@ function normalizeUrl(url: string | null): string | null {
   if (/^https?:\/\/localhost:\d+/.test(url)) {
     return url.replace(/^https?:\/\/localhost:\d+/, "");
   }
+  if (/^https?:\/\/apnakit-backend\.onrender\.com/.test(url)) {
+    return url.replace(/^https?:\/\/apnakit-backend\.onrender\.com/, "");
+  }
   return url;
 }
 

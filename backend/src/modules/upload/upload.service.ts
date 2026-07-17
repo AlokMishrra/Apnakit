@@ -57,6 +57,21 @@ export class UploadService {
 
     try {
       this.supabase = createClient(supabaseUrl, supabaseKey);
+
+      const { error: bucketError } = await this.supabase.storage.getBucket(this.supabaseBucket);
+      if (bucketError) {
+        this.logger.log(`Bucket "${this.supabaseBucket}" not found, creating...`);
+        const { error: createError } = await this.supabase.storage.createBucket(this.supabaseBucket, {
+          public: true,
+          fileSizeLimit: 200 * 1024 * 1024,
+        });
+        if (createError) {
+          this.logger.warn(`Failed to create bucket: ${createError.message}`);
+        } else {
+          this.logger.log(`Bucket "${this.supabaseBucket}" created successfully`);
+        }
+      }
+
       this.logger.log(`Supabase storage initialized (bucket: ${this.supabaseBucket})`);
       return this.supabase;
     } catch (err) {
