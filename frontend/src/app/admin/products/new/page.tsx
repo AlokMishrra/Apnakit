@@ -1037,5 +1037,5 @@ export default function NewProductPage() {
         </div>
       </div>
     </div>
-
+  );
 }
