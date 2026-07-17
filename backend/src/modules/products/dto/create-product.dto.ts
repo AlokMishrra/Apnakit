@@ -163,10 +163,15 @@ export class CreateProductDto {
   @IsString()
   barcode?: string;
 
-  @ApiPropertyOptional({ default: false })
+  @ApiPropertyOptional({ default: true })
   @IsOptional()
   @IsBoolean()
   isFeatured?: boolean;
+
+  @ApiPropertyOptional({ default: true })
+  @IsOptional()
+  @IsBoolean()
+  isVeg?: boolean;
 
   @ApiPropertyOptional({ default: true })
   @IsOptional()

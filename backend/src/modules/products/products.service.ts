@@ -641,6 +641,7 @@ export class ProductsService {
         barcode: dto.barcode,
         isFeatured: dto.isFeatured ?? false,
         isActive: dto.isActive ?? true,
+        isVeg: dto.isVeg ?? true,
         metaTitle: dto.metaTitle,
         metaDescription: dto.metaDescription,
         tags: dto.tags,
@@ -730,6 +731,7 @@ export class ProductsService {
     if (dto.barcode !== undefined) updateData.barcode = dto.barcode;
     if (dto.isFeatured !== undefined) updateData.isFeatured = dto.isFeatured;
     if (dto.isActive !== undefined) updateData.isActive = dto.isActive;
+    if (dto.isVeg !== undefined) updateData.isVeg = dto.isVeg;
     if (dto.metaTitle !== undefined) updateData.metaTitle = dto.metaTitle;
     if (dto.metaDescription !== undefined) updateData.metaDescription = dto.metaDescription;
     if (dto.tags !== undefined) updateData.tags = dto.tags;

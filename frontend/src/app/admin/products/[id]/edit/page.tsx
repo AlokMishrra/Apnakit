@@ -32,6 +32,7 @@ import { slugify, cn } from "@/lib/utils";
 import { adminService } from "@/services/admin.service";
 import api from "@/services/api";
 import { toast } from "sonner";
+import { VegNonVeg } from "@/components/ui/veg-non-veg";
 
 const steps = [
   { id: "basic", label: "Basic Info", icon: FileText },
@@ -87,6 +88,7 @@ export default function EditProductPage() {
     metaDescription: "",
     seoTags: [] as string[],
     seoTagInput: "",
+    isVeg: true,
   });
 
   const [variants, setVariants] = useState<Variant[]>([]);
@@ -127,9 +129,10 @@ export default function EditProductPage() {
             tags: found.tags ? found.tags.split(",").filter(Boolean) : [],
             tagInput: "",
             metaTitle: found.metaTitle || found.name || "",
-            metaDescription: found.metaDescription || found.description || "",
+            metaDescription: found.metaDescription || "",
             seoTags: found.tags ? found.tags.split(",").filter(Boolean) : [],
             seoTagInput: "",
+            isVeg: found.isVeg ?? true,
           });
 
           setVariants(
@@ -320,6 +323,7 @@ export default function EditProductPage() {
         sku: form.sku || undefined,
         barcode: form.barcode || undefined,
         isFeatured: status === "published",
+        isVeg: form.isVeg,
         metaTitle: form.metaTitle || undefined,
         metaDescription: form.metaDescription || undefined,
         tags: Array.isArray(form.tags) && form.tags.length > 0 ? form.tags.join(",") : undefined,
@@ -596,6 +600,40 @@ export default function EditProductPage() {
                   ))}
                 </div>
               )}
+            </div>
+
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-foreground">
+                Food Type
+              </label>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setForm((p) => ({ ...p, isVeg: true }))}
+                  className={cn(
+                    "flex items-center gap-2 rounded-lg border-2 px-4 py-2.5 text-sm font-medium transition-all",
+                    form.isVeg
+                      ? "border-green-500 bg-green-50 text-green-700"
+                      : "border-border hover:border-muted-foreground/50"
+                  )}
+                >
+                  <VegNonVeg isVeg={true} size="sm" />
+                  Veg
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setForm((p) => ({ ...p, isVeg: false }))}
+                  className={cn(
+                    "flex items-center gap-2 rounded-lg border-2 px-4 py-2.5 text-sm font-medium transition-all",
+                    !form.isVeg
+                      ? "border-[#8B4513] bg-orange-50 text-[#8B4513]"
+                      : "border-border hover:border-muted-foreground/50"
+                  )}
+                >
+                  <VegNonVeg isVeg={false} size="sm" />
+                  Non-Veg
+                </button>
+              </div>
             </div>
           </div>
         );

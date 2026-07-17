@@ -65,6 +65,7 @@ function mapBackendProduct(raw: any): Product {
     ratings: { average: raw.averageRating || 0, count: raw.reviewCount || 0 },
     isActive: raw.isActive ?? true,
     isFeatured: raw.isFeatured ?? false,
+    isVeg: raw.isVeg ?? true,
     isTrending: false,
     isBestSeller: false,
     createdAt: raw.createdAt || "",

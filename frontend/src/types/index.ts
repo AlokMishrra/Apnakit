@@ -57,6 +57,7 @@ export interface Product {
   };
   isActive: boolean;
   isFeatured: boolean;
+  isVeg: boolean;
   isTrending: boolean;
   isBestSeller: boolean;
   createdAt: string;

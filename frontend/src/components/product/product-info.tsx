@@ -10,6 +10,7 @@ import { Rating } from "@/components/ui/rating";
 import { Price } from "@/components/ui/price";
 import { QuantitySelector } from "@/components/ui/quantity-selector";
 import { Separator } from "@/components/ui/separator";
+import { VegNonVeg } from "@/components/ui/veg-non-veg";
 import { cartService } from "@/services/cart.service";
 import { toast } from "sonner";
 import type { Product } from "@/types";
@@ -144,6 +145,15 @@ function ProductInfo({ product, className }: ProductInfoProps) {
                 <span className="text-lg font-semibold text-muted-foreground"> — {selectedVariantData.name}</span>
               ) : ""}
             </h1>
+            <div className="flex items-center gap-2 mt-1">
+              <VegNonVeg isVeg={product.isVeg !== false} size="md" />
+              <span className={cn(
+                "text-xs font-medium",
+                product.isVeg !== false ? "text-green-600" : "text-[#8B4513]"
+              )}>
+                {product.isVeg !== false ? "Veg" : "Non-Veg"}
+              </span>
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <Button

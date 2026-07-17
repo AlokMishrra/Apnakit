@@ -78,6 +78,7 @@ function mapBackendProduct(raw: any): Product {
     },
     isActive: raw.isActive ?? true,
     isFeatured: raw.isFeatured ?? false,
+    isVeg: raw.isVeg ?? true,
     isTrending: false,
     isBestSeller: false,
     createdAt: raw.createdAt || "",

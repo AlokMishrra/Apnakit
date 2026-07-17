@@ -101,6 +101,7 @@ function FlashSaleCard({ sale, onTimeUp }: FlashSaleCardProps) {
     ratings: { average: 0, count: 0 },
     isActive: true,
     isFeatured: false,
+    isVeg: true,
     isTrending: false,
     isBestSeller: false,
     createdAt: "",

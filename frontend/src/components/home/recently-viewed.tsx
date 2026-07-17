@@ -43,6 +43,7 @@ export function RecentlyViewed() {
           numReviews: 0,
           stock: item.stock,
           isFeatured: false,
+          isVeg: true,
           isDeal: false,
           createdAt: "",
           updatedAt: "",

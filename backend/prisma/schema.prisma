@@ -320,6 +320,7 @@ model Product {
   barcode         String?
   isFeatured      Boolean   @default(false)
   isActive        Boolean   @default(true)
+  isVeg           Boolean   @default(true)
   metaTitle       String?
   metaDescription String?
   tags            String?

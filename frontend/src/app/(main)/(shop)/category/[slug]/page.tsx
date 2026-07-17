@@ -556,6 +556,7 @@ export default function CategoryPage() {
                         },
                         isActive: true,
                         isFeatured: false,
+                        isVeg: product.isVeg ?? true,
                         isTrending: false,
                         isBestSeller: false,
                         createdAt: product.createdAt || "",

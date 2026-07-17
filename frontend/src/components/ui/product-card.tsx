@@ -10,6 +10,7 @@ import { Price } from "./price";
 import { Rating } from "./rating";
 import { Button } from "./button";
 import { AddToCartButton } from "@/components/cart/add-to-cart-button";
+import { VegNonVeg } from "@/components/ui/veg-non-veg";
 import { getImageUrl, calculateDiscount } from "@/lib/utils";
 import type { Product } from "@/types";
 
@@ -91,6 +92,9 @@ function ProductCard({
           >
             {product.name}
           </Link>
+          <div className="mt-0.5">
+            <VegNonVeg isVeg={product.isVeg !== false} size="sm" />
+          </div>
         </div>
       </div>
     );
@@ -182,6 +186,12 @@ function ProductCard({
         >
           {product.name}
         </Link>
+        <div className="flex items-center gap-1.5">
+          <VegNonVeg isVeg={product.isVeg !== false} size="sm" />
+          <span className="text-[10px] font-medium" style={{ color: product.isVeg !== false ? "#16a34a" : "#8B4513" }}>
+            {product.isVeg !== false ? "Veg" : "Non-Veg"}
+          </span>
+        </div>
 
         <Rating value={product.rating} size="sm" showCount count={product.numReviews} />
 
