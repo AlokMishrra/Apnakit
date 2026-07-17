@@ -57,21 +57,6 @@ export class UploadService {
 
     try {
       this.supabase = createClient(supabaseUrl, supabaseKey);
-
-      const { error: bucketError } = await this.supabase.storage.getBucket(this.supabaseBucket);
-      if (bucketError) {
-        this.logger.log(`Bucket "${this.supabaseBucket}" not found, creating...`);
-        const { error: createError } = await this.supabase.storage.createBucket(this.supabaseBucket, {
-          public: true,
-          fileSizeLimit: 200 * 1024 * 1024,
-        });
-        if (createError) {
-          this.logger.warn(`Failed to create bucket: ${createError.message}`);
-        } else {
-          this.logger.log(`Bucket "${this.supabaseBucket}" created successfully`);
-        }
-      }
-
       this.logger.log(`Supabase storage initialized (bucket: ${this.supabaseBucket})`);
       return this.supabase;
     } catch (err) {
@@ -151,6 +136,20 @@ export class UploadService {
     file: Express.Multer.File,
     folder: string,
   ) {
+    const { error: bucketCheckError } = await supabase.storage.getBucket(this.supabaseBucket);
+    if (bucketCheckError) {
+      this.logger.log(`Bucket "${this.supabaseBucket}" not found, creating...`);
+      const { error: createError } = await supabase.storage.createBucket(this.supabaseBucket, {
+        public: true,
+        fileSizeLimit: 200 * 1024 * 1024,
+      });
+      if (createError) {
+        this.logger.warn(`Failed to create bucket: ${createError.message}`);
+      } else {
+        this.logger.log(`Bucket "${this.supabaseBucket}" created successfully`);
+      }
+    }
+
     const ext = path.extname(file.originalname) || this.getExtFromMime(file.mimetype);
     const baseName = path.basename(file.originalname, ext).replace(/[^a-zA-Z0-9-_]/g, '-');
     const fileName = `${Date.now()}-${baseName}${ext}`;
