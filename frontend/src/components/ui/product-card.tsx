@@ -92,9 +92,11 @@ function ProductCard({
           >
             {product.name}
           </Link>
-          <div className="mt-0.5">
-            <VegNonVeg isVeg={product.isVeg !== false} size="sm" />
-          </div>
+          {product.isVeg !== null && (
+            <div className="mt-0.5">
+              <VegNonVeg isVeg={product.isVeg} size="sm" />
+            </div>
+          )}
         </div>
       </div>
     );
@@ -186,12 +188,14 @@ function ProductCard({
         >
           {product.name}
         </Link>
-        <div className="flex items-center gap-1.5">
-          <VegNonVeg isVeg={product.isVeg !== false} size="sm" />
-          <span className="text-[10px] font-medium" style={{ color: product.isVeg !== false ? "#16a34a" : "#8B4513" }}>
-            {product.isVeg !== false ? "Veg" : "Non-Veg"}
-          </span>
-        </div>
+        {product.isVeg !== null && (
+          <div className="flex items-center gap-1.5">
+            <VegNonVeg isVeg={product.isVeg} size="sm" />
+            <span className="text-[10px] font-medium" style={{ color: product.isVeg ? "#16a34a" : "#8B4513" }}>
+              {product.isVeg ? "Veg" : "Non-Veg"}
+            </span>
+          </div>
+        )}
 
         <Rating value={product.rating} size="sm" showCount count={product.numReviews} />
 

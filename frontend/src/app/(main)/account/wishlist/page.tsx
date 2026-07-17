@@ -258,7 +258,7 @@ export default function WishlistPage() {
                             ratings: { average: p.ratings?.average || 0, count: p.ratings?.count || 0 },
                             isActive: true,
                             isFeatured: false,
-                            isVeg: true,
+                            isVeg: null,
                             isTrending: false,
                             isBestSeller: false,
                             createdAt: "",

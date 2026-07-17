@@ -88,7 +88,7 @@ export default function EditProductPage() {
     metaDescription: "",
     seoTags: [] as string[],
     seoTagInput: "",
-    isVeg: true,
+    isVeg: null,
   });
 
   const [variants, setVariants] = useState<Variant[]>([]);
@@ -132,7 +132,7 @@ export default function EditProductPage() {
             metaDescription: found.metaDescription || "",
             seoTags: found.tags ? found.tags.split(",").filter(Boolean) : [],
             seoTagInput: "",
-            isVeg: found.isVeg ?? true,
+            isVeg: found.isVeg ?? null,
           });
 
           setVariants(
@@ -612,7 +612,7 @@ export default function EditProductPage() {
                   onClick={() => setForm((p) => ({ ...p, isVeg: true }))}
                   className={cn(
                     "flex items-center gap-2 rounded-lg border-2 px-4 py-2.5 text-sm font-medium transition-all",
-                    form.isVeg
+                    form.isVeg === true
                       ? "border-green-500 bg-green-50 text-green-700"
                       : "border-border hover:border-muted-foreground/50"
                   )}
@@ -625,13 +625,25 @@ export default function EditProductPage() {
                   onClick={() => setForm((p) => ({ ...p, isVeg: false }))}
                   className={cn(
                     "flex items-center gap-2 rounded-lg border-2 px-4 py-2.5 text-sm font-medium transition-all",
-                    !form.isVeg
+                    form.isVeg === false
                       ? "border-[#8B4513] bg-orange-50 text-[#8B4513]"
                       : "border-border hover:border-muted-foreground/50"
                   )}
                 >
                   <VegNonVeg isVeg={false} size="sm" />
                   Non-Veg
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setForm((p) => ({ ...p, isVeg: null }))}
+                  className={cn(
+                    "flex items-center gap-2 rounded-lg border-2 px-4 py-2.5 text-sm font-medium transition-all",
+                    form.isVeg === null
+                      ? "border-gray-500 bg-gray-50 text-gray-700"
+                      : "border-border hover:border-muted-foreground/50"
+                  )}
+                >
+                  None
                 </button>
               </div>
             </div>

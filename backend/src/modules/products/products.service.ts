@@ -641,7 +641,7 @@ export class ProductsService {
         barcode: dto.barcode,
         isFeatured: dto.isFeatured ?? false,
         isActive: dto.isActive ?? true,
-        isVeg: dto.isVeg ?? true,
+        isVeg: dto.isVeg ?? null,
         metaTitle: dto.metaTitle,
         metaDescription: dto.metaDescription,
         tags: dto.tags,

@@ -145,15 +145,17 @@ function ProductInfo({ product, className }: ProductInfoProps) {
                 <span className="text-lg font-semibold text-muted-foreground"> — {selectedVariantData.name}</span>
               ) : ""}
             </h1>
-            <div className="flex items-center gap-2 mt-1">
-              <VegNonVeg isVeg={product.isVeg !== false} size="md" />
-              <span className={cn(
-                "text-xs font-medium",
-                product.isVeg !== false ? "text-green-600" : "text-[#8B4513]"
-              )}>
-                {product.isVeg !== false ? "Veg" : "Non-Veg"}
-              </span>
-            </div>
+            {product.isVeg !== null && (
+              <div className="flex items-center gap-2 mt-1">
+                <VegNonVeg isVeg={product.isVeg} size="md" />
+                <span className={cn(
+                  "text-xs font-medium",
+                  product.isVeg ? "text-green-600" : "text-[#8B4513]"
+                )}>
+                  {product.isVeg ? "Veg" : "Non-Veg"}
+                </span>
+              </div>
+            )}
           </div>
           <div className="flex items-center gap-2">
             <Button
