@@ -7,7 +7,8 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useCartActions, useCartItem } from "@/hooks/use-cart-actions";
 import { useSelector } from "react-redux";
-import type { Product } from "@/types";
+import { VariantPickerDialog } from "@/components/product/variant-picker-dialog";
+import type { Product, ProductVariant } from "@/types";
 
 type AddState = "idle" | "adding" | "added";
 type RemoveState = "idle" | "removing";
@@ -45,15 +46,16 @@ export function AddToCartButton({
   const productId = product._id || (product as any).id;
   const cartItem = useCartItem(productId);
   const { setQuantity, remove } = useCartActions();
-  // Read the global loading flag from the cart slice so we can show a spinner
-  // when any cart action is in flight on this product.
   const isSyncing = useSelector(
     (state: any) => !!state?.cart?.pendingByItem?.[`${productId}`]
   );
   const inCart = !!cartItem && cartItem.quantity > 0;
   const [addState, setAddState] = React.useState<AddState>("idle");
   const [removeState, setRemoveState] = React.useState<RemoveState>("idle");
+  const [variantOpen, setVariantOpen] = React.useState(false);
   const revertTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const hasMultipleVariants = (product.variants?.length ?? 0) > 1;
 
   React.useEffect(
     () => () => {
@@ -66,8 +68,20 @@ export function AddToCartButton({
     if (inCart) return;
     if (addState !== "idle") return;
     if ((product.stock ?? 0) <= 0) return;
+    if (hasMultipleVariants) {
+      setVariantOpen(true);
+      return;
+    }
     setAddState("adding");
     setQuantity(product, 1, { goToCheckout: buyNow });
+    setAddState("added");
+    if (revertTimer.current) clearTimeout(revertTimer.current);
+    revertTimer.current = setTimeout(() => setAddState("idle"), revertMs);
+  };
+
+  const handleVariantAdd = (variant: ProductVariant) => {
+    setAddState("adding");
+    setQuantity(product, 1, { goToCheckout: buyNow, variantId: variant._id });
     setAddState("added");
     if (revertTimer.current) clearTimeout(revertTimer.current);
     revertTimer.current = setTimeout(() => setAddState("idle"), revertMs);
@@ -132,6 +146,7 @@ export function AddToCartButton({
       : "bg-indigo-600 hover:bg-indigo-700";
 
   return (
+    <>
     <Button
       size={size}
       className={cn(
@@ -152,5 +167,14 @@ export function AddToCartButton({
       />
       {buttonLabel}
     </Button>
+    {hasMultipleVariants && (
+      <VariantPickerDialog
+        product={product}
+        open={variantOpen}
+        onOpenChange={setVariantOpen}
+        onAddToCart={handleVariantAdd}
+      />
+    )}
+    </>
   );
 }

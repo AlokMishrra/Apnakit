@@ -50,14 +50,6 @@ export class DeliveryController {
     return this.deliveryService.findAll({ page, limit, search });
   }
 
-  @Get(':id')
-  @UseGuards(RolesGuard)
-  @Roles(Role.ADMIN)
-  @ApiOperation({ summary: 'Get delivery partner by ID (Admin)' })
-  findOne(@Param('id') id: string) {
-    return this.deliveryService.findOne(id);
-  }
-
   @Patch(':id/suspend')
   @UseGuards(RolesGuard)
   @Roles(Role.ADMIN)
@@ -84,7 +76,7 @@ export class DeliveryController {
 
   @Get('assignments')
   @UseGuards(RolesGuard)
-  @Roles(Role.DELIVERY, Role.ADMIN)
+  @Roles('DELIVERY', 'ADMIN')
   @ApiOperation({ summary: 'Get assigned orders for delivery partner' })
   async getAssignedOrders(
     @CurrentUser() user: CurrentUserData,
@@ -102,7 +94,7 @@ export class DeliveryController {
 
   @Get('available-orders')
   @UseGuards(RolesGuard)
-  @Roles(Role.DELIVERY, Role.ADMIN)
+  @Roles('DELIVERY', 'ADMIN')
   @ApiOperation({ summary: 'Get unassigned confirmed orders available for pickup' })
   async getAvailableOrders(
     @CurrentUser() user: CurrentUserData,
@@ -114,7 +106,7 @@ export class DeliveryController {
 
   @Get('assignments/:id')
   @UseGuards(RolesGuard)
-  @Roles(Role.DELIVERY, Role.ADMIN)
+  @Roles('DELIVERY', 'ADMIN')
   @ApiOperation({ summary: 'Get single delivery assignment details' })
   async getAssignmentById(
     @CurrentUser() user: CurrentUserData,
@@ -126,7 +118,7 @@ export class DeliveryController {
 
   @Post('assignments/:id/reject')
   @UseGuards(RolesGuard)
-  @Roles(Role.DELIVERY, Role.ADMIN)
+  @Roles('DELIVERY', 'ADMIN')
   @ApiOperation({ summary: 'Reject a delivery assignment' })
   async rejectAssignment(
     @CurrentUser() user: CurrentUserData,
@@ -139,7 +131,7 @@ export class DeliveryController {
 
   @Post('accept-order/:orderId')
   @UseGuards(RolesGuard)
-  @Roles(Role.DELIVERY, Role.ADMIN)
+  @Roles('DELIVERY', 'ADMIN')
   @ApiOperation({ summary: 'Accept an unassigned order for delivery' })
   async acceptOrder(
     @CurrentUser() user: CurrentUserData,
@@ -151,7 +143,7 @@ export class DeliveryController {
 
   @Patch('assignments/:id/status')
   @UseGuards(RolesGuard)
-  @Roles(Role.DELIVERY, Role.ADMIN)
+  @Roles('DELIVERY', 'ADMIN')
   @ApiOperation({ summary: 'Update delivery status' })
   async updateDeliveryStatus(
     @CurrentUser() user: CurrentUserData,
@@ -164,7 +156,7 @@ export class DeliveryController {
 
   @Patch('availability')
   @UseGuards(RolesGuard)
-  @Roles(Role.DELIVERY, Role.ADMIN)
+  @Roles('DELIVERY', 'ADMIN')
   @ApiOperation({ summary: 'Toggle delivery partner availability' })
   async toggleAvailability(
     @CurrentUser() user: CurrentUserData,
@@ -176,7 +168,7 @@ export class DeliveryController {
 
   @Get('earnings')
   @UseGuards(RolesGuard)
-  @Roles(Role.DELIVERY, Role.ADMIN)
+  @Roles('DELIVERY', 'ADMIN')
   @ApiOperation({ summary: 'Get delivery partner earnings' })
   @ApiQuery({ name: 'period', required: false, enum: ['today', 'week', 'month', 'year'] })
   async getEarnings(
@@ -189,7 +181,7 @@ export class DeliveryController {
 
   @Get('route')
   @UseGuards(RolesGuard)
-  @Roles(Role.DELIVERY, Role.ADMIN)
+  @Roles('DELIVERY', 'ADMIN')
   @ApiOperation({ summary: 'Get optimized delivery route' })
   async getRoute(@CurrentUser() user: CurrentUserData) {
     const partnerId = await this.deliveryService.resolvePartnerId(user.id);
@@ -206,7 +198,7 @@ export class DeliveryController {
 
   @Patch('location')
   @UseGuards(RolesGuard)
-  @Roles(Role.DELIVERY, Role.ADMIN)
+  @Roles('DELIVERY', 'ADMIN')
   @ApiOperation({ summary: 'Update delivery partner location' })
   async updateLocation(
     @CurrentUser() user: CurrentUserData,
@@ -218,10 +210,18 @@ export class DeliveryController {
 
   @Get('stats')
   @UseGuards(RolesGuard)
-  @Roles(Role.DELIVERY, Role.ADMIN)
+  @Roles('DELIVERY', 'ADMIN')
   @ApiOperation({ summary: 'Get delivery partner stats' })
   async getPartnerStats(@CurrentUser() user: CurrentUserData) {
     const partnerId = await this.deliveryService.resolvePartnerId(user.id);
     return this.deliveryService.getPartnerStats(partnerId);
+  }
+
+  @Get(':id')
+  @UseGuards(RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: 'Get delivery partner by ID (Admin)' })
+  findOne(@Param('id') id: string) {
+    return this.deliveryService.findOne(id);
   }
 }

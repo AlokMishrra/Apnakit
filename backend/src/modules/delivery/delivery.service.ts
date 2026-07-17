@@ -261,6 +261,7 @@ export class DeliveryService {
     partnerId: string,
     query: { page?: number; limit?: number; status?: string },
   ) {
+    try {
     const { page, limit, skip } = getPaginationParams(query);
 
     const where: Prisma.DeliveryAssignmentWhereInput = {
@@ -301,9 +302,14 @@ export class DeliveryService {
     const mapped = assignments.map((a) => this.mapAssignment(a));
 
     return paginatedResponse(mapped, total, page, limit);
+    } catch (e) {
+      this.logger?.error(`getAssignedOrders error: ${e}`);
+      return { data: [], meta: { total: 0, page: 1, limit: 10, totalPages: 0 } };
+    }
   }
 
   async getAvailableOrders(query: { page?: number; limit?: number }) {
+    try {
     const { page, limit, skip } = getPaginationParams(query);
 
     const [orders, total] = await Promise.all([
@@ -361,6 +367,10 @@ export class DeliveryService {
     });
 
     return paginatedResponse(mapped, total, page, limit);
+    } catch (e) {
+      this.logger?.error(`getAvailableOrders error: ${e}`);
+      return { data: [], meta: { total: 0, page: 1, limit: 10, totalPages: 0 } };
+    }
   }
 
   async getAssignmentById(assignmentId: string, partnerId: string) {

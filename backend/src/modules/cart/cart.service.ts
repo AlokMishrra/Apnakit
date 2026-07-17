@@ -183,6 +183,18 @@ export class CartService {
       throw new BadRequestException('Coupon usage limit reached');
     }
 
+    const existingUsage = await this.prisma.couponUsage.findUnique({
+      where: {
+        userId_couponId: {
+          couponId: coupon.id,
+          userId,
+        },
+      },
+    });
+    if (existingUsage) {
+      throw new BadRequestException('You have already used this coupon');
+    }
+
     const cartTotal = cart.items.reduce(
       (sum, item) => sum + Number(item.price) * item.quantity,
       0,
