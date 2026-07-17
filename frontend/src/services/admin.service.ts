@@ -23,7 +23,7 @@ export const adminService = {
   },
 
   getOrderById: async (id: string): Promise<any> => {
-    const response = await api.get(`/orders/${id}`);
+    const response = await api.get(`/orders/admin/${id}`);
     return response.data;
   },
 

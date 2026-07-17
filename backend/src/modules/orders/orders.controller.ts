@@ -59,6 +59,14 @@ export class OrdersController {
     return this.ordersService.findAllAdmin(query);
   }
 
+  @Get('admin/:id')
+  @UseGuards(RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: 'Get order by ID (Admin)' })
+  findOneAdmin(@Param('id') id: string) {
+    return this.ordersService.findOneAdmin(id);
+  }
+
   @Get('seller/all')
   @UseGuards(RolesGuard)
   @Roles(Role.SELLER)

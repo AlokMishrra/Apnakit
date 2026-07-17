@@ -312,6 +312,41 @@ export class OrdersService {
     return order;
   }
 
+  async findOneAdmin(id: string) {
+    const order = await this.prisma.order.findUnique({
+      where: { id },
+      include: {
+        items: {
+          include: {
+            product: {
+              include: {
+                images: true,
+                brand: true,
+                category: true,
+              },
+            },
+            variant: true,
+          },
+        },
+        user: {
+          select: { id: true, firstName: true, lastName: true, email: true, phone: true },
+        },
+        statusHistory: {
+          orderBy: { createdAt: 'desc' },
+        },
+        payments: true,
+        shippingAddress: true,
+        billingAddress: true,
+      },
+    });
+
+    if (!order) {
+      throw new NotFoundException('Order not found');
+    }
+
+    return order;
+  }
+
   async updateStatus(id: string, dto: UpdateOrderStatusDto) {
     const order = await this.prisma.order.findUnique({
       where: { id },
