@@ -198,21 +198,7 @@ function FlashSaleCard({ sale, onTimeUp }: FlashSaleCardProps) {
         </div>
         {!expired && !isOutOfStock && (
           <div className="mt-auto">
-            <div className="mb-1 flex justify-between text-xs text-gray-500">
-              <span className="font-medium text-red-600">
-                {soldPercent >= 80 ? "Almost gone!" : `${soldPercent}% sold`}
-              </span>
-              <span>{stockLeft} left</span>
-            </div>
-            <div className="h-2 w-full overflow-hidden rounded-full bg-gray-200">
-              <div
-                className={cn(
-                  "h-full rounded-full transition-all",
-                  soldPercent > 80 ? "bg-red-500" : soldPercent > 50 ? "bg-orange-500" : "bg-emerald-500"
-                )}
-                style={{ width: `${Math.min(100, soldPercent)}%` }}
-              />
-            </div>
+            <span className="text-xs text-muted-foreground">{stockLeft} left</span>
           </div>
         )}
         {!expired && !isOutOfStock && (

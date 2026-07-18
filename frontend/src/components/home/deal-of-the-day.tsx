@@ -178,19 +178,6 @@ export function DealOfTheDay() {
                 size="lg"
               />
 
-              <div>
-                <div className="mb-1 flex justify-between text-sm text-gray-500">
-                  <span>{dealProduct.soldStock} sold</span>
-                  <span>{dealProduct.totalStock - dealProduct.soldStock} remaining</span>
-                </div>
-                <div className="h-3 w-full overflow-hidden rounded-full bg-gray-200">
-                  <div
-                    className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-violet-500"
-                    style={{ width: `${soldPercent}%` }}
-                  />
-                </div>
-              </div>
-
               <div className="flex gap-3">
                 <AddToCartButton
                   product={productForCart}

@@ -248,26 +248,7 @@ export default function FlashSalePage() {
                       </div>
                       {stockLeft > 0 && (
                         <div className="mt-2">
-                          <div className="mb-1 flex justify-between text-xs text-muted-foreground">
-                            <span className="font-medium text-red-600">
-                              {sale.soldPercent >= 80
-                                ? "Almost gone!"
-                                : `${sale.soldPercent || 0}% sold`}
-                            </span>
-                            <span>{stockLeft} left</span>
-                          </div>
-                          <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-200">
-                            <div
-                              className={`h-full rounded-full transition-all ${
-                                sale.soldPercent > 80
-                                  ? "bg-red-500"
-                                  : sale.soldPercent > 50
-                                  ? "bg-orange-500"
-                                  : "bg-emerald-500"
-                              }`}
-                              style={{ width: `${Math.min(100, sale.soldPercent || 0)}%` }}
-                            />
-                          </div>
+                          <span className="text-xs text-muted-foreground">{stockLeft} left</span>
                         </div>
                       )}
                     </div>
