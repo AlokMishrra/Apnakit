@@ -12,11 +12,11 @@ import {
   PackageOpen,
   RefreshCw,
   Home,
+  Loader2,
 } from "lucide-react";
 import { cn, getImageUrl } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Pagination } from "@/components/ui/pagination";
 import { AddToCartButton } from "@/components/cart/add-to-cart-button";
 import {
   Sheet,
@@ -49,6 +49,7 @@ interface Product {
   category?: { name: string; slug: string };
   variants?: any[];
   createdAt?: string;
+  isVeg?: boolean | null;
 }
 
 interface SubCategory {
@@ -69,6 +70,14 @@ interface CategoryInfo {
   children?: SubCategory[];
 }
 
+interface SubCategoryChunk {
+  subCategory: SubCategory;
+  products: Product[];
+  page: number;
+  hasMore: boolean;
+  loaded: boolean;
+}
+
 const SORT_OPTIONS = [
   { value: "relevance", label: "Relevance" },
   { value: "price-low", label: "Price: Low to High" },
@@ -76,6 +85,8 @@ const SORT_OPTIONS = [
   { value: "newest", label: "Newest First" },
   { value: "rating", label: "Rating" },
 ];
+
+const ITEMS_PER_PAGE = 20;
 
 function formatCategoryName(slug: string) {
   return slug
@@ -87,33 +98,126 @@ export default function CategoryPage() {
   const params = useParams();
   const slug = (params?.slug as string) || "";
 
-  const [products, setProducts] = React.useState<Product[]>([]);
   const [category, setCategory] = React.useState<CategoryInfo | null>(null);
   const [parentCategory, setParentCategory] = React.useState<CategoryInfo | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const [sortBy, setSortBy] = React.useState("relevance");
-  const [currentPage, setCurrentPage] = React.useState(1);
   const [mobileFilterOpen, setMobileFilterOpen] = React.useState(false);
   const [minPrice, setMinPrice] = React.useState("0");
   const [maxPrice, setMaxPrice] = React.useState("60000");
   const [ratingFilter, setRatingFilter] = React.useState<number | null>(null);
-  const [totalPages, setTotalPages] = React.useState(1);
-  const itemsPerPage = 12;
-  const productsTopRef = React.useRef<HTMLDivElement>(null);
 
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-    if (productsTopRef.current) {
-      const top = productsTopRef.current.getBoundingClientRect().top + window.scrollY - 100;
-      window.scrollTo({ top, behavior: "smooth" });
+  const [chunks, setChunks] = React.useState<SubCategoryChunk[]>([]);
+  const [loadingMore, setLoadingMore] = React.useState(false);
+  const [allLoaded, setAllLoaded] = React.useState(false);
+  const sentinelRef = React.useRef<HTMLDivElement>(null);
+  const activeChunkIndex = React.useRef(0);
+
+  const fetchProductsForSub = React.useCallback(
+    async (subSlug: string, page: number): Promise<{ products: Product[]; hasMore: boolean }> => {
+      try {
+        const sortParams: Record<string, string> = {};
+        if (sortBy === "price-low") { sortParams.sortBy = "price"; sortParams.sortOrder = "asc"; }
+        else if (sortBy === "price-high") { sortParams.sortBy = "price"; sortParams.sortOrder = "desc"; }
+        else if (sortBy === "newest") { sortParams.sortBy = "createdAt"; sortParams.sortOrder = "desc"; }
+        else if (sortBy === "rating") { sortParams.sortBy = "averageRating"; sortParams.sortOrder = "desc"; }
+
+        const res = await api.get("/products", {
+          params: {
+            category: subSlug,
+            page,
+            limit: ITEMS_PER_PAGE,
+            minPrice: parseInt(minPrice) > 0 ? minPrice : undefined,
+            maxPrice: parseInt(maxPrice) < 60000 ? maxPrice : undefined,
+            ...sortParams,
+          },
+        });
+        const body = res?.data;
+        let arr: Product[] = [];
+        if (Array.isArray(body?.data)) arr = body.data;
+        else if (Array.isArray(body)) arr = body;
+
+        const total = body?.pagination?.total ?? arr.length;
+        const hasMore = page * ITEMS_PER_PAGE < total;
+
+        if (ratingFilter !== null) {
+          arr = arr.filter((p) => (p.rating || p.averageRating || 0) >= ratingFilter);
+        }
+
+        return { products: arr, hasMore };
+      } catch {
+        return { products: [], hasMore: false };
+      }
+    },
+    [sortBy, ratingFilter, minPrice, maxPrice]
+  );
+
+  const loadNextChunk = React.useCallback(async () => {
+    if (loadingMore || allLoaded) return;
+
+    const subCategories = category?.children || [];
+    if (subCategories.length === 0) return;
+
+    setLoadingMore(true);
+
+    let currentChunks = [...chunks];
+    let chunkIdx = activeChunkIndex.current;
+
+    while (chunkIdx < subCategories.length) {
+      if (!currentChunks[chunkIdx]) {
+        currentChunks[chunkIdx] = {
+          subCategory: subCategories[chunkIdx],
+          products: [],
+          page: 0,
+          hasMore: true,
+          loaded: false,
+        };
+      }
+
+      const chunk = currentChunks[chunkIdx];
+      if (!chunk.hasMore || chunk.loaded) {
+        chunkIdx++;
+        activeChunkIndex.current = chunkIdx;
+        continue;
+      }
+
+      const nextPage = chunk.page + 1;
+      const { products: newProducts, hasMore } = await fetchProductsForSub(
+        chunk.subCategory.slug,
+        nextPage
+      );
+
+      chunk.products = [...chunk.products, ...newProducts];
+      chunk.page = nextPage;
+      chunk.hasMore = hasMore;
+      chunk.loaded = !hasMore;
+
+      setChunks([...currentChunks]);
+
+      if (newProducts.length > 0) {
+        break;
+      }
+
+      chunkIdx++;
+      activeChunkIndex.current = chunkIdx;
     }
-  };
+
+    if (chunkIdx >= subCategories.length) {
+      setAllLoaded(true);
+    }
+
+    setLoadingMore(false);
+  }, [category, chunks, loadingMore, allLoaded, fetchProductsForSub]);
 
   const fetchData = React.useCallback(async () => {
     if (!slug) return;
     setLoading(true);
     setError(null);
+    setChunks([]);
+    setAllLoaded(false);
+    activeChunkIndex.current = 0;
+
     try {
       let catInfo: CategoryInfo | null = null;
       let parent: CategoryInfo | null = null;
@@ -134,91 +238,62 @@ export default function CategoryPage() {
       setCategory(catInfo);
       setParentCategory(parent);
 
-      const res = await api.get("/products", {
-        params: { category: slug, limit: 100 },
-      });
-      const body = res?.data;
-      let arr: Product[] = [];
-      if (Array.isArray(body?.data)) arr = body.data;
-      else if (Array.isArray(body)) arr = body;
-      setProducts(arr);
-      setTotalPages(Math.max(1, Math.ceil(arr.length / itemsPerPage)));
+      const subCategories = catInfo?.children || [];
+      if (subCategories.length === 0) {
+        const { products, hasMore } = await fetchProductsForSub(slug, 1);
+        setChunks([{
+          subCategory: { id: catInfo?.id || "", name: catInfo?.name || slug, slug },
+          products,
+          page: 1,
+          hasMore,
+          loaded: !hasMore,
+        }]);
+        if (!hasMore) setAllLoaded(true);
+      }
     } catch (err: any) {
-      const msg =
-        err?.response?.data?.message || err?.message || "Failed to load category";
+      const msg = err?.response?.data?.message || err?.message || "Failed to load category";
       setError(msg);
-      setProducts([]);
     } finally {
       setLoading(false);
     }
-  }, [slug]);
+  }, [slug, fetchProductsForSub]);
 
   React.useEffect(() => {
     fetchData();
   }, [fetchData]);
 
+  React.useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && !loadingMore && !allLoaded && !loading) {
+          loadNextChunk();
+        }
+      },
+      { rootMargin: "400px" }
+    );
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [loadNextChunk, loadingMore, allLoaded, loading]);
+
   const displayName = category?.name || formatCategoryName(slug);
   const subCategories = category?.children || [];
   const activeSlug = slug;
 
-  const filteredProducts = React.useMemo(() => {
-    let result = [...products];
-    if (ratingFilter !== null) {
-      result = result.filter(
-        (p) => (p.rating || p.averageRating || 0) >= ratingFilter
-      );
-    }
-    result = result.filter((p) => {
-      const price = p.minPrice || p.price || 0;
-      return (
-        price >= parseInt(minPrice || "0") &&
-        price <= parseInt(maxPrice || "60000")
-      );
-    });
-    switch (sortBy) {
-      case "price-low":
-        result.sort(
-          (a, b) => (a.minPrice || a.price || 0) - (b.minPrice || b.price || 0)
-        );
-        break;
-      case "price-high":
-        result.sort(
-          (a, b) => (b.minPrice || b.price || 0) - (a.minPrice || a.price || 0)
-        );
-        break;
-      case "rating":
-        result.sort((a, b) => (b.rating || 0) - (a.rating || 0));
-        break;
-      case "newest":
-        result.sort(
-          (a, b) =>
-            new Date(b.createdAt || 0).getTime() -
-            new Date(a.createdAt || 0).getTime()
-        );
-        break;
-    }
-    result.sort((a, b) => {
-      const aStock = a.countInStock ?? a.totalStock ?? (a.variants || []).reduce((s: number, v: any) => s + (v.stock || 0), 0) ?? 0;
-      const bStock = b.countInStock ?? b.totalStock ?? (b.variants || []).reduce((s: number, v: any) => s + (v.stock || 0), 0) ?? 0;
-      const aInStock = aStock > 0;
-      const bInStock = bStock > 0;
-      if (aInStock && !bInStock) return -1;
-      if (!aInStock && bInStock) return 1;
-      return 0;
-    });
-    return result;
-  }, [products, sortBy, ratingFilter, minPrice, maxPrice]);
+  const allProducts = React.useMemo(
+    () => chunks.flatMap((c) => c.products),
+    [chunks]
+  );
 
-  const paginatedProducts = React.useMemo(() => {
-    const start = (currentPage - 1) * itemsPerPage;
-    return filteredProducts.slice(start, start + itemsPerPage);
-  }, [filteredProducts, currentPage]);
+  const totalProducts = allProducts.length;
 
   const clearAllFilters = () => {
     setRatingFilter(null);
     setMinPrice("0");
     setMaxPrice("60000");
-    handlePageChange(1);
   };
 
   const FilterSidebar = ({ mobile = false }: { mobile?: boolean }) => (
@@ -242,7 +317,7 @@ export default function CategoryPage() {
             className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
           />
         </div>
-        <Button variant="outline" size="sm" className="w-full" onClick={() => handlePageChange(1)}>
+        <Button variant="outline" size="sm" className="w-full" onClick={fetchData}>
           Apply
         </Button>
       </div>
@@ -280,7 +355,6 @@ export default function CategoryPage() {
   return (
     <main className="min-h-screen bg-gray-50">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
-        {/* Breadcrumb */}
         <nav className="flex items-center gap-1 text-sm text-muted-foreground mb-4 flex-wrap">
           <Link href="/" className="hover:text-foreground inline-flex items-center gap-1">
             <Home className="h-3.5 w-3.5" /> Home
@@ -304,7 +378,6 @@ export default function CategoryPage() {
           </div>
         )}
 
-        {/* Error state */}
         {error && !loading && (
           <div className="mb-6 flex flex-col items-center justify-center rounded-lg border border-red-200 bg-red-50 p-8 text-center">
             <AlertCircle className="mb-3 h-12 w-12 text-red-500" />
@@ -318,7 +391,7 @@ export default function CategoryPage() {
 
         {loading ? (
           <CategoryPageSkeleton />
-        ) : !error && filteredProducts.length === 0 && subCategories.length === 0 ? (
+        ) : !error && totalProducts === 0 && subCategories.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <PackageOpen className="mb-4 h-16 w-16 text-muted-foreground/50" />
             <h3 className="text-lg font-bold text-foreground">
@@ -343,7 +416,6 @@ export default function CategoryPage() {
           </div>
         ) : !error ? (
           <div className="flex gap-0">
-            {/* Left Sidebar - Subcategories */}
             {subCategories.length > 0 && (
               <div className="w-20 sm:w-24 lg:w-28 flex-shrink-0 border-r bg-white">
                 <div className="sticky top-0 h-[calc(100vh-80px)] overflow-y-auto">
@@ -401,9 +473,7 @@ export default function CategoryPage() {
               </div>
             )}
 
-            {/* Main Content */}
             <div className="flex-1 min-w-0">
-              {/* Toolbar */}
               <div className="bg-white border-b px-4 py-3 flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
                   <Sheet open={mobileFilterOpen} onOpenChange={setMobileFilterOpen}>
@@ -421,13 +491,13 @@ export default function CategoryPage() {
                     </SheetContent>
                   </Sheet>
                   <span className="text-sm text-muted-foreground">
-                    {filteredProducts.length} products
+                    {totalProducts} products
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <select
                     value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value)}
+                    onChange={(e) => { setSortBy(e.target.value); fetchData(); }}
                     className="rounded-md border bg-background px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-ring"
                   >
                     {SORT_OPTIONS.map((opt) => (
@@ -439,7 +509,6 @@ export default function CategoryPage() {
                 </div>
               </div>
 
-              {/* Active Filters */}
               {(ratingFilter !== null ||
                 parseInt(minPrice) > 0 ||
                 parseInt(maxPrice) < 60000) && (
@@ -472,9 +541,8 @@ export default function CategoryPage() {
                 </div>
               )}
 
-              {/* Products Grid */}
-              <div ref={productsTopRef} className="p-4">
-                {filteredProducts.length === 0 ? (
+              <div className="p-4">
+                {totalProducts === 0 && !loadingMore ? (
                   <div className="flex flex-col items-center justify-center py-16 text-center">
                     <PackageOpen className="mb-4 h-16 w-16 text-muted-foreground/50" />
                     <h3 className="text-lg font-bold text-foreground">
@@ -497,138 +565,165 @@ export default function CategoryPage() {
                     </div>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4">
-                    {paginatedProducts.map((product) => {
-                      const img = product.images?.[0];
-                      const price =
-                        product.variants?.[0]?.price || product.minPrice || product.price || 0;
-                      const originalPrice =
-                        product.variants?.[0]?.compareAtPrice ||
-                        product.maxPrice ||
-                        product.originalPrice;
-                      const discount =
-                        originalPrice && originalPrice > price
-                          ? Math.round(((originalPrice - price) / originalPrice) * 100)
-                          : 0;
-                      const rating = product.rating || product.averageRating || 0;
-                      const productForCart: ProductType = {
-                        _id: product.id,
-                        name: product.name,
-                        slug: product.slug,
-                        description: product.description || "",
-                        price: Number(price) || 0,
-                        originalPrice: Number(originalPrice) || 0,
-                        sku: "",
-                        stock: product.totalStock ?? product.countInStock ?? 99,
-                        images: img
-                          ? [{ url: typeof img === "string" ? img : img.url, alt: product.name, isPrimary: true }]
-                          : [],
-                        category: {
-                          _id: "",
-                          name: product.category?.name || "",
-                          slug: product.category?.slug || "",
-                          productCount: 0,
-                          isActive: true,
-                          createdAt: "",
-                          updatedAt: "",
-                        },
-                        brand: {
-                          _id: "",
-                          name: product.brand?.name || "",
-                          slug: product.brand?.slug || "",
-                          productCount: 0,
-                          isActive: true,
-                        },
-                        variants: (product.variants || []).map((v: any) => ({
-                          _id: v.id || v._id,
-                          name: v.name || "",
-                          sku: v.sku || "",
-                          price: Number(v.price ?? price),
-                          compareAtPrice: v.compareAtPrice ? Number(v.compareAtPrice) : undefined,
-                          stock: v.stock ?? product.totalStock ?? 99,
-                          attributes: v.attributes || {},
-                        })),
-                        tags: [],
-                        specifications: [],
-                        ratings: {
-                          average: rating,
-                          count: product.numReviews ?? product.reviewCount ?? 0,
-                        },
-                        isActive: true,
-                        isFeatured: false,
-                        isVeg: product.isVeg ?? null,
-                        isTrending: false,
-                        isBestSeller: false,
-                        createdAt: product.createdAt || "",
-                        updatedAt: product.createdAt || "",
-                      } as ProductType;
-                      const unit = product.variants?.[0]?.name || (totalStock > 0 ? `${product.variants?.[0]?.stock || 1} pcs` : "1 pc");
+                  <div className="space-y-6">
+                    {chunks.map((chunk, idx) => {
+                      if (chunk.products.length === 0) return null;
+                      const showHeader = subCategories.length > 1 && chunk.subCategory.slug !== slug;
                       return (
-                        <div
-                          key={product.id}
-                          className="group flex flex-col rounded-xl border bg-white p-3 shadow-sm transition-all hover:shadow-md"
-                        >
-                          <Link href={`/product/${product.slug}`} className="block flex-1">
-                            <div className="relative aspect-square overflow-hidden rounded-lg bg-gray-50">
-                              {img ? (
-                                <img
-                                  src={getImageUrl(typeof img === "string" ? img : img.url)}
-                                  alt={product.name}
-                                  className="h-full w-full object-contain p-2 transition-transform group-hover:scale-105"
-                                  onError={(e) => {
-                                    (e.target as HTMLImageElement).src = "/images/placeholder.svg";
-                                  }}
-                                />
-                              ) : (
-                                <div className="flex h-full items-center justify-center text-muted-foreground text-3xl">
-                                  📦
-                                </div>
-                              )}
-                              {discount > 0 && (
-                                <Badge
-                                  variant="destructive"
-                                  className="absolute left-0 top-0 rounded-none rounded-br-lg px-2 py-1 text-[10px] font-bold text-white"
+                        <div key={chunk.subCategory.slug + idx}>
+                          {showHeader && (
+                            <div className="mb-4 flex items-center gap-2">
+                              <h2 className="text-lg font-bold text-foreground">
+                                {chunk.subCategory.name}
+                              </h2>
+                              <Badge variant="secondary" className="text-xs">
+                                {chunk.products.length} items
+                              </Badge>
+                            </div>
+                          )}
+                          <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4">
+                            {chunk.products.map((product) => {
+                              const img = product.images?.[0];
+                              const price =
+                                product.variants?.[0]?.price || product.minPrice || product.price || 0;
+                              const originalPrice =
+                                product.variants?.[0]?.compareAtPrice ||
+                                product.maxPrice ||
+                                product.originalPrice;
+                              const discount =
+                                originalPrice && originalPrice > price
+                                  ? Math.round(((originalPrice - price) / originalPrice) * 100)
+                                  : 0;
+                              const rating = product.rating || product.averageRating || 0;
+                              const productForCart: ProductType = {
+                                _id: product.id,
+                                name: product.name,
+                                slug: product.slug,
+                                description: product.description || "",
+                                price: Number(price) || 0,
+                                originalPrice: Number(originalPrice) || 0,
+                                sku: "",
+                                stock: product.totalStock ?? product.countInStock ?? 99,
+                                images: img
+                                  ? [{ url: typeof img === "string" ? img : img.url, alt: product.name, isPrimary: true }]
+                                  : [],
+                                category: {
+                                  _id: "",
+                                  name: product.category?.name || "",
+                                  slug: product.category?.slug || "",
+                                  productCount: 0,
+                                  isActive: true,
+                                  createdAt: "",
+                                  updatedAt: "",
+                                },
+                                brand: {
+                                  _id: "",
+                                  name: product.brand?.name || "",
+                                  slug: product.brand?.slug || "",
+                                  productCount: 0,
+                                  isActive: true,
+                                },
+                                variants: (product.variants || []).map((v: any) => ({
+                                  _id: v.id || v._id,
+                                  name: v.name || "",
+                                  sku: v.sku || "",
+                                  price: Number(v.price ?? price),
+                                  compareAtPrice: v.compareAtPrice ? Number(v.compareAtPrice) : undefined,
+                                  stock: v.stock ?? product.totalStock ?? 99,
+                                  attributes: v.attributes || {},
+                                })),
+                                tags: [],
+                                specifications: [],
+                                ratings: {
+                                  average: rating,
+                                  count: product.numReviews ?? product.reviewCount ?? 0,
+                                },
+                                isActive: true,
+                                isFeatured: false,
+                                isVeg: product.isVeg ?? null,
+                                isTrending: false,
+                                isBestSeller: false,
+                                createdAt: product.createdAt || "",
+                                updatedAt: product.createdAt || "",
+                              } as ProductType;
+                              const totalStock = product.totalStock ?? product.countInStock ?? (product.variants || []).reduce((s: number, v: any) => s + (v.stock || 0), 0) ?? 0;
+                              const unit = product.variants?.[0]?.name || (totalStock > 0 ? `${product.variants?.[0]?.stock || 1} pcs` : "1 pc");
+                              return (
+                                <div
+                                  key={product.id}
+                                  className="group flex flex-col rounded-xl border bg-white p-3 shadow-sm transition-all hover:shadow-md"
                                 >
-                                  {discount}% OFF
-                                </Badge>
-                              )}
-                            </div>
-                            <div className="mt-2 flex items-center gap-1 text-[10px] sm:text-xs font-semibold text-gray-700">
-                              <span className="inline-flex h-3.5 w-3.5 items-center justify-center rounded-full bg-amber-400 text-white text-[8px]">⚡</span>
-                              <span>18 MINS</span>
-                            </div>
-                            <h3 className="mt-1.5 text-xs sm:text-sm font-semibold text-gray-900 line-clamp-2 leading-snug group-hover:text-indigo-600">
-                              {product.name}
-                            </h3>
-                            <p className="mt-0.5 text-[10px] sm:text-xs text-gray-500">
-                              {unit}
-                            </p>
-                            <div className="mt-1.5 flex items-baseline gap-1.5">
-                              <span className="text-sm sm:text-base font-bold text-gray-900">
-                                ₹{Number(price).toLocaleString("en-IN")}
-                              </span>
-                              {discount > 0 && originalPrice ? (
-                                <span className="text-[10px] sm:text-xs text-muted-foreground line-through">
-                                  ₹{Number(originalPrice).toLocaleString("en-IN")}
-                                </span>
-                              ) : null}
-                            </div>
-                          </Link>
-                          <div className="mt-2 pt-1">
-                            <AddToCartButton product={productForCart} size="sm" label="ADD" />
+                                  <Link href={`/product/${product.slug}`} className="block flex-1">
+                                    <div className="relative aspect-square overflow-hidden rounded-lg bg-gray-50">
+                                      {img ? (
+                                        <img
+                                          src={getImageUrl(typeof img === "string" ? img : img.url)}
+                                          alt={product.name}
+                                          className="h-full w-full object-contain p-2 transition-transform group-hover:scale-105"
+                                          onError={(e) => {
+                                            (e.target as HTMLImageElement).src = "/images/placeholder.svg";
+                                          }}
+                                        />
+                                      ) : (
+                                        <div className="flex h-full items-center justify-center text-muted-foreground text-3xl">
+                                          📦
+                                        </div>
+                                      )}
+                                      {discount > 0 && (
+                                        <Badge
+                                          variant="destructive"
+                                          className="absolute left-0 top-0 rounded-none rounded-br-lg px-2 py-1 text-[10px] font-bold text-white"
+                                        >
+                                          {discount}% OFF
+                                        </Badge>
+                                      )}
+                                    </div>
+                                    <div className="mt-2 flex items-center gap-1 text-[10px] sm:text-xs font-semibold text-gray-700">
+                                      <span className="inline-flex h-3.5 w-3.5 items-center justify-center rounded-full bg-amber-400 text-white text-[8px]">⚡</span>
+                                      <span>18 MINS</span>
+                                    </div>
+                                    <h3 className="mt-1.5 text-xs sm:text-sm font-semibold text-gray-900 line-clamp-2 leading-snug group-hover:text-indigo-600">
+                                      {product.name}
+                                    </h3>
+                                    <p className="mt-0.5 text-[10px] sm:text-xs text-gray-500">
+                                      {unit}
+                                    </p>
+                                    <div className="mt-1.5 flex items-baseline gap-1.5">
+                                      <span className="text-sm sm:text-base font-bold text-gray-900">
+                                        ₹{Number(price).toLocaleString("en-IN")}
+                                      </span>
+                                      {discount > 0 && originalPrice ? (
+                                        <span className="text-[10px] sm:text-xs text-muted-foreground line-through">
+                                          ₹{Number(originalPrice).toLocaleString("en-IN")}
+                                        </span>
+                                      ) : null}
+                                    </div>
+                                  </Link>
+                                  <div className="mt-2 pt-1">
+                                    <AddToCartButton product={productForCart} size="sm" label="ADD" />
+                                  </div>
+                                </div>
+                              );
+                            })}
                           </div>
                         </div>
                       );
                     })}
                   </div>
                 )}
-                {totalPages > 1 && (
-                  <div className="mt-8 flex justify-center">
-                    <Pagination
-                      currentPage={currentPage}
-                      totalPages={totalPages}
-                      onPageChange={handlePageChange}
-                    />
+
+                <div ref={sentinelRef} className="h-4" />
+
+                {loadingMore && (
+                  <div className="flex items-center justify-center py-8 gap-2 text-muted-foreground">
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                    <span className="text-sm">Loading more products...</span>
+                  </div>
+                )}
+
+                {allLoaded && totalProducts > 0 && (
+                  <div className="py-8 text-center text-sm text-muted-foreground">
+                    You&apos;ve seen all products in {displayName}
                   </div>
                 )}
               </div>
