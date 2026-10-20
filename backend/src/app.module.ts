@@ -28,6 +28,7 @@ import { InventoryModule } from './modules/inventory/inventory.module';
 import { WarehouseModule } from './modules/warehouse/warehouse.module';
 import { DeliveryModule } from './modules/delivery/delivery.module';
 import { FlashSalesModule } from './modules/flash-sales/flash-sales.module';
+import { HomeSectionsModule } from './modules/home-sections/home-sections.module';
 import { DeliveryZonesModule } from './modules/delivery-zones/delivery-zones.module';
 import { AppBannerModule } from './modules/app-banner/app-banner.module';
 import { SocialMediaModule } from './modules/social-media/social-media.module';
@@ -73,6 +74,7 @@ import { SettingsModule } from './modules/settings/settings.module';
     WarehouseModule,
     DeliveryModule,
     FlashSalesModule,
+    HomeSectionsModule,
     DeliveryZonesModule,
     AppBannerModule,
     SocialMediaModule,

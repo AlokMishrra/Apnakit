@@ -1,6 +1,8 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+// Same-origin by default: requests go through the Next.js rewrite in
+// next.config.ts, which forwards them to BACKEND_URL.
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/api/v1';
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,

@@ -1,4 +1,5 @@
 import { PrismaClient, BannerPosition } from '@prisma/client';
+import { BANNER_IMAGES } from './seed-images';
 
 interface BannerSeed {
   title: string;
@@ -11,34 +12,34 @@ interface BannerSeed {
 
 const HERO_BANNERS: BannerSeed[] = [
   {
-    title: 'Mega Electronics Sale',
-    subtitle: 'Up to 70% off on smartphones, laptops & more',
-    image: 'https://placehold.co/1920x600?text=Mega+Electronics+Sale',
-    link: '/category/electronics',
+    title: 'Fresh Groceries, Delivered Fast',
+    subtitle: 'Fruits, vegetables, dairy and staples from stores near you',
+    image: BANNER_IMAGES['Fresh Groceries, Delivered Fast'],
+    link: '/category/grocery',
     position: BannerPosition.HERO,
     sortOrder: 1,
   },
   {
-    title: 'Fashion Weekend Special',
-    subtitle: 'Buy 2 Get 1 Free on all fashion brands',
-    image: 'https://placehold.co/1920x600?text=Fashion+Weekend+Special',
-    link: '/category/fashion',
+    title: 'Snacks & Drinks Deals',
+    subtitle: 'Chips, chocolates, cold drinks and more from ₹20',
+    image: BANNER_IMAGES['Snacks & Drinks Deals'],
+    link: '/category/snacks-beverages',
     position: BannerPosition.HERO,
     sortOrder: 2,
   },
   {
-    title: 'Home & Kitchen Essentials',
-    subtitle: 'Starting from ₹299 only',
-    image: 'https://placehold.co/1920x600?text=Home+%26+Kitchen+Essentials',
-    link: '/category/home-kitchen',
+    title: 'Beauty & Personal Care',
+    subtitle: 'Shampoo, skincare and hygiene from brands you trust',
+    image: BANNER_IMAGES['Beauty & Personal Care'],
+    link: '/category/beauty-skincare',
     position: BannerPosition.HERO,
     sortOrder: 3,
   },
   {
-    title: 'New Arrivals - Beauty',
-    subtitle: 'Discover the latest beauty products',
-    image: 'https://placehold.co/1920x600?text=New+Beauty+Products',
-    link: '/category/beauty',
+    title: 'Instant Food & Frozen Treats',
+    subtitle: 'Momos, pizza, fries and ice cream ready in minutes',
+    image: BANNER_IMAGES['Instant Food & Frozen Treats'],
+    link: '/category/instant-food',
     position: BannerPosition.HERO,
     sortOrder: 4,
   },
@@ -48,7 +49,7 @@ const PROMOTIONAL_BANNERS: BannerSeed[] = [
   {
     title: 'Free Delivery',
     subtitle: 'On orders above ₹999',
-    image: 'https://placehold.co/600x300?text=Free+Delivery',
+    image: BANNER_IMAGES['Free Delivery'],
     link: '/help',
     position: BannerPosition.PROMOTIONAL,
     sortOrder: 1,
@@ -56,7 +57,7 @@ const PROMOTIONAL_BANNERS: BannerSeed[] = [
   {
     title: 'Bank Offers',
     subtitle: 'Extra 10% off with HDFC cards',
-    image: 'https://placehold.co/600x300?text=Bank+Offers',
+    image: BANNER_IMAGES['Bank Offers'],
     link: '/coupons',
     position: BannerPosition.PROMOTIONAL,
     sortOrder: 2,
@@ -64,7 +65,7 @@ const PROMOTIONAL_BANNERS: BannerSeed[] = [
   {
     title: 'Refer & Earn',
     subtitle: 'Get ₹200 for every friend you refer',
-    image: 'https://placehold.co/600x300?text=Refer+%26+Earn',
+    image: BANNER_IMAGES['Refer & Earn'],
     link: '/account',
     position: BannerPosition.PROMOTIONAL,
     sortOrder: 3,
@@ -72,7 +73,7 @@ const PROMOTIONAL_BANNERS: BannerSeed[] = [
   {
     title: 'Sell on ApnaKit',
     subtitle: 'Start your online business today',
-    image: 'https://placehold.co/600x300?text=Sell+on+ApnaKit',
+    image: BANNER_IMAGES['Sell on ApnaKit'],
     link: '/seller/register',
     position: BannerPosition.PROMOTIONAL,
     sortOrder: 4,
@@ -88,7 +89,9 @@ export async function seedBanners(prisma: PrismaClient) {
     });
 
     if (!existing) {
-      await prisma.banner.create({ data: banner });
+      await prisma.banner.create({
+        data: { ...banner, image: BANNER_IMAGES[banner.title] ?? banner.image },
+      });
       console.log(`  ├─ Hero: ${banner.title}`);
     }
   }
@@ -99,7 +102,9 @@ export async function seedBanners(prisma: PrismaClient) {
     });
 
     if (!existing) {
-      await prisma.banner.create({ data: banner });
+      await prisma.banner.create({
+        data: { ...banner, image: BANNER_IMAGES[banner.title] ?? banner.image },
+      });
       console.log(`  ├─ Promo: ${banner.title}`);
     }
   }

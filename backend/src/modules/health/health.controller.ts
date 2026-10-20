@@ -1,10 +1,14 @@
 import { Controller, Get } from '@nestjs/common';
 import { Public } from '../../common/decorators/roles.decorator';
 import { EmailService } from '../notifications/email.service';
+import { PrismaService } from '../../config/database.config';
 
 @Controller()
 export class HealthController {
-  constructor(private readonly emailService: EmailService) {}
+  constructor(
+    private readonly emailService: EmailService,
+    private readonly prisma: PrismaService,
+  ) {}
 
   @Public()
   @Get()
@@ -12,10 +16,33 @@ export class HealthController {
     return { status: 'ok', timestamp: new Date().toISOString() };
   }
 
+  /**
+   * Liveness plus a real database round-trip.
+   *
+   * The function itself starting up says nothing about whether the API can
+   * actually serve data, so this reports the database explicitly rather than
+   * returning a cheerful 200 while every query 500s.
+   */
   @Public()
   @Get('health')
-  check() {
-    return { status: 'ok', timestamp: new Date().toISOString() };
+  async check() {
+    const database = await this.checkDatabase();
+    return {
+      status: database === 'ok' ? 'ok' : 'degraded',
+      database,
+      databaseUrlConfigured: !!process.env.DATABASE_URL,
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  private async checkDatabase(): Promise<'ok' | 'not_configured' | 'unreachable'> {
+    if (!process.env.DATABASE_URL) return 'not_configured';
+    try {
+      await this.prisma.$queryRaw`SELECT 1`;
+      return 'ok';
+    } catch (err: any) {
+      return 'unreachable';
+    }
   }
 
   @Public()

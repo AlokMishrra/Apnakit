@@ -14,10 +14,13 @@ export class BannersService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  async findAll(position?: BannerPosition) {
+  async findAll(position?: BannerPosition, homeSectionKey?: string) {
     const where: any = { isActive: true };
     if (position) {
       where.position = position;
+    }
+    if (homeSectionKey) {
+      where.homeSectionKey = homeSectionKey;
     }
 
     const banners = await this.prisma.banner.findMany({

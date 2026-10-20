@@ -5,6 +5,7 @@ import { seedBrands } from './brands.seed';
 import { seedProducts } from './products.seed';
 import { seedBanners } from './banners.seed';
 import { seedCoupons } from './coupons.seed';
+import { seedHomeSections, seedHomeSectionBanners } from './home-sections.seed';
 
 const prisma = new PrismaClient();
 
@@ -28,6 +29,12 @@ async function main() {
     console.log('');
 
     await seedCoupons(prisma);
+    console.log('');
+
+    await seedHomeSections(prisma);
+    console.log('');
+
+    await seedHomeSectionBanners(prisma);
     console.log('');
 
     console.log('✅ Database seeding completed successfully!');

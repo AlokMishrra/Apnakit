@@ -1,5 +1,5 @@
 import api from './api';
-import axios from 'axios';
+import { uploadFileToStorage } from '@/lib/upload';
 
 export const adminService = {
   // Dashboard
@@ -357,41 +357,14 @@ export const adminService = {
     return response.data;
   },
 
-  // Upload — bypass Next.js rewrite proxy for large files to avoid Vercel function timeout
+  // Upload — goes browser -> object storage directly. The API only issues the
+  // ticket, so the 4.5MB serverless request cap never applies to the file.
   uploadImage: async (file: File): Promise<any> => {
-    const formData = new FormData();
-    formData.append('file', file);
-    const token = localStorage.getItem('accessToken');
-    const response = await axios.post(
-      `${process.env.NEXT_PUBLIC_BACKEND_URL || 'https://apnakit-backend.onrender.com'}/api/v1/upload/image`,
-      formData,
-      {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        timeout: 120000,
-      }
-    );
-    return response.data;
+    return uploadFileToStorage(file, 'image');
   },
 
   uploadVideo: async (file: File): Promise<any> => {
-    const formData = new FormData();
-    formData.append('file', file);
-    const token = localStorage.getItem('accessToken');
-    const response = await axios.post(
-      `${process.env.NEXT_PUBLIC_BACKEND_URL || 'https://apnakit-backend.onrender.com'}/api/v1/upload/video`,
-      formData,
-      {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        timeout: 300000,
-      }
-    );
-    return response.data;
+    return uploadFileToStorage(file, 'video');
   },
 
   // Inventory

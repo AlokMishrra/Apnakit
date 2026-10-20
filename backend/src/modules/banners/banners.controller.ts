@@ -17,7 +17,7 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard, Role } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { Public } from '../../common/decorators/roles.decorator';
-import { BannerPosition } from '@prisma/client';
+import { BannerPosition, HomeSectionKey } from '@prisma/client';
 
 @ApiTags('Banners')
 @Controller('banners')
@@ -26,11 +26,15 @@ export class BannersController {
 
   @Public()
   @Get()
-  @ApiOperation({ summary: 'Get banners by position' })
+  @ApiOperation({ summary: 'Get banners by position, optionally scoped to a home section' })
   @ApiQuery({ name: 'position', required: false, enum: BannerPosition })
+  @ApiQuery({ name: 'homeSectionKey', required: false, enum: HomeSectionKey })
   @ApiResponse({ status: 200, description: 'List of banners' })
-  findAll(@Query('position') position?: BannerPosition) {
-    return this.bannersService.findAll(position);
+  findAll(
+    @Query('position') position?: BannerPosition,
+    @Query('homeSectionKey') homeSectionKey?: HomeSectionKey,
+  ) {
+    return this.bannersService.findAll(position, homeSectionKey);
   }
 
   @Get('admin/all')

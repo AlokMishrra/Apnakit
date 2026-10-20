@@ -253,6 +253,7 @@ model Category {
   children Category[] @relation("CategoryTree")
   products Product[] @relation("ProductPrimaryCategory")
   productCategories ProductCategory[]
+  homeSectionCategories HomeSectionCategory[]
 
   @@index([slug])
   @@index([parentId])
@@ -342,6 +343,7 @@ model Product {
   analytics      ProductAnalytics?
   searchClicks   SearchQuery[]
   flashSales     FlashSale[]
+  homeSectionItems HomeSectionItem[]
   productCategories ProductCategory[]
 
   @@index([slug])
@@ -807,6 +809,9 @@ model Banner {
   showButton   Boolean        @default(true)
   link         String?
   position     BannerPosition @default(HERO)
+  /// When set, the banner renders inside that home section instead of the
+  /// generic banner slots.
+  homeSectionKey HomeSectionKey?
   isActive     Boolean        @default(true)
   sortOrder    Int            @default(0)
   startsAt     DateTime?
@@ -815,6 +820,7 @@ model Banner {
   updatedAt    DateTime       @updatedAt
 
   @@index([position])
+  @@index([homeSectionKey])
   @@index([isActive])
   @@index([sortOrder])
 }
@@ -850,6 +856,69 @@ model FlashSale {
   @@index([isActive])
   @@index([startsAt])
   @@index([expiresAt])
+}
+
+// ─── Home Section Models ──────────────────────────────────────────────────────
+//
+// The storefront home page exposes two admin-managed sections behind a
+// Quick / Shop All toggle. `HomeSection` holds one row per section (the copy
+// the toggle renders), `HomeSectionItem` is the ordered product list inside it.
+
+enum HomeSectionKey {
+  QUICK
+  SHOP_ALL
+}
+
+model HomeSection {
+  id          String        @id @default(cuid())
+  key         HomeSectionKey @unique
+  title       String
+  subtitle    String?
+  isActive    Boolean       @default(true)
+  sortOrder   Int           @default(0)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  items HomeSectionItem[]
+  categories HomeSectionCategory[]
+
+  @@index([isActive])
+}
+
+model HomeSectionItem {
+  id        String   @id @default(cuid())
+  sectionId String
+  productId String
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  section HomeSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  product Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([sectionId, productId])
+  @@index([sectionId, sortOrder])
+  @@index([productId])
+}
+
+/// Categories the admin pins to a section. Pinned categories are shown as
+/// filter chips so shoppers can narrow a long section without leaving it.
+model HomeSectionCategory {
+  id        String   @id @default(cuid())
+  sectionId String
+  categoryId String
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  section  HomeSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  category Category     @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([sectionId, categoryId])
+  @@index([sectionId, sortOrder])
+  @@index([categoryId])
 }
 
 // ─── Review Models ────────────────────────────────────────────────────────────

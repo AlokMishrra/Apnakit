@@ -1,8 +1,8 @@
 import { Suspense } from "react";
-import { HeroBanner } from "@/components/home/hero-banner";
 import { CategoryGrid } from "@/components/home/category-grid";
 import { FlashSale } from "@/components/home/flash-sale";
 import { CategoryWiseProducts } from "@/components/home/category-wise-products";
+import { HomeSectionSwitch } from "@/components/home/home-section-switch";
 import { RecentlyViewed } from "@/components/home/recently-viewed";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -11,19 +11,6 @@ export const metadata = {
   description:
     "Discover amazing deals on electronics, fashion, home & kitchen essentials. Shop now with free delivery on orders above ₹999.",
 };
-
-function HeroSkeleton() {
-  return (
-    <div className="relative h-[200px] w-full overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-500 to-purple-600 sm:h-[320px] md:h-[400px]">
-      <div className="absolute inset-0 flex flex-col justify-center px-6 sm:px-12">
-        <Skeleton className="h-6 w-48 bg-white/30" />
-        <Skeleton className="mt-3 h-10 w-64 bg-white/30 sm:h-12 sm:w-80" />
-        <Skeleton className="mt-2 h-4 w-40 bg-white/30" />
-        <Skeleton className="mt-5 h-10 w-32 rounded-md bg-white/30" />
-      </div>
-    </div>
-  );
-}
 
 function CategorySkeleton() {
   return (
@@ -73,14 +60,14 @@ function ProductGridSkeleton({ count = 4 }: { count?: number }) {
 export default function HomePage() {
   return (
     <main className="flex flex-col gap-0">
-      <Suspense fallback={<HeroSkeleton />}>
-        <HeroBanner />
-      </Suspense>
-
-      <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
-        <Suspense fallback={<CategorySkeleton />}>
-          <CategoryGrid />
-        </Suspense>
+      {/* The Quick / Shop All toggle leads the page; the category grid and the
+          selected section both hang off it. */}
+      <div className="mx-auto w-full max-w-7xl px-4 pt-4 sm:px-6 sm:pt-5 lg:px-8">
+        <HomeSectionSwitch>
+          <Suspense fallback={<CategorySkeleton />}>
+            <CategoryGrid />
+          </Suspense>
+        </HomeSectionSwitch>
       </div>
 
       <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">

@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import { CATEGORY_IMAGES } from './seed-images';
 
 interface CategorySeed {
   name: string;
@@ -150,7 +151,7 @@ async function createCategoryTree(
       update: {
         name: category.name,
         description: category.description,
-        image: category.image,
+        image: CATEGORY_IMAGES[category.slug] ?? category.image,
         sortOrder: category.sortOrder,
         metaTitle: category.metaTitle,
         metaDescription: category.metaDescription,
@@ -160,7 +161,7 @@ async function createCategoryTree(
         name: category.name,
         slug: category.slug,
         description: category.description,
-        image: category.image,
+        image: CATEGORY_IMAGES[category.slug] ?? category.image,
         sortOrder: category.sortOrder,
         metaTitle: category.metaTitle,
         metaDescription: category.metaDescription,

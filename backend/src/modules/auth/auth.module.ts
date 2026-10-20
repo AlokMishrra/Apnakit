@@ -9,6 +9,14 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 import { GoogleStrategy } from './strategies/google.strategy';
 import { NotificationsModule } from '../notifications/notifications.module';
 
+/**
+ * Google sign-in is optional. Registering the strategy without credentials
+ * makes passport throw during dependency injection, which would take down the
+ * whole serverless container — so only register it when it is actually usable.
+ */
+const googleStrategyEnabled =
+  !!process.env.GOOGLE_CLIENT_ID && !!process.env.GOOGLE_CLIENT_SECRET;
+
 @Module({
   imports: [
     PassportModule.register({ defaultStrategy: 'jwt' }),
@@ -25,7 +33,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
     NotificationsModule,
   ],
   controllers: [AuthController, TruecallerCallbackController],
-  providers: [AuthService, JwtStrategy, GoogleStrategy],
+  providers: [AuthService, JwtStrategy, ...(googleStrategyEnabled ? [GoogleStrategy] : [])],
   exports: [AuthService, JwtModule],
 })
 export class AuthModule {}

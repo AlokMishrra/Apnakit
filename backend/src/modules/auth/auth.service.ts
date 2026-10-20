@@ -22,17 +22,31 @@ import { OtpType } from '@prisma/client';
 import { Msg91Service } from '../notifications/msg91.service';
 import { EmailService } from '../notifications/email.service';
 import { FirebaseLoginDto } from './dto/firebase-login.dto';
-import { initializeApp, getApps, cert, App } from 'firebase-admin/app';
-import { getAuth, DecodedIdToken } from 'firebase-admin/auth';
+import type { App } from 'firebase-admin/app';
+import type { DecodedIdToken } from 'firebase-admin/auth';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import axios from 'axios';
 import * as crypto from 'crypto';
+
+/**
+ * `firebase-admin` pulls in `jwks-rsa`, which requires the ESM-only `jose`
+ * package. Under Vercel's CommonJS runtime that throws ERR_REQUIRE_ESM while
+ * the module graph is being loaded, which takes down every route — including
+ * /health — even though most deployments never use Firebase OTP.
+ *
+ * So firebase-admin is only ever pulled in through a dynamic import, at the
+ * point the Firebase code paths actually run.
+ */
+type FirebaseAdminAppModule = typeof import('firebase-admin/app');
+type FirebaseAdminAuthModule = typeof import('firebase-admin/auth');
 
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
   private firebaseEnabled: boolean;
   private firebaseApp: App | null = null;
+  /** Resolves once the lazy Firebase init has settled, so callers can await it. */
+  private firebaseReady: Promise<boolean>;
   private supabase: SupabaseClient;
 
   constructor(
@@ -42,7 +56,9 @@ export class AuthService {
     private msg91Service: Msg91Service,
     private emailService: EmailService,
   ) {
-    this.firebaseEnabled = this.initFirebase();
+    // Firebase is initialised lazily (see initFirebase) because loading
+    // firebase-admin on boot is expensive and can fail on serverless runtimes.
+    this.firebaseReady = this.initFirebase();
     this.initSupabase();
   }
 
@@ -50,7 +66,7 @@ export class AuthService {
    * Initialize Firebase Admin SDK for verifying ID tokens
    * Requires service account JSON from Firebase Console → Project Settings → Service Accounts
    */
-  private initFirebase(): boolean {
+  private async initFirebase(): Promise<boolean> {
     const projectId = this.configService.get('FIREBASE_PROJECT_ID');
     const clientEmail = this.configService.get('FIREBASE_CLIENT_EMAIL');
     const privateKey = this.configService.get('FIREBASE_PRIVATE_KEY');
@@ -65,13 +81,15 @@ export class AuthService {
       return false;
     }
     try {
-      const existing = getApps().find((a) => a?.name === 'nishumart-firebase');
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const adminApp: FirebaseAdminAppModule = await import('firebase-admin/app');
+      const existing = adminApp.getApps().find((a) => a?.name === 'nishumart-firebase');
       if (existing) {
         this.firebaseApp = existing;
       } else {
-        this.firebaseApp = initializeApp(
+        this.firebaseApp = adminApp.initializeApp(
           {
-            credential: cert({
+            credential: adminApp.cert({
               projectId,
               clientEmail,
               privateKey: privateKey.replace(/\\n/g, '\n'),
@@ -1109,6 +1127,7 @@ export class AuthService {
    * Returns our own JWT tokens so the frontend can use them.
    */
   async verifyFirebaseToken(dto: FirebaseLoginDto) {
+    await this.firebaseReady;
     if (!this.firebaseEnabled || !this.firebaseApp) {
       throw new BadRequestException(
         'Firebase is not configured on the server. Add FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY to .env'
@@ -1120,7 +1139,9 @@ export class AuthService {
 
     let decoded: DecodedIdToken;
     try {
-      decoded = await getAuth(this.firebaseApp).verifyIdToken(dto.idToken);
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const adminAuth: FirebaseAdminAuthModule = await import('firebase-admin/auth');
+      decoded = await adminAuth.getAuth(this.firebaseApp).verifyIdToken(dto.idToken);
     } catch (err: any) {
       this.logger.warn(`Firebase ID token verification failed: ${err.message}`);
       throw new UnauthorizedException('Invalid or expired Firebase ID token');

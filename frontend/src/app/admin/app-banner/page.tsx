@@ -35,7 +35,7 @@ import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { getSafeErrorMessage } from "@/lib/safe-error";
 import { appBannerService, type AppBannerConfig } from "@/services/app-banner.service";
-import apiClient from "@/lib/api-client";
+import { uploadFileToStorage, type UploadKind } from "@/lib/upload";
 import { cn } from "@/lib/utils";
 
 function formatBytes(n: number | null | undefined): string {
@@ -140,16 +140,10 @@ export default function AdminAppBannerPage() {
 
   const uploadFile = async (
     file: File,
-    endpoint: string,
+    kind: UploadKind,
     field: "iconImage" | "apkFileUrl" | "ipaFileUrl"
   ) => {
-    const form = new FormData();
-    form.append("file", file);
-    const res = await apiClient.post(endpoint, form, {
-      headers: { "Content-Type": "multipart/form-data" },
-      timeout: 300000, // 5min for big APKs
-    });
-    const data = res.data?.data || res.data;
+    const data = await uploadFileToStorage(file, kind);
     const url = data?.url;
     if (!url) throw new Error("Upload did not return a URL");
     setConfig((c) =>
@@ -169,7 +163,7 @@ export default function AdminAppBannerPage() {
     if (!f) return;
     try {
       setUploadingIcon(true);
-      await uploadFile(f, "/upload/app-icon", "iconImage");
+      await uploadFile(f, "app-icon", "iconImage");
       toast.success("App icon uploaded");
     } catch (err) {
       toast.error("Icon upload failed", { description: getSafeErrorMessage(err) });
@@ -184,7 +178,7 @@ export default function AdminAppBannerPage() {
     if (!f) return;
     try {
       setUploadingApk(true);
-      await uploadFile(f, "/upload/apk", "apkFileUrl");
+      await uploadFile(f, "apk", "apkFileUrl");
       toast.success("APK uploaded", { description: `Direct download link saved.` });
     } catch (err) {
       toast.error("APK upload failed", { description: getSafeErrorMessage(err) });
@@ -199,7 +193,7 @@ export default function AdminAppBannerPage() {
     if (!f) return;
     try {
       setUploadingIpa(true);
-      await uploadFile(f, "/upload/ipa", "ipaFileUrl");
+      await uploadFile(f, "ipa", "ipaFileUrl");
       toast.success("IPA uploaded", { description: `Direct download link saved.` });
     } catch (err) {
       toast.error("IPA upload failed", { description: getSafeErrorMessage(err) });

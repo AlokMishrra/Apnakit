@@ -66,6 +66,21 @@ export function debounce<T extends (...args: unknown[]) => unknown>(
   };
 }
 
+/**
+ * Neutral placeholder for products whose upstream image host refuses to serve
+ * the file. A tinted tile with the brand initial reads as intentional, whereas
+ * an empty grey box reads as a bug.
+ */
+export function productPlaceholder(text?: string): string {
+  const initial = (text || "?").trim().charAt(0).toUpperCase() || "?";
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="600" viewBox="0 0 600 600">
+  <rect width="600" height="600" fill="#f1f5f9"/>
+  <circle cx="300" cy="300" r="150" fill="#e2e8f0"/>
+  <text x="300" y="300" font-family="system-ui, -apple-system, sans-serif" font-size="180" font-weight="600" fill="#94a3b8" text-anchor="middle" dominant-baseline="central">${initial}</text>
+</svg>`;
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+}
+
 export function getImageUrl(path: any, fallback: string = "/images/placeholder.svg"): string {
   if (!path) return fallback;
   const url = typeof path === "string" ? path : path?.url || path?.image || "";

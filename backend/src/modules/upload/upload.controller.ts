@@ -3,6 +3,7 @@ import {
   Post,
   Get,
   Delete,
+  Body,
   Param,
   UploadedFile,
   UploadedFiles,
@@ -13,12 +14,31 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes, ApiBody } from '@nestjs/swagger';
-import { UploadService } from './upload.service';
+import { IsIn, IsOptional, IsString, MaxLength } from 'class-validator';
+import { UploadService, UploadKind, UPLOAD_KIND_SPECS } from './upload.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { Role } from '@prisma/client';
 import { PrismaService } from '../../config/database.config';
+
+const UPLOAD_KINDS = Object.keys(UPLOAD_KIND_SPECS) as UploadKind[];
+
+class PresignUploadDto {
+  @IsIn(UPLOAD_KINDS)
+  kind: UploadKind;
+
+  @IsString()
+  @MaxLength(255)
+  fileName: string;
+
+  @IsString()
+  @MaxLength(255)
+  contentType: string;
+
+  @IsOptional()
+  size?: number;
+}
 
 @ApiTags('Upload')
 @Controller('upload')
@@ -29,6 +49,20 @@ export class UploadController {
     private readonly uploadService: UploadService,
     private readonly prisma: PrismaService,
   ) {}
+
+  @Post('presign')
+  @ApiOperation({
+    summary:
+      'Get a direct-to-storage upload ticket. Required for files too large for the 4.5MB API request cap (video, APK, IPA).',
+  })
+  presignUpload(@Body() dto: PresignUploadDto) {
+    return this.uploadService.createDirectUpload({
+      kind: dto.kind,
+      fileName: dto.fileName,
+      contentType: dto.contentType,
+      size: dto.size,
+    });
+  }
 
   @Post('image')
   @UseInterceptors(FileInterceptor('file'))

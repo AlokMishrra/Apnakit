@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import { PRODUCT_IMAGES } from './seed-images';
 
 interface ProductVariantSeed {
   name: string;
@@ -680,11 +681,15 @@ export async function seedProducts(prisma: PrismaClient) {
       });
     }
 
-    for (let i = 0; i < productData.images.length; i++) {
+    // Prefer the real photography in seed-images.ts over the inline
+    // placehold.co fallbacks that ship with each product definition.
+    const images = PRODUCT_IMAGES[productData.slug] ?? productData.images;
+
+    for (let i = 0; i < images.length; i++) {
       await prisma.productImage.create({
         data: {
           productId: product.id,
-          url: productData.images[i],
+          url: images[i],
           alt: productData.name,
           sortOrder: i,
           isPrimary: i === 0,
