@@ -414,19 +414,30 @@ export class ReferralsService implements OnModuleInit {
 
       // Ledger entry with the same idempotency key the partner app uses, so
       // its own settle_commission() can never double-count this reversal.
-      this.checked(
-        await this.db.from('earnings_transactions').insert({
-          partner_id: commission.partner_id,
-          type: 'commission_reversed',
-          amount: -Math.abs(Number(commission.commission_amount)),
-          status: 'cancelled',
-          description: `Reversal for order ${orderId}`,
-          commission_id: commission.id,
-          reference_id: orderId,
-          idempotency_key: `${commission.partner_id}:${orderId}:commission_cancelled`,
-        }),
-        'earnings_transactions insert',
-      );
+      // 'commission_cancelled' is the type the partner app uses; it only
+      // exists once its enum migration is applied, so 'commission_reversed' is
+      // used as the fallback. The idempotency key is the partner app's own
+      // format either way, so its settle_commission() can never double-count.
+      const ledger = {
+        partner_id: commission.partner_id,
+        amount: -Math.abs(Number(commission.commission_amount)),
+        status: 'cancelled',
+        description: `Reversal for order ${orderId}`,
+        commission_id: commission.id,
+        reference_id: orderId,
+        idempotency_key: `${commission.partner_id}:${orderId}:commission_cancelled`,
+      };
+      const inserted = await this.db
+        .from('earnings_transactions')
+        .insert({ ...ledger, type: 'commission_cancelled' });
+      if (inserted.error) {
+        this.checked(
+          await this.db
+            .from('earnings_transactions')
+            .insert({ ...ledger, type: 'commission_reversed' }),
+          'earnings_transactions insert',
+        );
+      }
 
       await this.recomputeBalance(commission.partner_id);
       return { id: commission.id, status: 'cancelled' };

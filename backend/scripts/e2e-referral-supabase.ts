@@ -53,12 +53,14 @@ async function api(method: string, path: string, token?: string, body?: unknown)
   return { status: res.status, data, message: json?.message, raw: json };
 }
 
-async function sb(method: string, path: string, body?: unknown, prefer?: string) {
+async function sb(method: string, path: string, body?: unknown, prefer?: string, authToken?: string) {
+  // PostgREST reads the role from the Authorization header, but the apikey
+  // header must still be the project key.
   const res = await fetch(`${SB}${path}`, {
     method,
     headers: {
       apikey: SK,
-      Authorization: `Bearer ${SK}`,
+      Authorization: `Bearer ${authToken ?? SK}`,
       'Content-Type': 'application/json',
       ...(prefer ? { Prefer: prefer } : {}),
     },
@@ -127,15 +129,17 @@ async function main() {
   let partnerUid: string | null = null;
   let partnerCode = '';
   let partnerEmail = '';
+  let partnerPassword = '';
   const sessionS = `e2e-link-${rand(8)}`;
 
   try {
     // ── Setup: temporary partner in Supabase Auth ─────────────────────────
     console.log('Setup');
     partnerEmail = `e2e-partner-${rand(6)}@test.local`;
+    partnerPassword = `Pw-${rand(12)}`;
     const created = await sb('POST', '/auth/v1/admin/users', {
       email: partnerEmail,
-      password: `Pw-${rand(12)}`,
+      password: partnerPassword,
       email_confirm: true,
       user_metadata: { full_name: 'E2E Partner', account_type: 'earning_partner' },
     });
@@ -241,7 +245,9 @@ async function main() {
     const o3Db = await prisma.order.findUnique({ where: { orderNumber: o3.data?.orderNumber } });
     check('cart-code order gets 5% discount', Math.abs(Number(o3Db?.partnerDiscount) - round2(priceL * 0.05)) < 0.01, Number(o3Db?.partnerDiscount));
     await new Promise((r) => setTimeout(r, 800));
-    const c3 = await sb('GET', `/rest/v1/partner_commissions?order_id=eq.${o3.data?.orderNumber}&select=status`);
+    const net3 = round2(priceL - round2(priceL * 0.05));
+    const comm3 = round2(net3 * 0.1);
+    const c3 = await sb('GET', `/rest/v1/partner_commissions?order_id=eq.${o3.data?.orderNumber}&select=status,commission_amount`);
     check('order 3 commission pending', c3.data?.[0]?.status === 'pending', c3.data);
     const cancel = await api('POST', `/orders/${o3.data?.id}/cancel`, buyer2.token);
     check('customer cancels order 3', cancel.status < 300, cancel.raw);
@@ -255,6 +261,12 @@ async function main() {
     check('conversion marked reversed', conv3.data?.[0]?.is_reversed === true, conv3.data);
     const ledger3 = await sb('GET', `/rest/v1/earnings_transactions?reference_id=eq.${o3.data?.orderNumber}&select=type,amount`);
     check('reversal written to the earnings ledger', ledger3.data?.length === 1, ledger3.data);
+    check(
+      'ledger row uses the partner app commission_cancelled type',
+      ['commission_cancelled', 'commission_reversed'].includes(ledger3.data?.[0]?.type),
+      ledger3.data?.[0]?.type,
+    );
+    check('ledger amount is the negative commission', Math.abs(Number(ledger3.data?.[0]?.amount) + comm3) < 0.01, ledger3.data?.[0]);
     const profile3 = await sb('GET', `/rest/v1/partner_profiles?user_id=eq.${partnerUid}&select=total_earnings,available_balance,pending_balance`);
     check('partner balance excludes the voided commission', Number(profile3.data?.[0]?.total_earnings) === comm1, profile3.data);
 
@@ -272,6 +284,36 @@ async function main() {
     check('partner rows: one approved, one cancelled', statuses === 'approved,cancelled', statuses);
     const conversions = await sb('GET', `/rest/v1/referral_conversions?partner_id=eq.${partnerUid}&select=order_id`);
     check('partner sees two conversions', Array.isArray(conversions.data) && conversions.data.length === 2, conversions.data);
+
+    // Sign in as the partner with Supabase Auth and read the dashboard the
+    // partner app shows. This is the real end-to-end check of the app.
+    const tokenRes = await sb('POST', '/auth/v1/token?grant_type=password', {
+      email: partnerEmail,
+      password: partnerPassword,
+    });
+    const partnerJwt = tokenRes.data?.access_token;
+    check('partner can sign in with Supabase Auth', !!partnerJwt, tokenRes.data?.error_description ?? tokenRes.data?.msg);
+
+    if (partnerJwt) {
+      // The partner app reads these numbers with the partner's own session.
+      const dash = await sb('GET', '/rest/v1/rpc/get_dashboard_summary', undefined, undefined, partnerJwt);
+      const summary = dash.data;
+      check('partner dashboard returns a summary', !!summary, dash);
+      check('partner dashboard knows the account is a partner', summary?.is_partner === true, summary?.is_partner);
+      check(
+        'partner dashboard counts the delivered commission as earnings',
+        Math.abs(Number(summary?.total_earnings) - comm1) < 0.01,
+        { total_earnings: summary?.total_earnings, comm1 },
+      );
+      check('partner dashboard shows nothing pending after delivery', Number(summary?.pending_balance) === 0, summary?.pending_balance);
+      // Both referred orders created a commission, so both are conversions.
+      check('partner dashboard counts both conversions', Number(summary?.total_conversions) === 2, summary?.total_conversions);
+      check('partner dashboard shows today earnings for the day', Number(summary?.today_earnings) >= comm1 - 0.01, summary?.today_earnings);
+      check('partner dashboard counts the clicks', Number(summary?.total_clicks) >= 2, summary?.total_clicks);
+
+      const chart = await sb('GET', '/rest/v1/rpc/get_earnings_chart', undefined, undefined, partnerJwt);
+      check('partner earnings chart responds for the partner', chart.status === 200, { status: chart.status, body: chart.data });
+    }
 
     // ── 7. Quick / Shop All still holds ──────────────────────────────────
     console.log('\n7. Quick / Shop All');
