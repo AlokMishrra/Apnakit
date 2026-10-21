@@ -15,7 +15,11 @@ COPY backend/tsconfig.json ./
 COPY backend/src ./src/
 COPY backend/templates ./templates/
 
-RUN ./node_modules/.bin/tsc; exit 0
+# The backend has pre-existing type errors in unrelated modules, so the compile
+# is allowed to report them. It must still emit the app, and the build must fail
+# loudly if it did not: a missing dist/ used to start a container that exited
+# immediately, which left the deploy stuck instead of failing fast.
+RUN ./node_modules/.bin/tsc; test -f dist/main.js && test -f dist/app.module.js
 
 RUN npm prune --omit=dev
 
@@ -23,4 +27,8 @@ RUN mkdir -p uploads
 
 EXPOSE 3000
 
-CMD ["sh", "-c", "npx prisma migrate deploy 2>&1 || true; node dist/main"]
+# No `prisma migrate deploy` here on purpose. The production database is
+# managed with `prisma db push` (the schema is applied out of band), and
+# running the migration folder against it blocks on the migration lock, which
+# left the container starting without ever listening on its port.
+CMD ["node", "dist/main"]
