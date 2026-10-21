@@ -33,6 +33,16 @@ export const cartService = {
     return response.data;
   },
 
+  applyPartnerCode: async (code: string): Promise<any> => {
+    const response = await api.post('/cart/partner-code', { code });
+    return response.data;
+  },
+
+  removePartnerCode: async (): Promise<any> => {
+    const response = await api.delete('/cart/partner-code');
+    return response.data;
+  },
+
   applyCoupon: async (code: string): Promise<ApiResponse<{ cart: Cart; coupon: Coupon }>> => {
     const response = await api.post('/cart/coupon', { code });
     return response.data;

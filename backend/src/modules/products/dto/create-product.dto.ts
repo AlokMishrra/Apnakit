@@ -163,6 +163,12 @@ export class CreateProductDto {
   @IsString()
   barcode?: string;
 
+  @ApiPropertyOptional({ description: 'Hours to deliver. <= 24 puts the product in Quick.' })
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  deliveryHours?: number;
+
   @ApiPropertyOptional({ default: true })
   @IsOptional()
   @IsBoolean()

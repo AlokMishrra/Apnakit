@@ -43,6 +43,9 @@ const SECTION_INCLUDE = {
   },
 } satisfies Prisma.HomeSectionInclude;
 
+/** Products delivered within this many hours belong to Quick. */
+export const QUICK_MAX_HOURS = 24;
+
 @Injectable()
 export class HomeSectionsService {
   private readonly logger = new Logger(HomeSectionsService.name);
@@ -57,17 +60,21 @@ export class HomeSectionsService {
   async findAll() {
     const sections = await this.prisma.homeSection.findMany({
       orderBy: { sortOrder: 'asc' },
-      include: { _count: { select: { items: true } } },
     });
 
-    return sections.map((section) => ({
-      key: section.key,
-      title: section.title,
-      subtitle: section.subtitle,
-      isActive: section.isActive,
-      sortOrder: section.sortOrder,
-      itemCount: section._count.items,
-    }));
+    const result = [];
+    for (const section of sections) {
+      const items = await this.resolveItems(section.key);
+      result.push({
+        key: section.key,
+        title: section.title,
+        subtitle: section.subtitle,
+        isActive: section.isActive,
+        sortOrder: section.sortOrder,
+        itemCount: items.length,
+      });
+    }
+    return result;
   }
 
   /** One section with its full, ordered product list. */
@@ -88,7 +95,7 @@ export class HomeSectionsService {
       isActive: section.isActive,
       sortOrder: section.sortOrder,
       categories: this.formatCategories(section.categories),
-      items: section.items.map((item) => this.formatItem(item)),
+      items: (await this.resolveItems(section.key)).map((item) => this.formatItem(item)),
     };
   }
 
@@ -100,12 +107,6 @@ export class HomeSectionsService {
     const section = await this.prisma.homeSection.findUnique({
       where: { key },
       include: {
-        items: {
-          where: { isActive: true },
-          orderBy: [{ sortOrder: 'asc' as const }, { createdAt: 'asc' as const }],
-          take: limit && limit > 0 ? limit : undefined,
-          include: { product: { include: PRODUCT_INCLUDE } },
-        },
         categories: {
           where: { isActive: true },
           orderBy: [{ sortOrder: 'asc' as const }, { createdAt: 'asc' as const }],
@@ -116,12 +117,14 @@ export class HomeSectionsService {
 
     if (!section || !section.isActive) return null;
 
+    const items = await this.resolveItems(key, limit);
+
     return {
       key: section.key,
       title: section.title,
       subtitle: section.subtitle,
       categories: this.formatCategories(section.categories),
-      items: section.items.map((item) => this.formatItem(item)),
+      items: items.map((item) => this.formatItem(item)),
     };
   }
 
@@ -364,6 +367,72 @@ export class HomeSectionsService {
 
     this.logger.log(`Replaced ${uniqueIds.length} pinned categor(y/ies) in section ${key}`);
     return this.findAdminSection(key);
+  }
+
+  /** Products that belong to QUICK: admin-pinned OR delivered within 24h. */
+  private quickOrClause(pinnedIds: string[]): Prisma.ProductWhereInput[] {
+    const clauses: Prisma.ProductWhereInput[] = [{ deliveryHours: { lte: QUICK_MAX_HOURS } }];
+    if (pinnedIds.length) clauses.push({ id: { in: pinnedIds } });
+    return clauses;
+  }
+
+  /**
+   * Computes a section's product list.
+   * QUICK    = active products pinned in the admin QUICK list, plus any active
+   *            product whose deliveryHours <= 24. Pinned first, then fastest.
+   * SHOP_ALL = every other active product (delivered after 24h).
+   * The two lists never overlap, so every product appears in exactly one tab.
+   */
+  private async resolveItems(key: HomeSectionKey, limit?: number) {
+    const pinned = await this.prisma.homeSectionItem.findMany({
+      where: { isActive: true, section: { key: HomeSectionKey.QUICK } },
+      select: { productId: true, sortOrder: true },
+      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
+    });
+    const pinnedOrder = new Map(pinned.map((p, i) => [p.productId, i]));
+    const pinnedIds = pinned.map((p) => p.productId);
+    const quickOr = this.quickOrClause(pinnedIds);
+
+    // Shop All is written without NOT(OR(...)): SQL's NULL logic would drop
+    // every product whose deliveryHours is unset.
+    const where: Prisma.ProductWhereInput =
+      key === HomeSectionKey.QUICK
+        ? { isActive: true, OR: quickOr }
+        : {
+            isActive: true,
+            AND: [
+              ...(pinnedIds.length ? [{ NOT: { id: { in: pinnedIds } } }] : []),
+              { OR: [{ deliveryHours: null }, { deliveryHours: { gt: QUICK_MAX_HOURS } }] },
+            ],
+          };
+
+    const products = await this.prisma.product.findMany({
+      where,
+      include: PRODUCT_INCLUDE,
+    });
+
+    if (key === HomeSectionKey.QUICK) {
+      products.sort((a, b) => {
+        const pa = pinnedOrder.get(a.id);
+        const pb = pinnedOrder.get(b.id);
+        if (pa !== undefined || pb !== undefined) {
+          return (pa ?? Infinity) - (pb ?? Infinity);
+        }
+        const da = a.deliveryHours ?? Infinity;
+        const db = b.deliveryHours ?? Infinity;
+        if (da !== db) return da - db;
+        return a.name.localeCompare(b.name);
+      });
+    } else {
+      products.sort((a, b) => a.name.localeCompare(b.name));
+    }
+
+    const selected = limit && limit > 0 ? products.slice(0, limit) : products;
+    return selected.map((product, index) => ({
+      productId: product.id,
+      sortOrder: index,
+      product,
+    }));
   }
 
   private formatItem(item: {

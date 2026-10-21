@@ -156,32 +156,32 @@ enum BusinessType {
 // ─── Core Models ──────────────────────────────────────────────────────────────
 
 model User {
-  id        String   @id @default(cuid())
-  email     String?  @unique
-  phone     String?  @unique
-  password  String
-  firstName String
-  lastName  String
-  avatar    String?
-  role      Role     @default(CUSTOMER)
-  isVerified Boolean @default(false)
-  isActive  Boolean @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id         String   @id @default(cuid())
+  email      String?  @unique
+  phone      String?  @unique
+  password   String
+  firstName  String
+  lastName   String
+  avatar     String?
+  role       Role     @default(CUSTOMER)
+  isVerified Boolean  @default(false)
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   sessions            Session[]
   addresses           Address[]
-  orders              Order[]              @relation("CustomerOrders")
+  orders              Order[]          @relation("CustomerOrders")
   cart                Cart?
   wishlists           Wishlist[]
   reviews             Review[]
   reviewVotes         ReviewVote[]
   loyaltyPoints       LoyaltyPoint[]
   wallet              Wallet?
-  referralsMade       Referral[]           @relation("Referrer")
-  referralsReceived   Referral[]           @relation("Referee")
+  referralsMade       Referral[]       @relation("Referrer")
+  referralsReceived   Referral[]       @relation("Referee")
   supportTickets      SupportTicket[]
-  assignedTickets     SupportTicket[]      @relation("TicketAssignee")
+  assignedTickets     SupportTicket[]  @relation("TicketAssignee")
   ticketMessages      TicketMessage[]
   notifications       Notification[]
   couponUsages        CouponUsage[]
@@ -190,6 +190,9 @@ model User {
   seller              Seller?
   deliveryPartner     DeliveryPartner?
   passwordResets      PasswordReset[]
+  referredByPartnerId String?
+  referredByPartner   Partner?         @relation("PartnerCustomers", fields: [referredByPartnerId], references: [id], onDelete: SetNull)
+  Partner             Partner?
 
   @@index([email])
   @@index([phone])
@@ -212,14 +215,14 @@ model OTP {
 }
 
 model Session {
-  id         String   @id @default(cuid())
-  userId     String
-  token      String   @unique
-  refreshToken String @unique
-  deviceInfo Json?
-  ip         String?
-  expiresAt  DateTime
-  createdAt  DateTime @default(now())
+  id           String   @id @default(cuid())
+  userId       String
+  token        String   @unique
+  refreshToken String   @unique
+  deviceInfo   Json?
+  ip           String?
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -234,25 +237,25 @@ model Session {
 // ─── Product Models ───────────────────────────────────────────────────────────
 
 model Category {
-  id              String    @id @default(cuid())
+  id              String   @id @default(cuid())
   name            String
-  slug            String    @unique
+  slug            String   @unique
   description     String?
   image           String?
   parentId        String?
-  isActive        Boolean   @default(true)
-  sortOrder       Int       @default(0)
-  isComingSoon    Boolean   @default(false)
-  codEnabled      Boolean   @default(true)
+  isActive        Boolean  @default(true)
+  sortOrder       Int      @default(0)
+  isComingSoon    Boolean  @default(false)
+  codEnabled      Boolean  @default(true)
   metaTitle       String?
   metaDescription String?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
-  parent   Category?  @relation("CategoryTree", fields: [parentId], references: [id], onDelete: SetNull)
-  children Category[] @relation("CategoryTree")
-  products Product[] @relation("ProductPrimaryCategory")
-  productCategories ProductCategory[]
+  parent                Category?             @relation("CategoryTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children              Category[]            @relation("CategoryTree")
+  products              Product[]             @relation("ProductPrimaryCategory")
+  productCategories     ProductCategory[]
   homeSectionCategories HomeSectionCategory[]
 
   @@index([slug])
@@ -309,41 +312,42 @@ model Brand {
 }
 
 model Product {
-  id              String    @id @default(cuid())
-  name            String
-  slug            String    @unique
-  description     String?
+  deliveryHours    Int?
+  id               String   @id @default(cuid())
+  name             String
+  slug             String   @unique
+  description      String?
   shortDescription String?
-  brandId         String?
-  categoryId      String?
-  sellerId        String?
-  sku             String    @unique
-  barcode         String?
-  isFeatured      Boolean   @default(false)
-  isActive        Boolean   @default(true)
-  isVeg           Boolean?
-  metaTitle       String?
-  metaDescription String?
-  tags            String?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  brandId          String?
+  categoryId       String?
+  sellerId         String?
+  sku              String   @unique
+  barcode          String?
+  isFeatured       Boolean  @default(false)
+  isActive         Boolean  @default(true)
+  isVeg            Boolean?
+  metaTitle        String?
+  metaDescription  String?
+  tags             String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
-  brand          Brand?               @relation(fields: [brandId], references: [id], onDelete: SetNull)
-  category       Category?            @relation("ProductPrimaryCategory", fields: [categoryId], references: [id], onDelete: SetNull)
-  seller         Seller?              @relation(fields: [sellerId], references: [id], onDelete: SetNull)
-  variants       ProductVariant[]
-  images         ProductImage[]
-  specifications ProductSpecification[]
-  faqs           ProductFAQ[]
-  cartItems      CartItem[]
-  wishlistItems  Wishlist[]
-  orderItems     OrderItem[]
-  reviews        Review[]
-  inventories    Inventory[]
-  analytics      ProductAnalytics?
-  searchClicks   SearchQuery[]
-  flashSales     FlashSale[]
-  homeSectionItems HomeSectionItem[]
+  brand             Brand?                 @relation(fields: [brandId], references: [id], onDelete: SetNull)
+  category          Category?              @relation("ProductPrimaryCategory", fields: [categoryId], references: [id], onDelete: SetNull)
+  seller            Seller?                @relation(fields: [sellerId], references: [id], onDelete: SetNull)
+  variants          ProductVariant[]
+  images            ProductImage[]
+  specifications    ProductSpecification[]
+  faqs              ProductFAQ[]
+  cartItems         CartItem[]
+  wishlistItems     Wishlist[]
+  orderItems        OrderItem[]
+  reviews           Review[]
+  inventories       Inventory[]
+  analytics         ProductAnalytics?
+  searchClicks      SearchQuery[]
+  flashSales        FlashSale[]
+  homeSectionItems  HomeSectionItem[]
   productCategories ProductCategory[]
 
   @@index([slug])
@@ -374,7 +378,7 @@ model ProductVariant {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  product     Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  product     Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
   cartItems   CartItem[]
   orderItems  OrderItem[]
   images      ProductImage[]
@@ -405,12 +409,12 @@ model ProductImage {
 }
 
 model ProductSpecification {
-  id        String @id @default(cuid())
+  id        String  @id @default(cuid())
   productId String
   groupId   String?
   name      String
   value     String
-  sortOrder Int    @default(0)
+  sortOrder Int     @default(0)
 
   product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
@@ -447,8 +451,8 @@ model Warehouse {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  inventories   Inventory[]
-  stockTransfers StockTransfer[] @relation("TransferFrom")
+  inventories       Inventory[]
+  stockTransfers    StockTransfer[] @relation("TransferFrom")
   receivedTransfers StockTransfer[] @relation("TransferTo")
 
   @@index([code])
@@ -457,20 +461,20 @@ model Warehouse {
 }
 
 model Inventory {
-  id              String @id @default(cuid())
-  productId       String
-  variantId       String?
-  warehouseId     String
-  quantity        Int    @default(0)
-  reservedQuantity Int   @default(0)
-  reorderLevel    Int    @default(10)
-  reorderQuantity Int    @default(50)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id               String   @id @default(cuid())
+  productId        String
+  variantId        String?
+  warehouseId      String
+  quantity         Int      @default(0)
+  reservedQuantity Int      @default(0)
+  reorderLevel     Int      @default(10)
+  reorderQuantity  Int      @default(50)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
-  product   Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
-  variant   ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
-  warehouse Warehouse       @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  product   Product             @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variant   ProductVariant?     @relation(fields: [variantId], references: [id], onDelete: SetNull)
+  warehouse Warehouse           @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
   movements InventoryMovement[]
 
   @@unique([productId, variantId, warehouseId])
@@ -497,7 +501,7 @@ model InventoryMovement {
 }
 
 model StockTransfer {
-  id            String   @id @default(cuid())
+  id              String   @id @default(cuid())
   fromWarehouseId String
   toWarehouseId   String
   productId       String
@@ -530,10 +534,12 @@ model Cart {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user    User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  session Session?      @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  coupon  Coupon?       @relation(fields: [couponId], references: [id], onDelete: SetNull)
-  items   CartItem[]
+  user      User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  session   Session?   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  coupon    Coupon?    @relation(fields: [couponId], references: [id], onDelete: SetNull)
+  items     CartItem[]
+  partnerId String?
+  partner   Partner?   @relation("CartPartner", fields: [partnerId], references: [id], onDelete: SetNull)
 
   @@index([userId])
   @@index([sessionId])
@@ -548,9 +554,9 @@ model CartItem {
   price     Decimal  @db.Decimal(10, 2)
   createdAt DateTime @default(now())
 
-  cart    Cart             @relation(fields: [cartId], references: [id], onDelete: Cascade)
-  product Product          @relation(fields: [productId], references: [id], onDelete: Cascade)
-  variant ProductVariant?  @relation(fields: [variantId], references: [id], onDelete: SetNull)
+  cart    Cart            @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variant ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
 
   @@index([cartId])
   @@index([productId])
@@ -571,34 +577,37 @@ model Wishlist {
 }
 
 model Order {
-  id                String      @id @default(cuid())
-  orderNumber       String      @unique
+  partnerCode       String?
+  partnerDiscount   Decimal       @default(0) @db.Decimal(10, 2)
+  id                String        @id @default(cuid())
+  orderNumber       String        @unique
   userId            String
   sellerId          String?
-  status            OrderStatus @default(PENDING)
-  subtotal          Decimal     @db.Decimal(10, 2)
-  discount          Decimal     @default(0) @db.Decimal(10, 2)
-  tax               Decimal     @default(0) @db.Decimal(10, 2)
-  shippingCost      Decimal     @default(0) @db.Decimal(10, 2)
-  total             Decimal     @db.Decimal(10, 2)
+  status            OrderStatus   @default(PENDING)
+  subtotal          Decimal       @db.Decimal(10, 2)
+  discount          Decimal       @default(0) @db.Decimal(10, 2)
+  tax               Decimal       @default(0) @db.Decimal(10, 2)
+  shippingCost      Decimal       @default(0) @db.Decimal(10, 2)
+  total             Decimal       @db.Decimal(10, 2)
   paymentMethod     PaymentMethod
   paymentStatus     PaymentStatus @default(PENDING)
   shippingAddressId String?
   billingAddressId  String?
   notes             String?
-  createdAt         DateTime    @default(now())
-  updatedAt         DateTime    @updatedAt
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
 
-  user              User               @relation("CustomerOrders", fields: [userId], references: [id], onDelete: Cascade)
-  seller            Seller?            @relation(fields: [sellerId], references: [id], onDelete: SetNull)
-  items             OrderItem[]
-  statusHistory     OrderStatusHistory[]
-  payments          Payment[]
-  shippingAddress   Address?           @relation("ShippingAddress", fields: [shippingAddressId], references: [id], onDelete: SetNull)
-  billingAddress    Address?           @relation("BillingAddress", fields: [billingAddressId], references: [id], onDelete: SetNull)
-  review            Review?
+  user               User                 @relation("CustomerOrders", fields: [userId], references: [id], onDelete: Cascade)
+  seller             Seller?              @relation(fields: [sellerId], references: [id], onDelete: SetNull)
+  items              OrderItem[]
+  statusHistory      OrderStatusHistory[]
+  payments           Payment[]
+  shippingAddress    Address?             @relation("ShippingAddress", fields: [shippingAddressId], references: [id], onDelete: SetNull)
+  billingAddress     Address?             @relation("BillingAddress", fields: [billingAddressId], references: [id], onDelete: SetNull)
+  review             Review?
   deliveryAssignment DeliveryAssignment?
-  couponUsages      CouponUsage[]
+  couponUsages       CouponUsage[]
+  partnerCommission  PartnerCommission?
 
   @@index([userId])
   @@index([sellerId])
@@ -619,9 +628,9 @@ model OrderItem {
   status    String   @default("PENDING")
   createdAt DateTime @default(now())
 
-  order   Order             @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product Product           @relation(fields: [productId], references: [id], onDelete: Cascade)
-  variant ProductVariant?   @relation(fields: [variantId], references: [id], onDelete: SetNull)
+  order   Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variant ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
 
   @@index([orderId])
   @@index([productId])
@@ -657,9 +666,9 @@ model Address {
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
 
-  user            User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  shippingOrders  Order[] @relation("ShippingAddress")
-  billingOrders   Order[] @relation("BillingAddress")
+  user           User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  shippingOrders Order[] @relation("ShippingAddress")
+  billingOrders  Order[] @relation("BillingAddress")
 
   @@index([userId])
   @@index([isDefault])
@@ -668,19 +677,19 @@ model Address {
 // ─── Payment Models ───────────────────────────────────────────────────────────
 
 model Payment {
-  id               String        @id @default(cuid())
-  orderId          String
-  method           PaymentMethod
-  transactionId    String?       @unique
-  razorpayOrderId  String?
+  id                String        @id @default(cuid())
+  orderId           String
+  method            PaymentMethod
+  transactionId     String?       @unique
+  razorpayOrderId   String?
   razorpayPaymentId String?
-  amount           Decimal       @db.Decimal(10, 2)
-  status           PaymentStatus @default(PENDING)
-  metadata         Json?
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @updatedAt
+  amount            Decimal       @db.Decimal(10, 2)
+  status            PaymentStatus @default(PENDING)
+  metadata          Json?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
 
-  order  Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  order  Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
   refund Refund?
 
   @@index([orderId])
@@ -727,7 +736,7 @@ model Seller {
   createdAt         DateTime     @default(now())
   updatedAt         DateTime     @updatedAt
 
-  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   products  Product[]
   orders    Order[]
   dashboard SellerDashboard?
@@ -738,14 +747,14 @@ model Seller {
 }
 
 model SellerDashboard {
-  id           String   @id @default(cuid())
-  sellerId     String   @unique
-  totalSales   Decimal  @default(0) @db.Decimal(12, 2)
-  totalOrders  Int      @default(0)
-  pendingOrders Int     @default(0)
-  rating       Decimal? @db.Decimal(3, 2)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id            String   @id @default(cuid())
+  sellerId      String   @unique
+  totalSales    Decimal  @default(0) @db.Decimal(12, 2)
+  totalOrders   Int      @default(0)
+  pendingOrders Int      @default(0)
+  rating        Decimal? @db.Decimal(3, 2)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   seller Seller @relation(fields: [sellerId], references: [id], onDelete: Cascade)
 
@@ -755,24 +764,24 @@ model SellerDashboard {
 // ─── Coupon & Promotion Models ────────────────────────────────────────────────
 
 model Coupon {
-  id                  String     @id @default(cuid())
-  code                String     @unique
-  description         String?
-  type                CouponType
-  value               Decimal    @db.Decimal(10, 2)
-  minimumOrder        Decimal?   @db.Decimal(10, 2)
-  maximumDiscount     Decimal?   @db.Decimal(10, 2)
-  usageLimit          Int?
-  usedCount           Int        @default(0)
-  startsAt            DateTime
-  expiresAt           DateTime
-  isActive            Boolean    @default(true)
+  id                   String     @id @default(cuid())
+  code                 String     @unique
+  description          String?
+  type                 CouponType
+  value                Decimal    @db.Decimal(10, 2)
+  minimumOrder         Decimal?   @db.Decimal(10, 2)
+  maximumDiscount      Decimal?   @db.Decimal(10, 2)
+  usageLimit           Int?
+  usedCount            Int        @default(0)
+  startsAt             DateTime
+  expiresAt            DateTime
+  isActive             Boolean    @default(true)
   applicableCategories Json?
   applicableBrands     Json?
-  createdAt           DateTime   @default(now())
-  updatedAt           DateTime   @updatedAt
+  createdAt            DateTime   @default(now())
+  updatedAt            DateTime   @updatedAt
 
-  carts Cart[]
+  carts  Cart[]
   usages CouponUsage[]
 
   @@index([code])
@@ -798,26 +807,26 @@ model CouponUsage {
 }
 
 model Banner {
-  id           String         @id @default(cuid())
-  title        String
-  subtitle     String?
-  image        String
-  mediaType    BannerMediaType @default(IMAGE)
-  loopVideo    Boolean        @default(false)
-  showTitle    Boolean        @default(true)
-  showSubtitle Boolean        @default(true)
-  showButton   Boolean        @default(true)
-  link         String?
-  position     BannerPosition @default(HERO)
+  id             String          @id @default(cuid())
+  title          String
+  subtitle       String?
+  image          String
+  mediaType      BannerMediaType @default(IMAGE)
+  loopVideo      Boolean         @default(false)
+  showTitle      Boolean         @default(true)
+  showSubtitle   Boolean         @default(true)
+  showButton     Boolean         @default(true)
+  link           String?
+  position       BannerPosition  @default(HERO)
   /// When set, the banner renders inside that home section instead of the
   /// generic banner slots.
   homeSectionKey HomeSectionKey?
-  isActive     Boolean        @default(true)
-  sortOrder    Int            @default(0)
-  startsAt     DateTime?
-  expiresAt    DateTime?
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
+  isActive       Boolean         @default(true)
+  sortOrder      Int             @default(0)
+  startsAt       DateTime?
+  expiresAt      DateTime?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
 
   @@index([position])
   @@index([homeSectionKey])
@@ -833,22 +842,22 @@ enum BannerMediaType {
 // ─── Flash Sale Models ───────────────────────────────────────────────────────
 
 model FlashSale {
-  id           String   @id @default(cuid())
-  groupId      String   @default(cuid())
-  productId    String
-  variantId    String?
-  title        String?
-  salePrice    Decimal  @db.Decimal(10, 2)
+  id            String   @id @default(cuid())
+  groupId       String   @default(cuid())
+  productId     String
+  variantId     String?
+  title         String?
+  salePrice     Decimal  @db.Decimal(10, 2)
   originalPrice Decimal  @db.Decimal(10, 2)
-  totalStock   Int      @default(0)
-  soldCount    Int      @default(0)
-  startsAt     DateTime
-  expiresAt    DateTime
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  totalStock    Int      @default(0)
+  soldCount     Int      @default(0)
+  startsAt      DateTime
+  expiresAt     DateTime
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  product Product          @relation(fields: [productId], references: [id], onDelete: Cascade)
+  product Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
   variant ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
 
   @@index([productId])
@@ -870,16 +879,16 @@ enum HomeSectionKey {
 }
 
 model HomeSection {
-  id          String        @id @default(cuid())
-  key         HomeSectionKey @unique
-  title       String
-  subtitle    String?
-  isActive    Boolean       @default(true)
-  sortOrder   Int           @default(0)
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  id        String         @id @default(cuid())
+  key       HomeSectionKey @unique
+  title     String
+  subtitle  String?
+  isActive  Boolean        @default(true)
+  sortOrder Int            @default(0)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
 
-  items HomeSectionItem[]
+  items      HomeSectionItem[]
   categories HomeSectionCategory[]
 
   @@index([isActive])
@@ -905,16 +914,16 @@ model HomeSectionItem {
 /// Categories the admin pins to a section. Pinned categories are shown as
 /// filter chips so shoppers can narrow a long section without leaving it.
 model HomeSectionCategory {
-  id        String   @id @default(cuid())
-  sectionId String
+  id         String   @id @default(cuid())
+  sectionId  String
   categoryId String
-  sortOrder Int      @default(0)
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  sortOrder  Int      @default(0)
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   section  HomeSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
-  category Category     @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  category Category    @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 
   @@unique([sectionId, categoryId])
   @@index([sectionId, sortOrder])
@@ -938,9 +947,9 @@ model Review {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-  order   Order?  @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  user    User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+  order   Order?       @relation(fields: [orderId], references: [id], onDelete: SetNull)
   votes   ReviewVote[]
 
   @@unique([userId, productId])
@@ -993,20 +1002,20 @@ model Wallet {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         User                @relation(fields: [userId], references: [id], onDelete: Cascade)
   transactions WalletTransaction[]
 
   @@index([userId])
 }
 
 model WalletTransaction {
-  id          String              @id @default(cuid())
+  id          String                @id @default(cuid())
   walletId    String
-  amount      Decimal             @db.Decimal(10, 2)
+  amount      Decimal               @db.Decimal(10, 2)
   type        WalletTransactionType
   reference   String?
   description String?
-  createdAt   DateTime            @default(now())
+  createdAt   DateTime              @default(now())
 
   wallet Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
 
@@ -1037,19 +1046,19 @@ model Referral {
 // ─── Support Models ───────────────────────────────────────────────────────────
 
 model SupportTicket {
-  id           String         @id @default(cuid())
-  userId       String
-  subject      String
-  description  String
-  status       TicketStatus   @default(OPEN)
-  priority     TicketPriority @default(MEDIUM)
-  assignedTo   String?
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
+  id          String         @id @default(cuid())
+  userId      String
+  subject     String
+  description String
+  status      TicketStatus   @default(OPEN)
+  priority    TicketPriority @default(MEDIUM)
+  assignedTo  String?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
 
-  user       User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  assignee   User?           @relation("TicketAssignee", fields: [assignedTo], references: [id], onDelete: SetNull)
-  messages   TicketMessage[]
+  user     User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  assignee User?           @relation("TicketAssignee", fields: [assignedTo], references: [id], onDelete: SetNull)
+  messages TicketMessage[]
 
   @@index([userId])
   @@index([assignedTo])
@@ -1067,7 +1076,7 @@ model TicketMessage {
   createdAt   DateTime @default(now())
 
   ticket SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
-  sender User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  sender User          @relation(fields: [senderId], references: [id], onDelete: Cascade)
 
   @@index([ticketId])
   @@index([senderId])
@@ -1136,19 +1145,19 @@ model DeliveryPartner {
 }
 
 model DeliveryAssignment {
-  id               String         @id @default(cuid())
-  orderId          String         @unique
+  id                String         @id @default(cuid())
+  orderId           String         @unique
   deliveryPartnerId String
-  status           DeliveryStatus @default(ASSIGNED)
-  assignedAt       DateTime       @default(now())
-  pickedUpAt       DateTime?
-  deliveredAt      DateTime?
-  currentLat       Decimal?       @db.Decimal(10, 8)
-  currentLng       Decimal?       @db.Decimal(11, 8)
-  createdAt        DateTime       @default(now())
-  updatedAt        DateTime       @updatedAt
+  status            DeliveryStatus @default(ASSIGNED)
+  assignedAt        DateTime       @default(now())
+  pickedUpAt        DateTime?
+  deliveredAt       DateTime?
+  currentLat        Decimal?       @db.Decimal(10, 8)
+  currentLng        Decimal?       @db.Decimal(11, 8)
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
 
-  order          Order            @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  order           Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
   deliveryPartner DeliveryPartner @relation(fields: [deliveryPartnerId], references: [id], onDelete: Cascade)
 
   @@index([orderId])
@@ -1181,12 +1190,12 @@ model PageView {
 }
 
 model SearchQuery {
-  id              String   @id @default(cuid())
-  userId          String?
-  query           String
-  resultsCount    Int      @default(0)
+  id               String   @id @default(cuid())
+  userId           String?
+  query            String
+  resultsCount     Int      @default(0)
   clickedProductId String?
-  createdAt       DateTime @default(now())
+  createdAt        DateTime @default(now())
 
   user           User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
   clickedProduct Product? @relation(fields: [clickedProductId], references: [id], onDelete: SetNull)
@@ -1198,13 +1207,13 @@ model SearchQuery {
 }
 
 model ProductAnalytics {
-  id            String   @id @default(cuid())
-  productId     String   @unique
-  views         Int      @default(0)
-  wishlistAdds  Int      @default(0)
-  cartAdds      Int      @default(0)
-  purchases     Int      @default(0)
-  date          DateTime @default(now())
+  id           String   @id @default(cuid())
+  productId    String   @unique
+  views        Int      @default(0)
+  wishlistAdds Int      @default(0)
+  cartAdds     Int      @default(0)
+  purchases    Int      @default(0)
+  date         DateTime @default(now())
 
   product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
@@ -1215,23 +1224,23 @@ model ProductAnalytics {
 // ─── Delivery Zones ──────────────────────────────────────────────────────────
 
 model DeliveryZone {
-  id          String   @id @default(cuid())
-  pincode     String   @unique
-  city        String
-  state       String
-  country     String   @default("India")
-  isActive    Boolean  @default(true)
-  codEnabled  Boolean  @default(true)
-  prepaidOnly Boolean @default(false)
+  id                   String   @id @default(cuid())
+  pincode              String   @unique
+  city                 String
+  state                String
+  country              String   @default("India")
+  isActive             Boolean  @default(true)
+  codEnabled           Boolean  @default(true)
+  prepaidOnly          Boolean  @default(false)
   minOrderFreeDelivery Decimal? @db.Decimal(10, 2)
-  estimatedDays Int    @default(3)
-  estimatedHours Int?
-  estimatedMinutes Int?
-  deliveryTimeUnit String @default("days")
-  cities      Json?
-  notes       String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  estimatedDays        Int      @default(3)
+  estimatedHours       Int?
+  estimatedMinutes     Int?
+  deliveryTimeUnit     String   @default("days")
+  cities               Json?
+  notes                String?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 
   @@index([pincode])
   @@index([city])
@@ -1275,18 +1284,18 @@ model AppBannerConfig {
 }
 
 model SocialMediaConfig {
-  id          String   @id @default(cuid())
-  isActive    Boolean  @default(true)
-  facebook    String?
-  twitter     String?
-  instagram   String?
-  youtube     String?
-  linkedin    String?
-  pinterest   String?
-  telegram    String?
-  whatsapp    String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(cuid())
+  isActive  Boolean  @default(true)
+  facebook  String?
+  twitter   String?
+  instagram String?
+  youtube   String?
+  linkedin  String?
+  pinterest String?
+  telegram  String?
+  whatsapp  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model ContactMessage {
@@ -1313,4 +1322,54 @@ model SystemSettings {
   updatedAt DateTime @updatedAt
 
   @@index([key])
+}
+
+// ─── Partner (referral) Models ───────────────────────────────────────────────
+
+enum PartnerCommissionStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  PAID
+}
+
+/// An Apnakit partner. Customers enter `code` at checkout to get
+/// `customerDiscount*`; the partner earns `commissionRate`% of the net
+/// merchandise value of every order placed by customers attributed to them.
+model Partner {
+  id                    String     @id @default(cuid())
+  userId                String     @unique
+  code                  String     @unique
+  customerDiscountType  CouponType @default(PERCENTAGE)
+  customerDiscountValue Decimal    @default(0) @db.Decimal(10, 2)
+  commissionRate        Decimal    @default(0) @db.Decimal(5, 2)
+  isActive              Boolean    @default(true)
+  createdAt             DateTime   @default(now())
+  updatedAt             DateTime   @updatedAt
+
+  user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  customers   User[]              @relation("PartnerCustomers")
+  carts       Cart[]              @relation("CartPartner")
+  commissions PartnerCommission[]
+
+  @@index([isActive])
+}
+
+model PartnerCommission {
+  id               String                  @id @default(cuid())
+  partnerId        String
+  customerId       String
+  orderId          String                  @unique
+  orderAmount      Decimal                 @db.Decimal(10, 2)
+  commissionRate   Decimal                 @db.Decimal(5, 2)
+  commissionAmount Decimal                 @db.Decimal(10, 2)
+  status           PartnerCommissionStatus @default(PENDING)
+  createdAt        DateTime                @default(now())
+  updatedAt        DateTime                @updatedAt
+
+  partner Partner @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([partnerId, status])
+  @@index([customerId])
 }

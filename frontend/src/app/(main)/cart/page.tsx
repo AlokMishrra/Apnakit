@@ -43,6 +43,12 @@ export default function CartPage() {
     type: "fixed" | "percent";
   } | null>(null);
   const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
+  const [partnerCode, setPartnerCode] = useState("");
+  const [appliedPartner, setAppliedPartner] = useState<{
+    code: string;
+    estimatedDiscount: number;
+  } | null>(null);
+  const [isApplyingPartner, setIsApplyingPartner] = useState(false);
   const [updatingItem, setUpdatingItem] = useState<string | null>(null);
 
   useEffect(() => {
@@ -197,6 +203,46 @@ export default function CartPage() {
       toast.error("Coupon failed", { description: Array.isArray(msg) ? msg[0] : msg });
     } finally {
       setIsApplyingCoupon(false);
+    }
+  };
+
+  const handleApplyPartner = async () => {
+    const code = partnerCode.trim().toUpperCase();
+    if (!code) {
+      toast.error("Please enter a referral code");
+      return;
+    }
+    try {
+      setIsApplyingPartner(true);
+      const res = await cartService.applyPartnerCode(code);
+      const payload = (res as any)?.data ?? res;
+      if (payload?.cart) setCart(payload.cart);
+      const partner = payload?.partner;
+      setAppliedPartner({
+        code: partner?.code ?? code,
+        estimatedDiscount: Number(partner?.estimatedDiscount) || 0,
+      });
+      toast.success("Referral code applied", {
+        description: `You save ${formatCurrency(Number(partner?.estimatedDiscount) || 0)} on this order`,
+      });
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || err?.message || "Invalid referral code";
+      toast.error("Referral code failed", { description: Array.isArray(msg) ? msg[0] : msg });
+    } finally {
+      setIsApplyingPartner(false);
+    }
+  };
+
+  const handleRemovePartner = async () => {
+    try {
+      const res = await cartService.removePartnerCode();
+      const payload = (res as any)?.data ?? res;
+      if (payload) setCart(payload);
+      setAppliedPartner(null);
+      setPartnerCode("");
+      toast.success("Referral code removed");
+    } catch (err: any) {
+      toast.error("Could not remove referral code", { description: err.message });
     }
   };
 
@@ -485,6 +531,43 @@ export default function CartPage() {
                         ) : (
                           "Apply"
                         )}
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="p-4">
+                  <h3 className="mb-3 text-base font-semibold text-foreground">Referral code</h3>
+                  {appliedPartner ? (
+                    <div className="flex items-center justify-between rounded-md bg-emerald-50 px-3 py-2">
+                      <div className="text-sm">
+                        <span className="font-semibold text-emerald-700">{appliedPartner.code}</span>
+                        <span className="ml-2 text-emerald-700">
+                          saves about {formatCurrency(appliedPartner.estimatedDiscount)}
+                        </span>
+                      </div>
+                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleRemovePartner}>
+                        <X className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="Partner / referral code (e.g. APN-XXXX)"
+                        value={partnerCode}
+                        onChange={(e) => setPartnerCode(e.target.value)}
+                        className="h-9 text-sm uppercase"
+                      />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-9 px-4"
+                        onClick={handleApplyPartner}
+                        disabled={isApplyingPartner}
+                      >
+                        {isApplyingPartner ? <Loader2 className="h-3 w-3 animate-spin" /> : "Apply"}
                       </Button>
                     </div>
                   )}

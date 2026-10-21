@@ -1,3 +1,4 @@
+import { normalizePartnerCode, customerDiscountFor } from '../partners/partner-math';
 import {
   Injectable,
   NotFoundException,
@@ -253,6 +254,60 @@ export class CartService {
       data: { couponId: coupon.id },
     });
 
+    return this.getCart(userId);
+  }
+
+  /**
+   * Attaches a partner referral code to the cart. The customer discount is
+   * applied at order placement; this returns a preview of it.
+   * A customer can only be linked to one partner, and a partner cannot use
+   * their own code.
+   */
+  async applyPartnerCode(userId: string, rawCode: string) {
+    const cart = await this.getOrCreateCart(userId);
+    if (!cart.items.length) {
+      throw new BadRequestException('Cannot apply a referral code to an empty cart');
+    }
+
+    const code = normalizePartnerCode(rawCode);
+    const partner = await this.prisma.partner.findUnique({ where: { code } });
+    if (!partner || !partner.isActive) {
+      throw new NotFoundException('This referral code is not valid');
+    }
+    if (partner.userId === userId) {
+      throw new BadRequestException('You cannot use your own referral code');
+    }
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { referredByPartnerId: true },
+    });
+    if (user?.referredByPartnerId && user.referredByPartnerId !== partner.id) {
+      throw new BadRequestException('Your account is already linked to another referral code');
+    }
+
+    await this.prisma.cart.update({
+      where: { id: cart.id },
+      data: { partnerId: partner.id },
+    });
+
+    const subtotal = cart.items.reduce((sum, item) => sum + Number(item.price) * item.quantity, 0);
+    const preview = customerDiscountFor(partner, subtotal);
+
+    return {
+      cart: await this.getCart(userId),
+      partner: {
+        code: partner.code,
+        customerDiscountType: partner.customerDiscountType,
+        customerDiscountValue: Number(partner.customerDiscountValue),
+        estimatedDiscount: preview,
+      },
+    };
+  }
+
+  async removePartnerCode(userId: string) {
+    const cart = await this.getOrCreateCart(userId);
+    await this.prisma.cart.update({ where: { id: cart.id }, data: { partnerId: null } });
     return this.getCart(userId);
   }
 

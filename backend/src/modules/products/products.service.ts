@@ -641,6 +641,7 @@ export class ProductsService {
         barcode: dto.barcode,
         isFeatured: dto.isFeatured ?? false,
         isActive: dto.isActive ?? true,
+        deliveryHours: dto.deliveryHours ?? null,
         isVeg: dto.isVeg ?? null,
         metaTitle: dto.metaTitle,
         metaDescription: dto.metaDescription,
@@ -727,6 +728,7 @@ export class ProductsService {
     if (slug !== existing.slug) updateData.slug = slug;
     if (dto.description !== undefined) updateData.description = dto.description;
     if (dto.shortDescription !== undefined) updateData.shortDescription = dto.shortDescription;
+    if (dto.deliveryHours !== undefined) updateData.deliveryHours = dto.deliveryHours;
     if (dto.sku !== undefined) updateData.sku = dto.sku;
     if (dto.barcode !== undefined) updateData.barcode = dto.barcode;
     if (dto.isFeatured !== undefined) updateData.isFeatured = dto.isFeatured;

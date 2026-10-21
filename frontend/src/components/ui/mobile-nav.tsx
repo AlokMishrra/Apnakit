@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Home,
-  Grid3X3,
+  Zap,
   ShoppingCart,
   User,
   Search,
@@ -29,10 +29,10 @@ function MobileNav({ cartCount = 0, className }: MobileNavProps) {
 
   const navItems: MobileNavItem[] = [
     { label: "Home", href: "/", icon: <Home className="h-5 w-5" /> },
-    { label: "Categories", href: "/category", icon: <Grid3X3 className="h-5 w-5" /> },
+    { label: "Quick", href: "/quick-shop", icon: <Zap className="h-5 w-5" /> },
     { label: "Search", href: "/search", icon: <Search className="h-5 w-5" /> },
     { label: "Cart", href: "/cart", icon: <ShoppingCart className="h-5 w-5" />, badge: cartCount },
-    { label: "Account", href: "/account", icon: <User className="h-5 w-5" /> },
+    { label: "Profile", href: "/account", icon: <User className="h-5 w-5" /> },
   ];
 
   return (

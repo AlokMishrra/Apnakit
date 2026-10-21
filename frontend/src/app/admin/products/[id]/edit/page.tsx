@@ -75,6 +75,7 @@ export default function EditProductPage() {
     slug: "",
     description: "",
     shortDescription: "",
+    deliveryHours: "",
     categoryId: "",
     additionalCategoryIds: [] as string[],
     brandId: "",
@@ -119,6 +120,7 @@ export default function EditProductPage() {
             slug: found.slug || "",
             description: found.description || "",
             shortDescription: found.shortDescription || "",
+            deliveryHours: found.deliveryHours ? String(found.deliveryHours) : "",
             additionalCategoryIds: (found.productCategories || []).map((pc: any) => pc.categoryId || pc.category?.id).filter(Boolean),
             categoryId: found.categoryId || found.category?.id || "",
             brandId: found.brandId || found.brand?.id || "",
@@ -317,6 +319,8 @@ export default function EditProductPage() {
         name: form.name,
         description: form.description || undefined,
         shortDescription: form.shortDescription || undefined,
+        // Hours to deliver. <= 24 places the product in Quick; empty = Shop All.
+        deliveryHours: form.deliveryHours ? Number(form.deliveryHours) : null,
         categoryId: form.categoryId || undefined,
         additionalCategoryIds: form.additionalCategoryIds.length > 0 ? form.additionalCategoryIds : undefined,
         brandId: form.brandId || undefined,
@@ -563,6 +567,14 @@ export default function EditProductPage() {
                 value={form.price}
                 onChange={(e) => setForm((p) => ({ ...p, price: e.target.value }))}
                 placeholder="0.00"
+              />
+              <Input
+                label="Delivery hours"
+                type="number"
+                min={1}
+                value={form.deliveryHours}
+                onChange={(e) => setForm((p) => ({ ...p, deliveryHours: e.target.value }))}
+                placeholder="24 = Quick, blank = Shop All"
               />
             </div>
 

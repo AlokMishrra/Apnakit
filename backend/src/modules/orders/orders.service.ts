@@ -1,3 +1,4 @@
+import { customerDiscountFor, commissionFor } from '../partners/partner-math';
 import { Injectable, NotFoundException, BadRequestException, ForbiddenException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../config/database.config';
 import { CreateOrderDto } from './dto/create-order.dto';
@@ -58,6 +59,7 @@ export class OrdersService {
           },
         },
         coupon: true,
+        partner: true,
       },
     });
 
@@ -102,6 +104,40 @@ export class OrdersService {
       }
     }
 
+    // ── Partner referral: customer discount + partner commission ──
+    const buyer = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { referredByPartnerId: true },
+    });
+    const cartPartner = cart.partner && cart.partner.isActive ? cart.partner : null;
+    if (cart.partner && !cart.partner.isActive) {
+      throw new BadRequestException('This referral code is no longer active. Remove it and try again.');
+    }
+    if (cartPartner && cartPartner.userId === userId) {
+      throw new BadRequestException('You cannot use your own referral code');
+    }
+    if (cartPartner && buyer?.referredByPartnerId && buyer.referredByPartnerId !== cartPartner.id) {
+      throw new BadRequestException('Your account is already linked to another referral code');
+    }
+
+    const partnerDiscount = cartPartner ? customerDiscountFor(cartPartner, subtotal) : 0;
+    discount = Math.min(discount + partnerDiscount, subtotal);
+
+    // Attribution is permanent: once a customer is linked, commission keeps
+    // going to that partner on every later order.
+    const attributedPartner =
+      cartPartner ??
+      (buyer?.referredByPartnerId
+        ? await this.prisma.partner.findUnique({ where: { id: buyer.referredByPartnerId } })
+        : null);
+    const commissionTarget =
+      attributedPartner && attributedPartner.isActive && attributedPartner.userId !== userId
+        ? attributedPartner
+        : null;
+    const commission = commissionTarget
+      ? commissionFor(commissionTarget, subtotal, partnerDiscount)
+      : null;
+
     const taxableAmount = subtotal - discount;
     const settings = await this.settingsService.getSettings();
     const gstRate = (settings.tax.gstRate ?? 18) / 100;
@@ -125,6 +161,8 @@ export class OrdersService {
           total,
           paymentMethod: dto.paymentMethod,
           paymentStatus: PaymentStatus.PENDING,
+          partnerCode: cartPartner?.code ?? null,
+          partnerDiscount: new Prisma.Decimal(partnerDiscount),
           shippingAddressId: dto.addressId,
           billingAddressId: dto.billingAddressId || dto.addressId,
           notes: dto.notes,
@@ -161,6 +199,26 @@ export class OrdersService {
             data: { stock: { decrement: item.quantity } },
           });
         }
+      }
+
+      if (commissionTarget && commission) {
+        if (cartPartner && !buyer?.referredByPartnerId) {
+          await tx.user.update({
+            where: { id: userId },
+            data: { referredByPartnerId: commissionTarget.id },
+          });
+        }
+        await tx.partnerCommission.create({
+          data: {
+            partnerId: commissionTarget.id,
+            customerId: userId,
+            orderId: newOrder.id,
+            orderAmount: new Prisma.Decimal(subtotal - partnerDiscount),
+            commissionRate: new Prisma.Decimal(commission.rate),
+            commissionAmount: new Prisma.Decimal(commission.amount),
+            status: 'PENDING',
+          },
+        });
       }
 
       if (cart.couponId) {
@@ -347,6 +405,29 @@ export class OrdersService {
     return order;
   }
 
+  /**
+   * Keeps the partner commission in step with the order:
+   * DELIVERED -> CONFIRMED (payable); CANCELLED/RETURNED/REFUNDED -> CANCELLED.
+   * PAID commissions are never changed here.
+   */
+  private async syncPartnerCommission(tx: Prisma.TransactionClient, orderId: string, status: OrderStatus) {
+    if (status === OrderStatus.DELIVERED) {
+      await tx.partnerCommission.updateMany({
+        where: { orderId, status: 'PENDING' },
+        data: { status: 'CONFIRMED' },
+      });
+    } else if (
+      status === OrderStatus.CANCELLED ||
+      status === OrderStatus.RETURNED ||
+      status === OrderStatus.REFUNDED
+    ) {
+      await tx.partnerCommission.updateMany({
+        where: { orderId, status: { in: ['PENDING', 'CONFIRMED'] } },
+        data: { status: 'CANCELLED' },
+      });
+    }
+  }
+
   async updateStatus(id: string, dto: UpdateOrderStatusDto) {
     const order = await this.prisma.order.findUnique({
       where: { id },
@@ -389,6 +470,8 @@ export class OrdersService {
           notes: dto.notes || `Status updated to ${dto.status}`,
         },
       });
+
+      await this.syncPartnerCommission(tx, id, dto.status);
 
       return updated;
     });
@@ -467,6 +550,8 @@ export class OrdersService {
           notes: 'Order cancelled by customer',
         },
       });
+
+      await this.syncPartnerCommission(tx, id, OrderStatus.CANCELLED);
 
       return updated;
     });
