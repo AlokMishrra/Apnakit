@@ -7,7 +7,9 @@ RUN apk add --no-cache openssl
 COPY backend/package.json backend/package-lock.json* ./
 COPY backend/prisma ./prisma/
 
-RUN npm ci && npm install ws
+# `ws` is a declared dependency (supabase-js needs it as the realtime
+# transport on Node 20), so `npm ci` alone is enough to install it.
+RUN npm ci
 
 RUN npx prisma generate
 

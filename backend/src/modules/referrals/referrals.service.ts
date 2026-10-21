@@ -50,9 +50,22 @@ export class ReferralsService implements OnModuleInit {
       this.logger.warn('SUPABASE_URL / SUPABASE_SERVICE_KEY not set: referrals are disabled');
       return;
     }
-    this.supabase = createClient(url, key, {
-      auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
-    });
+    try {
+      // supabase-js builds a Realtime client, which needs a WebSocket
+      // implementation. Node 20 has no native one, so the `ws` package has to
+      // be passed as the transport (Node 22+ has it built in).
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const ws = require('ws');
+      this.supabase = createClient(url, key, {
+        auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+        realtime: { transport: ws },
+      });
+    } catch (e: any) {
+      // Never let a Supabase client problem take the whole storefront down:
+      // referrals simply stay disabled.
+      this.logger.error(`Supabase client could not be created, referrals disabled: ${e?.message}`);
+      this.supabase = null;
+    }
   }
 
   private get db(): SupabaseClient {
