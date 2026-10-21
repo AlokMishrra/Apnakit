@@ -1,7 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { trackReferralClick } from "@/lib/referral";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
@@ -116,10 +117,18 @@ export default function ProductDetailPage() {
   const params = useParams();
   const router = useRouter();
   const slug = params?.slug as string;
+  const searchParams = useSearchParams();
   const { data: rawProduct, isLoading, error } = useProductBySlug(slug || "");
   const [isStickyBarVisible, setIsStickyBarVisible] = React.useState(false);
 
   const product = rawProduct ? mapBackendProduct(rawProduct as any) : null;
+
+  // Partner link capture: /product/<slug>?ref=APK-XXXXX
+  React.useEffect(() => {
+    const ref = searchParams?.get("ref");
+    if (!ref || !slug) return;
+    trackReferralClick(ref, slug);
+  }, [searchParams, slug]);
 
   React.useEffect(() => {
     if (product) {

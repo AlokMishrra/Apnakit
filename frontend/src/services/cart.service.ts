@@ -33,13 +33,13 @@ export const cartService = {
     return response.data;
   },
 
-  applyPartnerCode: async (code: string): Promise<any> => {
-    const response = await api.post('/cart/partner-code', { code });
+  applyReferralCode: async (code: string): Promise<any> => {
+    const response = await api.post('/cart/referral-code', { code });
     return response.data;
   },
 
-  removePartnerCode: async (): Promise<any> => {
-    const response = await api.delete('/cart/partner-code');
+  removeReferralCode: async (): Promise<any> => {
+    const response = await api.delete('/cart/referral-code');
     return response.data;
   },
 

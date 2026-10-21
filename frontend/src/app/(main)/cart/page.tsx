@@ -43,12 +43,12 @@ export default function CartPage() {
     type: "fixed" | "percent";
   } | null>(null);
   const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
-  const [partnerCode, setPartnerCode] = useState("");
-  const [appliedPartner, setAppliedPartner] = useState<{
+  const [referralCode, setReferralCode] = useState("");
+  const [appliedReferral, setAppliedReferral] = useState<{
     code: string;
-    estimatedDiscount: number;
+    discountPercent: number;
   } | null>(null);
-  const [isApplyingPartner, setIsApplyingPartner] = useState(false);
+  const [isApplyingReferral, setIsApplyingReferral] = useState(false);
   const [updatingItem, setUpdatingItem] = useState<string | null>(null);
 
   useEffect(() => {
@@ -206,40 +206,40 @@ export default function CartPage() {
     }
   };
 
-  const handleApplyPartner = async () => {
-    const code = partnerCode.trim().toUpperCase();
+  const handleApplyReferral = async () => {
+    const code = referralCode.trim().toUpperCase();
     if (!code) {
       toast.error("Please enter a referral code");
       return;
     }
     try {
-      setIsApplyingPartner(true);
-      const res = await cartService.applyPartnerCode(code);
+      setIsApplyingReferral(true);
+      const res = await cartService.applyReferralCode(code);
       const payload = (res as any)?.data ?? res;
       if (payload?.cart) setCart(payload.cart);
-      const partner = payload?.partner;
-      setAppliedPartner({
-        code: partner?.code ?? code,
-        estimatedDiscount: Number(partner?.estimatedDiscount) || 0,
+      const referral = payload?.referral;
+      setAppliedReferral({
+        code: referral?.referralCode ?? code,
+        discountPercent: Number(referral?.discountPercent) || 0,
       });
       toast.success("Referral code applied", {
-        description: `You save ${formatCurrency(Number(partner?.estimatedDiscount) || 0)} on this order`,
+        description: `You get ${Number(referral?.discountPercent) || 0}% off this order`,
       });
     } catch (err: any) {
       const msg = err?.response?.data?.message || err?.message || "Invalid referral code";
       toast.error("Referral code failed", { description: Array.isArray(msg) ? msg[0] : msg });
     } finally {
-      setIsApplyingPartner(false);
+      setIsApplyingReferral(false);
     }
   };
 
-  const handleRemovePartner = async () => {
+  const handleRemoveReferral = async () => {
     try {
-      const res = await cartService.removePartnerCode();
+      const res = await cartService.removeReferralCode();
       const payload = (res as any)?.data ?? res;
       if (payload) setCart(payload);
-      setAppliedPartner(null);
-      setPartnerCode("");
+      setAppliedReferral(null);
+      setReferralCode("");
       toast.success("Referral code removed");
     } catch (err: any) {
       toast.error("Could not remove referral code", { description: err.message });
@@ -540,34 +540,34 @@ export default function CartPage() {
               <Card>
                 <CardContent className="p-4">
                   <h3 className="mb-3 text-base font-semibold text-foreground">Referral code</h3>
-                  {appliedPartner ? (
+                  {appliedReferral ? (
                     <div className="flex items-center justify-between rounded-md bg-emerald-50 px-3 py-2">
                       <div className="text-sm">
-                        <span className="font-semibold text-emerald-700">{appliedPartner.code}</span>
+                        <span className="font-semibold text-emerald-700">{appliedReferral.code}</span>
                         <span className="ml-2 text-emerald-700">
-                          saves about {formatCurrency(appliedPartner.estimatedDiscount)}
+                          you get {appliedReferral.discountPercent}% off
                         </span>
                       </div>
-                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleRemovePartner}>
+                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleRemoveReferral}>
                         <X className="h-3.5 w-3.5" />
                       </Button>
                     </div>
                   ) : (
                     <div className="flex gap-2">
                       <Input
-                        placeholder="Partner / referral code (e.g. APN-XXXX)"
-                        value={partnerCode}
-                        onChange={(e) => setPartnerCode(e.target.value)}
+                        placeholder="Partner code (e.g. APK-48291)"
+                        value={referralCode}
+                        onChange={(e) => setReferralCode(e.target.value)}
                         className="h-9 text-sm uppercase"
                       />
                       <Button
                         variant="outline"
                         size="sm"
                         className="h-9 px-4"
-                        onClick={handleApplyPartner}
-                        disabled={isApplyingPartner}
+                        onClick={handleApplyReferral}
+                        disabled={isApplyingReferral}
                       >
-                        {isApplyingPartner ? <Loader2 className="h-3 w-3 animate-spin" /> : "Apply"}
+                        {isApplyingReferral ? <Loader2 className="h-3 w-3 animate-spin" /> : "Apply"}
                       </Button>
                     </div>
                   )}

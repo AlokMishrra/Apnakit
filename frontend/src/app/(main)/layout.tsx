@@ -7,6 +7,7 @@ import { AppDownloadPopup } from "@/components/layout/app-download-popup";
 import { DeliveryGate } from "@/components/layout/delivery-gate";
 import { PageLoader } from "@/components/ui/page-loader";
 import { StoreClosedBanner } from "@/components/layout/store-closed-banner";
+import { ReferralBanner } from "@/components/layout/referral-banner";
 
 export default function MainLayout({
   children,
@@ -20,6 +21,7 @@ export default function MainLayout({
       <div className="flex min-h-screen flex-col">
         <AppDownloadBanner />
         <StoreClosedBanner />
+        <ReferralBanner />
         <Header />
         <main className="flex-1 pb-16 md:pb-0">
           <DeliveryGate>{children}</DeliveryGate>

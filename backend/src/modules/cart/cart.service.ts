@@ -1,4 +1,5 @@
-import { normalizePartnerCode, customerDiscountFor } from '../partners/partner-math';
+import { ReferralsService } from '../referrals/referrals.service';
+import { randomUUID } from 'crypto';
 import {
   Injectable,
   NotFoundException,
@@ -19,6 +20,7 @@ export class CartService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly settingsService: SettingsService,
+    private readonly referrals: ReferralsService,
   ) {}
 
   async getCart(userId: string) {
@@ -258,56 +260,61 @@ export class CartService {
   }
 
   /**
-   * Attaches a partner referral code to the cart. The customer discount is
-   * applied at order placement; this returns a preview of it.
-   * A customer can only be linked to one partner, and a partner cannot use
-   * their own code.
+   * Applies a partner code typed at cart. Entering a code is a click on the
+   * first cart product's partner link: it creates a session attribution under
+   * the cart's session id, which the order later converts. This is the same
+   * path a link visit takes, so commission and discount work identically.
    */
-  async applyPartnerCode(userId: string, rawCode: string) {
+  async applyReferralCode(userId: string, rawCode: string) {
     const cart = await this.getOrCreateCart(userId);
     if (!cart.items.length) {
       throw new BadRequestException('Cannot apply a referral code to an empty cart');
     }
 
-    const code = normalizePartnerCode(rawCode);
-    const partner = await this.prisma.partner.findUnique({ where: { code } });
-    if (!partner || !partner.isActive) {
+    const buyer = await this.prisma.user.findUnique({ where: { id: userId }, select: { email: true } });
+    const code = (rawCode ?? '').trim().toUpperCase();
+    const known = await this.referrals.resolve({ code, buyerEmail: buyer?.email });
+    if (!known) {
       throw new NotFoundException('This referral code is not valid');
     }
-    if (partner.userId === userId) {
+    if (known.isSelf) {
       throw new BadRequestException('You cannot use your own referral code');
     }
 
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-      select: { referredByPartnerId: true },
+    const sessionId = cart.referralSessionId ?? randomUUID();
+    const firstProduct = await this.prisma.product.findUnique({
+      where: { id: cart.items[0].productId },
+      select: { slug: true },
     });
-    if (user?.referredByPartnerId && user.referredByPartnerId !== partner.id) {
-      throw new BadRequestException('Your account is already linked to another referral code');
+    const tracked = await this.referrals.track({
+      code,
+      productSlug: firstProduct?.slug ?? null,
+      sessionId,
+    });
+    if (!tracked.attributed || !tracked.referralCode) {
+      throw new BadRequestException('This referral code cannot be applied to your cart right now');
     }
 
     await this.prisma.cart.update({
       where: { id: cart.id },
-      data: { partnerId: partner.id },
+      data: { referralCode: tracked.referralCode, referralSessionId: sessionId },
     });
-
-    const subtotal = cart.items.reduce((sum, item) => sum + Number(item.price) * item.quantity, 0);
-    const preview = customerDiscountFor(partner, subtotal);
 
     return {
       cart: await this.getCart(userId),
-      partner: {
-        code: partner.code,
-        customerDiscountType: partner.customerDiscountType,
-        customerDiscountValue: Number(partner.customerDiscountValue),
-        estimatedDiscount: preview,
+      referral: {
+        referralCode: tracked.referralCode,
+        discountPercent: await this.referrals.discountPercent(),
       },
     };
   }
 
-  async removePartnerCode(userId: string) {
+  async removeReferralCode(userId: string) {
     const cart = await this.getOrCreateCart(userId);
-    await this.prisma.cart.update({ where: { id: cart.id }, data: { partnerId: null } });
+    await this.prisma.cart.update({
+      where: { id: cart.id },
+      data: { referralCode: null, referralSessionId: null },
+    });
     return this.getCart(userId);
   }
 

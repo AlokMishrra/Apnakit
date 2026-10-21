@@ -73,19 +73,19 @@ export class CartController {
     return this.cartService.removeCoupon(user.id);
   }
 
-  @Post('partner-code')
-  @ApiOperation({ summary: 'Apply a partner referral code to the cart' })
-  applyPartnerCode(
+  @Post('referral-code')
+  @ApiOperation({ summary: 'Apply a partner referral code (APK-XXXXX) to the cart' })
+  applyReferralCode(
     @CurrentUser() user: CurrentUserData,
     @Body() body: { code: string },
   ) {
-    return this.cartService.applyPartnerCode(user.id, body?.code ?? '');
+    return this.cartService.applyReferralCode(user.id, body?.code ?? '');
   }
 
-  @Delete('partner-code')
-  @ApiOperation({ summary: 'Remove partner referral code from the cart' })
-  removePartnerCode(@CurrentUser() user: CurrentUserData) {
-    return this.cartService.removePartnerCode(user.id);
+  @Delete('referral-code')
+  @ApiOperation({ summary: 'Remove the partner referral code from the cart' })
+  removeReferralCode(@CurrentUser() user: CurrentUserData) {
+    return this.cartService.removeReferralCode(user.id);
   }
 
   @Post('save-later/:itemId')

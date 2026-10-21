@@ -35,7 +35,7 @@ import { SocialMediaModule } from './modules/social-media/social-media.module';
 import { ContactModule } from './modules/contact/contact.module';
 import { HealthModule } from './modules/health/health.module';
 import { SettingsModule } from './modules/settings/settings.module';
-import { PartnersModule } from './modules/partners/partners.module';
+import { ReferralsModule } from './modules/referrals/referrals.module';
 
 @Module({
   imports: [
@@ -81,7 +81,7 @@ import { PartnersModule } from './modules/partners/partners.module';
     SocialMediaModule,
     ContactModule,
     SettingsModule,
-    PartnersModule,
+    ReferralsModule,
   ],
 })
 export class AppModule {}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo, useCallback } from "react";
+import { getReferralSessionId } from "@/lib/referral";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -290,7 +291,7 @@ export default function CheckoutPage() {
         const orderRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/orders`, {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${localStorage.getItem("accessToken")}` },
-          body: JSON.stringify({ addressId: selectedAddressId, paymentMethod: selectedPayment }),
+          body: JSON.stringify({ addressId: selectedAddressId, paymentMethod: selectedPayment, referralSessionId: getReferralSessionId() }),
         });
         const orderRaw = await orderRes.json();
         if (!orderRes.ok) {
@@ -377,7 +378,7 @@ export default function CheckoutPage() {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/orders`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${localStorage.getItem("accessToken")}` },
-        body: JSON.stringify({ addressId: selectedAddressId, paymentMethod: selectedPayment }),
+        body: JSON.stringify({ addressId: selectedAddressId, paymentMethod: selectedPayment, referralSessionId: getReferralSessionId() }),
       });
       const raw = await res.json();
       console.log("Order response status:", res.status, "body:", JSON.stringify(raw, null, 2).substring(0, 500));

@@ -1,6 +1,6 @@
-import { customerDiscountFor, commissionFor } from '../partners/partner-math';
 import { Injectable, NotFoundException, BadRequestException, ForbiddenException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../config/database.config';
+import { ReferralsService } from '../referrals/referrals.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { OrderFilterDto } from './dto/order-filter.dto';
@@ -19,6 +19,7 @@ export class OrdersService {
     private readonly notificationsService: NotificationsService,
     private readonly settingsService: SettingsService,
     private readonly emailService: EmailService,
+    private readonly referrals: ReferralsService,
   ) {}
 
   private readonly CANCELLABLE_STATUSES: OrderStatus[] = [
@@ -59,7 +60,6 @@ export class OrdersService {
           },
         },
         coupon: true,
-        partner: true,
       },
     });
 
@@ -104,39 +104,24 @@ export class OrdersService {
       }
     }
 
-    // ── Partner referral: customer discount + partner commission ──
-    const buyer = await this.prisma.user.findUnique({
-      where: { id: userId },
-      select: { referredByPartnerId: true },
-    });
-    const cartPartner = cart.partner && cart.partner.isActive ? cart.partner : null;
-    if (cart.partner && !cart.partner.isActive) {
-      throw new BadRequestException('This referral code is no longer active. Remove it and try again.');
+    // ── Partner referral (Supabase): customer discount ──
+    // The discount applies when the visitor came through a partner link (session
+    // attribution) or entered a partner code in the cart. Commission is recorded
+    // in Supabase after the order is committed (see below).
+    const buyer = await this.prisma.user.findUnique({ where: { id: userId }, select: { email: true } });
+    // The visitor's session attribution: from the cart (code entered at cart) or
+    // from the partner link the visitor landed on (sent by the storefront).
+    const sessionId = cart.referralSessionId ?? dto.referralSessionId ?? null;
+    const referral = await this.referrals.resolve({ sessionId, buyerEmail: buyer?.email });
+    if (cart.referralCode && !referral) {
+      throw new BadRequestException('The referral code on your cart has expired. Please remove it and try again.');
     }
-    if (cartPartner && cartPartner.userId === userId) {
-      throw new BadRequestException('You cannot use your own referral code');
-    }
-    if (cartPartner && buyer?.referredByPartnerId && buyer.referredByPartnerId !== cartPartner.id) {
-      throw new BadRequestException('Your account is already linked to another referral code');
-    }
-
-    const partnerDiscount = cartPartner ? customerDiscountFor(cartPartner, subtotal) : 0;
+    const referralActive = referral && !referral.isSelf ? referral : null;
+    const referralPercent = referralActive ? await this.referrals.discountPercent() : 0;
+    const partnerDiscount = referralActive
+      ? Math.min(Math.round(((subtotal * referralPercent) / 100) * 100) / 100, subtotal)
+      : 0;
     discount = Math.min(discount + partnerDiscount, subtotal);
-
-    // Attribution is permanent: once a customer is linked, commission keeps
-    // going to that partner on every later order.
-    const attributedPartner =
-      cartPartner ??
-      (buyer?.referredByPartnerId
-        ? await this.prisma.partner.findUnique({ where: { id: buyer.referredByPartnerId } })
-        : null);
-    const commissionTarget =
-      attributedPartner && attributedPartner.isActive && attributedPartner.userId !== userId
-        ? attributedPartner
-        : null;
-    const commission = commissionTarget
-      ? commissionFor(commissionTarget, subtotal, partnerDiscount)
-      : null;
 
     const taxableAmount = subtotal - discount;
     const settings = await this.settingsService.getSettings();
@@ -161,7 +146,7 @@ export class OrdersService {
           total,
           paymentMethod: dto.paymentMethod,
           paymentStatus: PaymentStatus.PENDING,
-          partnerCode: cartPartner?.code ?? null,
+          partnerCode: referralActive?.referralCode ?? null,
           partnerDiscount: new Prisma.Decimal(partnerDiscount),
           shippingAddressId: dto.addressId,
           billingAddressId: dto.billingAddressId || dto.addressId,
@@ -201,26 +186,6 @@ export class OrdersService {
         }
       }
 
-      if (commissionTarget && commission) {
-        if (cartPartner && !buyer?.referredByPartnerId) {
-          await tx.user.update({
-            where: { id: userId },
-            data: { referredByPartnerId: commissionTarget.id },
-          });
-        }
-        await tx.partnerCommission.create({
-          data: {
-            partnerId: commissionTarget.id,
-            customerId: userId,
-            orderId: newOrder.id,
-            orderAmount: new Prisma.Decimal(subtotal - partnerDiscount),
-            commissionRate: new Prisma.Decimal(commission.rate),
-            commissionAmount: new Prisma.Decimal(commission.amount),
-            status: 'PENDING',
-          },
-        });
-      }
-
       if (cart.couponId) {
         await tx.coupon.update({
           where: { id: cart.couponId },
@@ -248,6 +213,19 @@ export class OrdersService {
 
       return newOrder;
     });
+
+    if (referralActive) {
+      // Commission ledger lives in Supabase. Failure is logged, never blocks the order.
+      this.referrals
+        .recordOrder({
+          orderNumber: order.orderNumber,
+          amount: subtotal - partnerDiscount,
+          sessionId,
+          referralCode: referralActive.referralCode,
+          productId: referralActive.productId,
+        })
+        .catch((e) => this.logger.error(`referral record failed for ${order.orderNumber}`, e));
+    }
 
     try {
       await this.notificationsService.create(
@@ -405,29 +383,6 @@ export class OrdersService {
     return order;
   }
 
-  /**
-   * Keeps the partner commission in step with the order:
-   * DELIVERED -> CONFIRMED (payable); CANCELLED/RETURNED/REFUNDED -> CANCELLED.
-   * PAID commissions are never changed here.
-   */
-  private async syncPartnerCommission(tx: Prisma.TransactionClient, orderId: string, status: OrderStatus) {
-    if (status === OrderStatus.DELIVERED) {
-      await tx.partnerCommission.updateMany({
-        where: { orderId, status: 'PENDING' },
-        data: { status: 'CONFIRMED' },
-      });
-    } else if (
-      status === OrderStatus.CANCELLED ||
-      status === OrderStatus.RETURNED ||
-      status === OrderStatus.REFUNDED
-    ) {
-      await tx.partnerCommission.updateMany({
-        where: { orderId, status: { in: ['PENDING', 'CONFIRMED'] } },
-        data: { status: 'CANCELLED' },
-      });
-    }
-  }
-
   async updateStatus(id: string, dto: UpdateOrderStatusDto) {
     const order = await this.prisma.order.findUnique({
       where: { id },
@@ -471,10 +426,12 @@ export class OrdersService {
         },
       });
 
-      await this.syncPartnerCommission(tx, id, dto.status);
-
       return updated;
     });
+
+    this.referrals
+      .updateOrderStatus(order.orderNumber, dto.status)
+      .catch((e) => this.logger.error(`referral status sync failed for ${order.orderNumber}`, e));
 
     try {
       const typeMap: Record<string, { title: string; type: string }> = {
@@ -551,10 +508,12 @@ export class OrdersService {
         },
       });
 
-      await this.syncPartnerCommission(tx, id, OrderStatus.CANCELLED);
-
       return updated;
     });
+
+    this.referrals
+      .updateOrderStatus(order.orderNumber, OrderStatus.CANCELLED)
+      .catch((e) => this.logger.error(`referral cancel sync failed for ${order.orderNumber}`, e));
 
     return cancelledOrder;
   }

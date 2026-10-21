@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  Handshake,
   LayoutDashboard,
   Package,
   FolderTree,
@@ -65,7 +64,6 @@ const navItems: NavItem[] = [
   { label: "Social Media", href: "/admin/social-media", icon: Share2 },
   { label: "Contact Messages", href: "/admin/contact-messages", icon: Mail },
   { label: "Coupons", href: "/admin/coupons", icon: Ticket },
-  { label: "Partners", href: "/admin/partners", icon: Handshake },
   { label: "Orders", href: "/admin/orders", icon: ShoppingCart },
   { label: "Flash Sales", href: "/admin/flash-sales", icon: Zap },
   { label: "Delivery Zones", href: "/admin/delivery-zones", icon: MapPin },

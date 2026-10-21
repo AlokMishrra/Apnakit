@@ -4,7 +4,6 @@ import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  Users,
   X,
   ChevronRight,
   ChevronDown,
@@ -56,7 +55,6 @@ function Sidebar({ open, onClose, user }: SidebarProps) {
     { label: "Orders", href: "/account/orders", icon: Package },
     { label: "Wishlist", href: "/account/wishlist", icon: Heart },
     { label: "Addresses", href: "/account/addresses", icon: MapPin },
-    { label: "Partner", href: "/account/partner", icon: Users },
     { label: "Help Center", href: "/help", icon: HelpCircle },
   ];
 
