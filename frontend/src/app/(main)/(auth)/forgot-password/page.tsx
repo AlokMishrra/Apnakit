@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Logo } from "@/components/brand/logo";
-import { api } from "@/services/api";
+import api from "@/services/api";
 import { toast } from "sonner";
 
 export default function ForgotPasswordPage() {

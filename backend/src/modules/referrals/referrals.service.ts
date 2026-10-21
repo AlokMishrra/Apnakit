@@ -68,6 +68,14 @@ export class ReferralsService implements OnModuleInit {
     }
   }
 
+  /** supabase-js reports failures in an `error` field instead of throwing. */
+  private checked<T>(result: { data: T; error: any }, what: string): T {
+    if (result.error) {
+      throw new Error(`${what} failed: ${result.error.message ?? JSON.stringify(result.error)}`);
+    }
+    return result.data;
+  }
+
   private get db(): SupabaseClient {
     if (!this.supabase) throw new Error('Supabase is not configured');
     return this.supabase;
@@ -326,6 +334,11 @@ export class ReferralsService implements OnModuleInit {
     const result = await this.callOrderEvent({ orderId: orderNumber, status: mapped });
     if (result) return result;
 
+    // The partner app's cancel path fails while its earning_txn_type enum is
+    // missing 'commission_cancelled' (see supabase/migrations/
+    // 20260101000011_fix_commission_cancelled_enum.sql). Until that migration
+    // is applied, void the commission here with the same result the partner
+    // app would produce.
     const commission = await this.findCommission(orderNumber);
     if (!commission) return null;
     if (commission.status === 'available') {
@@ -333,7 +346,103 @@ export class ReferralsService implements OnModuleInit {
       // ('reversed'), so a failure here means there is nothing to reverse.
       return null;
     }
-    return this.rejectCommission(commission.id, `Order ${mapped}`);
+    if (commission.status === 'cancelled' || commission.status === 'reversed') {
+      return commission;
+    }
+    return this.voidCommission(commission, mapped);
+  }
+
+  /**
+   * Marks a commission as cancelled, mirroring public.process_referral_order()
+   * for a commission that is still pending or approved:
+   *   - partner_commissions.status -> 'cancelled'
+   *   - referral_conversions.is_reversed -> true, order_status updated
+   *   - a 'reversal' referral_events row
+   *   - the negative earnings_transactions ledger row
+   */
+  private async voidCommission(
+    commission: {
+      id: string;
+      status: string;
+      partner_id: string;
+      commission_amount: number;
+      order_id: string;
+      referral_link_id: string | null;
+      product_id: string | null;
+    },
+    orderStatus: string,
+  ) {
+    const orderId = commission.order_id;
+    try {
+      this.checked(
+        await this.db
+          .from('partner_commissions')
+          .update({
+            status: 'cancelled',
+            cancelled_at: new Date().toISOString(),
+            admin_note: `Order ${orderStatus}`,
+          })
+          .eq('id', commission.id),
+        'partner_commissions update',
+      );
+
+      this.checked(
+        await this.db
+          .from('referral_conversions')
+          .update({ is_reversed: true, order_status: orderStatus })
+          .eq('order_id', orderId),
+        'referral_conversions update',
+      );
+
+      // referral_events has non-null foreign keys on both the link and the
+      // product, so the reversal event is only written when the commission
+      // carries them.
+      if (commission.referral_link_id && commission.product_id) {
+        this.checked(
+          await this.db.from('referral_events').insert({
+            referral_link_id: commission.referral_link_id,
+            partner_id: commission.partner_id,
+            product_id: commission.product_id,
+            event_type: 'reversal',
+            order_id: orderId,
+            order_amount: null,
+            source: 'order',
+          }),
+          'referral_events insert',
+        );
+      }
+
+      // Ledger entry with the same idempotency key the partner app uses, so
+      // its own settle_commission() can never double-count this reversal.
+      this.checked(
+        await this.db.from('earnings_transactions').insert({
+          partner_id: commission.partner_id,
+          type: 'commission_reversed',
+          amount: -Math.abs(Number(commission.commission_amount)),
+          status: 'cancelled',
+          description: `Reversal for order ${orderId}`,
+          commission_id: commission.id,
+          reference_id: orderId,
+          idempotency_key: `${commission.partner_id}:${orderId}:commission_cancelled`,
+        }),
+        'earnings_transactions insert',
+      );
+
+      await this.recomputeBalance(commission.partner_id);
+      return { id: commission.id, status: 'cancelled' };
+    } catch (e: any) {
+      this.logger.error(`voidCommission failed for ${orderId}: ${e?.message}`);
+      return null;
+    }
+  }
+
+  /** Asks the partner app to recompute the partner's balances. */
+  private async recomputeBalance(partnerId: string) {
+    try {
+      await this.db.rpc('recompute_balance', { p_partner_id: partnerId });
+    } catch (e: any) {
+      this.logger.warn(`recompute_balance failed: ${e?.message}`);
+    }
   }
 
   /** The partner app's own approval function: pending -> approved, with hold. */
@@ -377,10 +486,19 @@ export class ReferralsService implements OnModuleInit {
     try {
       const { data } = await this.db
         .from('partner_commissions')
-        .select('id, status, commission_amount, order_amount, partner_id')
+        .select('id, status, commission_amount, order_amount, partner_id, order_id, referral_link_id, product_id')
         .eq('order_id', orderNumber)
         .maybeSingle();
-      return data as { id: string; status: string; commission_amount: number; order_amount: number; partner_id: string } | null;
+      return data as {
+        id: string;
+        status: string;
+        commission_amount: number;
+        order_amount: number;
+        partner_id: string;
+        order_id: string;
+        referral_link_id: string | null;
+        product_id: string | null;
+      } | null;
     } catch {
       return null;
     }

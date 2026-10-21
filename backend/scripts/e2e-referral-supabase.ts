@@ -247,10 +247,16 @@ async function main() {
     check('customer cancels order 3', cancel.status < 300, cancel.raw);
     await new Promise((r) => setTimeout(r, 800));
     const c3b = await sb('GET', `/rest/v1/partner_commissions?order_id=eq.${o3.data?.orderNumber}&select=status`);
-    // The partner app's own cancel path is broken for a pending commission
-    // (it writes an earning_txn_type value that does not exist), so the
-    // storefront voids it with the partner app's reject_commission() instead.
-    check('commission voided with the order', ['cancelled', 'rejected'].includes(c3b.data?.[0]?.status), c3b.data);
+    // The partner app's own cancel path needs the 'commission_cancelled' value
+    // in earning_txn_type; until that migration is applied the storefront
+    // writes the same end state directly.
+    check('commission is cancelled with the order', c3b.data?.[0]?.status === 'cancelled', c3b.data);
+    const conv3 = await sb('GET', `/rest/v1/referral_conversions?order_id=eq.${o3.data?.orderNumber}&select=is_reversed,order_status`);
+    check('conversion marked reversed', conv3.data?.[0]?.is_reversed === true, conv3.data);
+    const ledger3 = await sb('GET', `/rest/v1/earnings_transactions?reference_id=eq.${o3.data?.orderNumber}&select=type,amount`);
+    check('reversal written to the earnings ledger', ledger3.data?.length === 1, ledger3.data);
+    const profile3 = await sb('GET', `/rest/v1/partner_profiles?user_id=eq.${partnerUid}&select=total_earnings,available_balance,pending_balance`);
+    check('partner balance excludes the voided commission', Number(profile3.data?.[0]?.total_earnings) === comm1, profile3.data);
 
     // ── 5. Self-referral is blocked ──────────────────────────────────────
     console.log('\n5. Self-referral');
@@ -263,7 +269,7 @@ async function main() {
     const mine = await sb('GET', `/rest/v1/partner_commissions?partner_id=eq.${partnerUid}&select=order_id,status,commission_amount&order=created_at.asc`);
     check('partner sees two commission rows', Array.isArray(mine.data) && mine.data.length === 2, mine.data);
     const statuses = (mine.data ?? []).map((r: any) => r.status).sort().join(',');
-    check('partner rows: one approved, one voided', /approved/.test(statuses) && /(cancelled|rejected)/.test(statuses), statuses);
+    check('partner rows: one approved, one cancelled', statuses === 'approved,cancelled', statuses);
     const conversions = await sb('GET', `/rest/v1/referral_conversions?partner_id=eq.${partnerUid}&select=order_id`);
     check('partner sees two conversions', Array.isArray(conversions.data) && conversions.data.length === 2, conversions.data);
 

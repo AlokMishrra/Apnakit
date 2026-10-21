@@ -6,7 +6,7 @@ import { useDispatch } from "react-redux";
 import { Loader2, ShieldCheck, AlertTriangle } from "lucide-react";
 import { setUser, setTokens } from "@/store/slices/authSlice";
 import { setAuthCookies } from "@/lib/utils";
-import { api } from "@/services/api";
+import api from "@/services/api";
 import { toast } from "sonner";
 import { getSafeErrorMessage, isAuthError } from "@/lib/safe-error";
 import type { User } from "@/types";

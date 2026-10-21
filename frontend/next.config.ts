@@ -49,6 +49,19 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  async redirects() {
+    return [
+      // Partner referral links were once built as
+      // https://apnakit.in/product/product/<slug>, because the referral base
+      // URL already ended in /product. Those links must still land on the
+      // product page.
+      {
+        source: "/product/product/:slug*",
+        destination: "/product/:slug*",
+        permanent: true,
+      },
+    ];
+  },
   images: {
     unoptimized: process.env.NODE_ENV === "development",
     // The real catalogue points at ~80 third-party image hosts. The custom
