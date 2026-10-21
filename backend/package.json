@@ -22,7 +22,9 @@
     "prisma:seed": "ts-node prisma/seed.ts",
     "db:import-supabase": "ts-node -r dotenv/config src/database/seeds/import-supabase.ts",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
-    "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\""
+    "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
+    "db:create-admin": "ts-node -r dotenv/config scripts/create-live-admin.ts",
+    "test:e2e-referral": "ts-node -r dotenv/config scripts/e2e-referral-supabase.ts"
   },
   "dependencies": {
     "@nestjs/cache-manager": "^2.2.0",
