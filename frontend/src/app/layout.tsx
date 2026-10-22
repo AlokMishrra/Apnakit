@@ -6,6 +6,7 @@ import { QueryProvider } from "@/providers/query-provider";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as SonnerToaster } from "sonner";
 import { PwaInstallPrompt } from "@/components/pwa-install-prompt";
+import { HomeSectionProvider } from "@/components/home/home-section-context";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -83,7 +84,9 @@ export default function RootLayout({
         <PwaInstallPrompt />
         <ReduxProvider>
           <QueryProvider>
-            {children}
+            <HomeSectionProvider>
+              {children}
+            </HomeSectionProvider>
             <Toaster />
             <SonnerToaster
               position="top-right"

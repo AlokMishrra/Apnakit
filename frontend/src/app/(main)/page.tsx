@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { CategoryGrid } from "@/components/home/category-grid";
+import { HeroBanner } from "@/components/home/hero-banner";
 import { FlashSale } from "@/components/home/flash-sale";
 import { CategoryWiseProducts } from "@/components/home/category-wise-products";
 import { HomeSectionSwitch } from "@/components/home/home-section-switch";
@@ -60,8 +61,15 @@ function ProductGridSkeleton({ count = 4 }: { count?: number }) {
 export default function HomePage() {
   return (
     <main className="flex flex-col gap-0">
-      {/* The Quick / Shop All toggle leads the page; the category grid and the
-          selected section both hang off it. */}
+      {/* The hero banner sits above the fold. The Quick / Shop All switch
+          lives in the header and in the mobile top bar, and drives the
+          section content below. */}
+      <div className="mx-auto w-full max-w-7xl px-4 pt-3 sm:px-6 lg:px-8">
+        <HeroBanner />
+      </div>
+
+      {/* The category grid and the selected section both hang off the
+          shared Quick / Shop All selection. */}
       <div className="mx-auto w-full max-w-7xl px-4 pt-4 sm:px-6 sm:pt-5 lg:px-8">
         <HomeSectionSwitch>
           <Suspense fallback={<CategorySkeleton />}>

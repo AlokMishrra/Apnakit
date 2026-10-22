@@ -63,7 +63,11 @@ const nextConfig: NextConfig = {
     ];
   },
   images: {
-    unoptimized: process.env.NODE_ENV === "development",
+    // The Vercel image optimizer on this project answers 404 for every
+    // remote host, which left every catalogue photo broken. The catalogue is
+    // third-party imagery anyway, so the images are served straight from
+    // their origin.
+    unoptimized: true,
     // The real catalogue points at ~80 third-party image hosts. The custom
     // loader optimises the ones we control and passes the rest straight through,
     // so remotePatterns only needs to cover the optimised set.

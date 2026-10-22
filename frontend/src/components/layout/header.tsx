@@ -8,7 +8,6 @@ import {
   ShoppingCart,
   Heart,
   User,
-  MapPin,
   HelpCircle,
   Package,
   Tag,
@@ -42,8 +41,9 @@ import { clearAuthCookies } from "@/lib/utils";
 import { SearchBar } from "@/components/search/search-bar";
 import { LocationSelector } from "@/components/layout/location-selector";
 import { LocationModal } from "@/components/layout/location-modal";
-import { useLocation } from "@/components/layout/location-context";
 import { Logo } from "@/components/brand/logo";
+import { QuickShopToggle } from "@/components/layout/quick-shop-toggle";
+import { DeliveryLocation } from "@/components/layout/delivery-location";
 import type { User as UserType } from "@/types";
 import type { RootState } from "@/store/store";
 
@@ -110,25 +110,21 @@ function Header({ user: userProp, cartCount = 0, wishlistCount = 0 }: HeaderProp
         isScrolled && "shadow-md"
       )}>
         <div className="mx-auto flex h-16 max-w-7xl items-center gap-2 px-3 sm:gap-4 sm:px-4">
-          {/* Mobile location (compact — just pin + city) */}
-          <button
-            type="button"
-            onClick={() => setLocationModalOpen(true)}
-            className="flex min-w-0 max-w-[120px] flex-shrink items-center gap-1 rounded-md px-1.5 py-1 text-left text-foreground transition-colors hover:bg-muted sm:max-w-[160px] lg:hidden"
-            aria-label="Change delivery location"
-          >
-            <MapPin className="h-4 w-4 flex-shrink-0 text-primary" />
-            <div className="min-w-0 flex-1 leading-tight">
-              <p className="truncate text-xs font-semibold">
-                {location ? location.city : "Set location"}
-              </p>
-            </div>
-            <ChevronDown className="h-3 w-3 flex-shrink-0 opacity-70" />
-          </button>
+          {/* The mobile bar under the header carries the location, so the
+              header row stays on the logo and the actions. */}
 
           {/* Logo */}
           <div className="flex flex-shrink-0 items-center">
             <Logo className="h-[100px]" />
+          </div>
+
+          {/* Desktop: Quick / Shop All, delivery promise and location */}
+          <div className="hidden items-center gap-4 lg:flex">
+            <QuickShopToggle variant="header" />
+            <DeliveryLocation
+              variant="header"
+              onClick={() => setLocationModalOpen(true)}
+            />
           </div>
 
           {/* Search Bar - Desktop */}
@@ -251,6 +247,20 @@ function Header({ user: userProp, cartCount = 0, wishlistCount = 0 }: HeaderProp
               )}
             </Button>
           </div>
+        </div>
+      </div>
+
+      {/* Mobile: the Quick / Shop All bar, then the delivery promise and
+          the shopper's location. */}
+      <div className="lg:hidden">
+        <div className="bg-[#4a0a12] px-2 pt-1.5">
+          <QuickShopToggle variant="mobile" />
+        </div>
+        <div className="border-b bg-[#fdf6d8] px-3 py-2">
+          <DeliveryLocation
+            variant="mobile"
+            onClick={() => setLocationModalOpen(true)}
+          />
         </div>
       </div>
 

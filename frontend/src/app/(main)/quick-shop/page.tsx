@@ -14,7 +14,7 @@ export const metadata = {
 export default function QuickShopPage() {
   return (
     <div className="container mx-auto px-3 py-4">
-      <HomeSectionSwitch />
+      <HomeSectionSwitch showToggle />
     </div>
   );
 }

@@ -2,6 +2,8 @@ import api from "./api";
 
 export interface DeliverySettings {
   deliveryCharge: number;
+  quickDeliveryMinutes: number;
+  standardDeliveryDays: number;
   freeDeliveryThreshold: number;
   enableFreeDelivery: boolean;
 }

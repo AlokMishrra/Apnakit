@@ -5,6 +5,10 @@ export interface DeliverySettings {
   deliveryCharge: number;
   freeDeliveryThreshold: number;
   enableFreeDelivery: boolean;
+  /** Promise shown for quick delivery, in minutes. */
+  quickDeliveryMinutes: number;
+  /** Promise shown for standard delivery, in days. */
+  standardDeliveryDays: number;
 }
 
 export interface TaxSettings {
@@ -51,6 +55,8 @@ const DEFAULTS: AllSettings = {
     deliveryCharge: 99,
     freeDeliveryThreshold: 999,
     enableFreeDelivery: true,
+    quickDeliveryMinutes: 19,
+    standardDeliveryDays: 2,
   },
   tax: {
     gstRate: 18,

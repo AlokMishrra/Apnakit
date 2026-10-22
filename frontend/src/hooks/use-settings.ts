@@ -6,7 +6,13 @@ import { settingsService, type AllSettings } from "@/services/settings.service";
 const CACHE_TTL = 5 * 60 * 1000;
 
 const DEFAULTS: AllSettings = {
-  delivery: { deliveryCharge: 99, freeDeliveryThreshold: 999, enableFreeDelivery: true },
+  delivery: {
+    deliveryCharge: 99,
+    freeDeliveryThreshold: 999,
+    enableFreeDelivery: true,
+    quickDeliveryMinutes: 19,
+    standardDeliveryDays: 2,
+  },
   tax: { gstRate: 18, gstEnabled: true, gstNumber: "", companyName: "ApnaKit" },
   store: { storeName: "ApnaKit", storeEmail: "", storePhone: "", storeDescription: "", currency: "INR" },
   payment: {
