@@ -68,7 +68,6 @@ function Header({ user: userProp, cartCount = 0, wishlistCount = 0 }: HeaderProp
   };
   const [isScrolled, setIsScrolled] = React.useState(false);
   const [locationModalOpen, setLocationModalOpen] = React.useState(false);
-  const { location } = useLocation();
 
   React.useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 10);
