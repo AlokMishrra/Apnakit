@@ -65,8 +65,8 @@ export function QuickShopToggle({ variant = "header", className }: QuickShopTogg
                 "flex flex-1 items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-sm font-bold tracking-wide transition-colors",
                 "disabled:cursor-not-allowed disabled:opacity-50",
                 selected
-                  ? "bg-[#fdf6d8] text-[#5b0a0a] shadow-sm"
-                  : "bg-white text-[#5b0a0a]"
+                  ? "bg-accent text-accent-foreground shadow-sm"
+                  : "bg-card text-primary"
               )}
             >
               {option.key === "QUICK" && (

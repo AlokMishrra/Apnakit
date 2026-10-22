@@ -7,6 +7,7 @@ import {
   Search,
   ShoppingCart,
   Heart,
+  MapPin,
   User,
   HelpCircle,
   Package,
@@ -109,8 +110,16 @@ function Header({ user: userProp, cartCount = 0, wishlistCount = 0 }: HeaderProp
         isScrolled && "shadow-md"
       )}>
         <div className="mx-auto flex h-16 max-w-7xl items-center gap-2 px-3 sm:gap-4 sm:px-4">
-          {/* The mobile bar under the header carries the location, so the
-              header row stays on the logo and the actions. */}
+          {/* Mobile: a compact location button. The delivery details live
+              under the header on desktop, so mobile keeps just the pin. */}
+          <button
+            type="button"
+            onClick={() => setLocationModalOpen(true)}
+            aria-label="Change delivery location"
+            className="flex flex-shrink-0 items-center rounded-md p-1.5 text-primary transition-colors hover:bg-muted lg:hidden"
+          >
+            <MapPin className="h-5 w-5" />
+          </button>
 
           {/* Logo */}
           <div className="flex flex-shrink-0 items-center">
@@ -249,18 +258,9 @@ function Header({ user: userProp, cartCount = 0, wishlistCount = 0 }: HeaderProp
         </div>
       </div>
 
-      {/* Mobile: the Quick / Shop All bar, then the delivery promise and
-          the shopper's location. */}
-      <div className="lg:hidden">
-        <div className="bg-[#4a0a12] px-2 pt-1.5">
-          <QuickShopToggle variant="mobile" />
-        </div>
-        <div className="border-b bg-[#fdf6d8] px-3 py-2">
-          <DeliveryLocation
-            variant="mobile"
-            onClick={() => setLocationModalOpen(true)}
-          />
-        </div>
+      {/* Mobile: the Quick / Shop All switch, on the site theme colour. */}
+      <div className="bg-primary px-2 py-1.5 lg:hidden">
+        <QuickShopToggle variant="mobile" />
       </div>
 
       <LocationModal
