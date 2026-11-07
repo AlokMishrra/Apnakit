@@ -19,7 +19,7 @@ const isProd = process.env.NODE_ENV === "production";
 const backendUrl = (
   process.env.BACKEND_URL ||
   process.env.NEXT_PUBLIC_BACKEND_URL ||
-  (isProd ? "https://apnakit-api.vercel.app" : "http://localhost:3000")
+  (isProd ? "https://apnakit-backend.onrender.com" : "http://localhost:3000")
 ).replace(/\/+$/, "");
 
 if (isProd && !backendUrl) {
