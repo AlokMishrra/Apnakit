@@ -439,6 +439,18 @@ export function LocationModal({
           } else if (res.city) {
             setPincodeCities([{ city: res.city, state: res.state || "", country: res.country || "India" }]);
           }
+
+          // Auto-apply when there is a single (or no) city so the shopper does
+          // not have to click an extra button for Quick availability to kick in.
+          if (res.city && (cities.length === 0 || cities.length === 1)) {
+            handleSelect({
+              city: res.city,
+              state: res.state || "",
+              country: res.country || "India",
+              pincode: pin,
+              source: "manual",
+            });
+          }
         } else {
           setBanner({
             type: "unserviceable",
@@ -505,6 +517,15 @@ export function LocationModal({
           state: res.state || "",
           country: res.country || "India",
           pincode: pin,
+        });
+      }
+      if (res.city) {
+        handleSelect({
+          city: res.city,
+          state: res.state || "",
+          country: res.country || "India",
+          pincode: pin,
+          source: "manual",
         });
       }
     } else {
