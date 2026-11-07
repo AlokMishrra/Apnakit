@@ -277,8 +277,13 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
           state?: string;
           estimatedDays?: number;
           message?: string;
-          cities?: { name: string; isActive?: boolean }[];
+          cities?: any;
         };
+        // Backend may return cities as a JSON string; normalize to an array.
+        if (typeof data.cities === "string") {
+          try { data.cities = JSON.parse(data.cities); } catch { data.cities = []; }
+        }
+        if (!Array.isArray(data.cities)) data.cities = [];
         return data;
       } catch {
         return {
