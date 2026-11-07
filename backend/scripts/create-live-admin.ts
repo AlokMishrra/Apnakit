@@ -7,18 +7,20 @@ async function main() {
   const email = process.env.ADMIN_EMAIL ?? 'admin@apnakit.in';
   const password = process.env.ADMIN_PASSWORD ?? randomBytes(9).toString('base64url') + 'A1!';
 
-  const existing = await prisma.user.findUnique({ where: { email } });
-  if (existing) {
-    console.log(`admin already exists: ${email}`);
-    await prisma.$disconnect();
-    return;
-  }
+  const hashedPassword = await bcrypt.hash(password, 12);
 
-  const user = await prisma.user.create({
-    data: {
+  const user = await prisma.user.upsert({
+    where: { email },
+    update: {
+      password: hashedPassword,
+      role: Role.ADMIN,
+      isVerified: true,
+      isActive: true,
+    },
+    create: {
       email,
       phone: '9000000001',
-      password: await bcrypt.hash(password, 12),
+      password: hashedPassword,
       firstName: 'Admin',
       lastName: 'ApnaKit',
       role: Role.ADMIN,

@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { HomeSectionToggle } from "./home-section-toggle";
+import { useLocation } from "@/components/layout/location-context";
+import { deliveryZoneService } from "@/services/delivery-zone.service";
 import { HomeSectionContent } from "./home-section-content";
 import { useHomeSection, QUICK_LIMIT } from "./home-section-context";
 import {
@@ -33,6 +35,36 @@ export function HomeSectionSwitch({ children, showToggle = false }: HomeSectionS
   const [categories, setCategories] = useState<HomeSectionCategory[]>([]);
   const [banners, setBanners] = useState<SectionBanner[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [quickAvailable, setQuickAvailable] = useState<boolean | null>(null);
+  const { location } = useLocation();
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      // Quick is only available for pincodes we can deliver to within 24h.
+      if (!location?.pincode) {
+        setQuickAvailable(true);
+        return;
+      }
+      try {
+        const res = await deliveryZoneService.check(location.pincode);
+        const data = (res?.data || res) as { serviceable?: boolean; estimatedMinutes?: number; estimatedDays?: number };
+        const quick = !!data.serviceable && (
+          (typeof data.estimatedMinutes === "number" && data.estimatedMinutes <= 24 * 60) ||
+          (typeof data.estimatedDays === "number" && data.estimatedDays <= 1)
+        );
+        if (cancelled) return;
+        setQuickAvailable(quick);
+        if (!quick) setActiveKey("SHOP_ALL");
+      } catch {
+        if (cancelled) return;
+        setQuickAvailable(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [location?.pincode]);
 
   useEffect(() => {
     let cancelled = false;
@@ -70,6 +102,12 @@ export function HomeSectionSwitch({ children, showToggle = false }: HomeSectionS
 
   return (
     <>
+      {quickAvailable === false && (
+        <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          We&apos;re not available in your area for Quick delivery yet. Please
+          shop from <span className="font-semibold">Shop All</span>.
+        </div>
+      )}
       {showToggle && (
         <HomeSectionToggle
           sections={sections}

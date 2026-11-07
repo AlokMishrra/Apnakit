@@ -414,6 +414,27 @@ export class CartService {
       }
     }
 
+    // Partner referral discount (the customer's 5%). Computed at cart time so
+    // the checkout total reflects it, not just at order placement.
+    if (cart.referralCode && cart.items.length) {
+      const buyer = await this.prisma.user.findUnique({
+        where: { id: cart.userId },
+        select: { email: true },
+      });
+      const referral = await this.referrals.resolve({
+        code: cart.referralCode,
+        buyerEmail: buyer?.email,
+      });
+      if (referral && !referral.isSelf) {
+        const pct = await this.referrals.discountPercent();
+        const referralDiscount = Math.min(
+          Math.round(((subtotal * pct) / 100) * 100) / 100,
+          subtotal,
+        );
+        discount = Math.min(discount + referralDiscount, subtotal);
+      }
+    }
+
     const taxableAmount = subtotal - discount;
     const settings = await this.settingsService.getSettings();
     const gstRate = (settings.tax.gstRate ?? 18) / 100;
@@ -434,6 +455,8 @@ export class CartService {
       userId: cart.userId,
       items: cart.items,
       coupon: cart.coupon,
+      referralCode: cart.referralCode,
+      referralSessionId: cart.referralSessionId,
       subtotal,
       discount,
       tax,
