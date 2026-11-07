@@ -15,8 +15,20 @@ export class DeliveryZonesService {
 
   constructor(private readonly prisma: PrismaService) {}
 
+  /** Self-heal older databases that predate the quickDelivery column. */
+  private async ensureQuickDeliveryColumn() {
+    try {
+      await this.prisma.$executeRawUnsafe(
+        'ALTER TABLE "DeliveryZone" ADD COLUMN IF NOT EXISTS "quickDelivery" BOOLEAN NOT NULL DEFAULT false',
+      );
+    } catch {
+      // Ignore: column may already exist or DB user lacks DDL rights.
+    }
+  }
+
   /** Public serviceability check used by the location modal */
   async checkPincode(pincode: string) {
+    await this.ensureQuickDeliveryColumn();
     if (!/^\d{6}$/.test(pincode)) {
       return { serviceable: false, pincode, reason: 'Invalid pincode' };
     }
@@ -53,6 +65,7 @@ export class DeliveryZonesService {
   }
 
   async findAll(query: QueryDeliveryZonesDto) {
+    await this.ensureQuickDeliveryColumn();
     const { page = 1, limit = 50, search, city, state, pincode, isActive } = query;
     const where: any = {};
     if (isActive !== undefined) where.isActive = isActive;
@@ -87,12 +100,14 @@ export class DeliveryZonesService {
   }
 
   async findOne(id: string) {
+    await this.ensureQuickDeliveryColumn();
     const zone = await this.prisma.deliveryZone.findUnique({ where: { id } });
     if (!zone) throw new NotFoundException(`Delivery zone ${id} not found`);
     return zone;
   }
 
   async create(dto: CreateDeliveryZoneDto) {
+    await this.ensureQuickDeliveryColumn();
     try {
       const created = await this.prisma.deliveryZone.create({
         data: {
@@ -126,6 +141,7 @@ export class DeliveryZonesService {
   }
 
   async update(id: string, dto: UpdateDeliveryZoneDto) {
+    await this.ensureQuickDeliveryColumn();
     const existing = await this.findOne(id);
     try {
       const updated = await this.prisma.deliveryZone.update({
