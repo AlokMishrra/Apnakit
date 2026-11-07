@@ -30,29 +30,27 @@ interface HomeSectionSwitchProps {
  * always agree.
  */
 export function HomeSectionSwitch({ children, showToggle = false }: HomeSectionSwitchProps) {
-  const { activeKey, sections } = useHomeSection();
+  const { activeKey, setActiveKey, sections } = useHomeSection();
   const [items, setItems] = useState<HomeSectionItem[]>([]);
   const [categories, setCategories] = useState<HomeSectionCategory[]>([]);
   const [banners, setBanners] = useState<SectionBanner[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [quickAvailable, setQuickAvailable] = useState<boolean | null>(null);
   const { location } = useLocation();
+  const effectiveKey = quickAvailable === false ? "SHOP_ALL" : activeKey;
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       // Quick is only available for pincodes we can deliver to within 24h.
       if (!location?.pincode) {
-        setQuickAvailable(true);
+        setQuickAvailable(false);
         return;
       }
       try {
         const res = await deliveryZoneService.check(location.pincode);
-        const data = (res?.data || res) as { serviceable?: boolean; estimatedMinutes?: number; estimatedDays?: number };
-        const quick = !!data.serviceable && (
-          (typeof data.estimatedMinutes === "number" && data.estimatedMinutes <= 24 * 60) ||
-          (typeof data.estimatedDays === "number" && data.estimatedDays <= 1)
-        );
+        const data = (res?.data || res) as { serviceable?: boolean; quickDelivery?: boolean; estimatedMinutes?: number; estimatedDays?: number };
+        const quick = !!data.serviceable && !!data.quickDelivery;
         if (cancelled) return;
         setQuickAvailable(quick);
         if (!quick) setActiveKey("SHOP_ALL");
@@ -74,10 +72,10 @@ export function HomeSectionSwitch({ children, showToggle = false }: HomeSectionS
       try {
         const [section, sectionBanners] = await Promise.all([
           homeSectionService.getSection(
-            activeKey,
-            activeKey === "QUICK" ? QUICK_LIMIT : undefined
+            effectiveKey,
+            effectiveKey === "QUICK" ? QUICK_LIMIT : undefined
           ),
-          homeSectionService.getSectionBanners(activeKey),
+          homeSectionService.getSectionBanners(effectiveKey),
         ]);
         if (cancelled) return;
         setItems(section?.items ?? []);
@@ -96,9 +94,9 @@ export function HomeSectionSwitch({ children, showToggle = false }: HomeSectionS
     return () => {
       cancelled = true;
     };
-  }, [activeKey]);
+  }, [effectiveKey]);
 
-  const activeMeta = sections.find((s) => s.key === activeKey);
+  const activeMeta = sections.find((s) => s.key === effectiveKey);
 
   return (
     <>
@@ -110,21 +108,28 @@ export function HomeSectionSwitch({ children, showToggle = false }: HomeSectionS
       )}
       {showToggle && (
         <HomeSectionToggle
-          sections={sections}
-          value={activeKey}
-          onChange={() => {}}
+          sections={sections.map((s) =>
+            s.key === "QUICK"
+              ? { ...s, isActive: s.isActive && quickAvailable !== false }
+              : s,
+          )}
+          value={effectiveKey}
+          onChange={(key) => {
+            if (key === "QUICK" && quickAvailable === false) return;
+            setActiveKey(key);
+          }}
           className="mb-4"
         />
       )}
       {children}
       <HomeSectionContent
-        title={activeMeta?.title ?? (activeKey === "QUICK" ? "Quick" : "Shop All")}
+        title={activeMeta?.title ?? (effectiveKey === "QUICK" ? "Quick" : "Shop All")}
         subtitle={activeMeta?.subtitle ?? null}
         items={items}
         categories={categories}
         banners={banners}
         isLoading={isLoading}
-        layout={activeKey === "QUICK" ? "rail" : "grid"}
+        layout={effectiveKey === "QUICK" ? "rail" : "grid"}
       />
     </>
   );

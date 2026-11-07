@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo, useCallback } from "react";
-import { getReferralSessionId } from "@/lib/referral";
+import { getReferralSessionId, useReferral } from "@/lib/referral";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -55,6 +55,7 @@ const steps = [
 export default function CheckoutPage() {
   const router = useRouter();
   const { settings } = useSettings();
+  const referral = useReferral();
   const [loading, setLoading] = useState(true);
   const [cart, setCart] = useState<any>(null);
   const [addresses, setAddresses] = useState<any[]>([]);
@@ -168,9 +169,17 @@ export default function CheckoutPage() {
   const gstRate = (settings?.tax?.gstRate ?? 18) / 100;
   const gstEnabled = settings?.tax?.gstEnabled ?? true;
   const shippingCharge = enableFreeDelivery && subtotal >= deliveryThreshold ? 0 : deliveryCharge;
-  const taxAmount = gstEnabled ? Math.round(subtotal * gstRate) : 0;
   const couponDiscount = cart?.discount > 0 ? Number(cart.discount) : 0;
-  const totalAmount = subtotal + shippingCharge + taxAmount - couponDiscount;
+  const referralDiscountAmount =
+    !cart?.referralCode && referral.code && referral.discountPercent
+      ? Math.min(
+          Math.round(((subtotal * referral.discountPercent) / 100) * 100) / 100,
+          subtotal,
+        )
+      : 0;
+  const totalDiscount = couponDiscount + referralDiscountAmount;
+  const taxAmount = gstEnabled ? Math.round((subtotal - totalDiscount) * gstRate) : 0;
+  const totalAmount = subtotal + shippingCharge + taxAmount - totalDiscount;
 
   const paymentMethods = [
     { id: "COD", label: "Cash on Delivery", icon: Banknote, description: "Pay when you receive", available: (settings?.payment?.cod?.enabled ?? true) && isCodAllowedForCart },
@@ -869,6 +878,12 @@ export default function CheckoutPage() {
                       <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">Coupon Discount</span>
                         <span className="font-medium text-emerald-600">-{formatCurrency(couponDiscount)}</span>
+                      </div>
+                    )}
+                    {referralDiscountAmount > 0 && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Referral Discount</span>
+                        <span className="font-medium text-emerald-600">-{formatCurrency(referralDiscountAmount)}</span>
                       </div>
                     )}
                     <Separator />

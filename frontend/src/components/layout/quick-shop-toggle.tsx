@@ -4,6 +4,9 @@ import { Zap } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useHomeSection } from "@/components/home/home-section-context";
+import { useEffect, useState } from "react";
+import { useLocation } from "@/components/layout/location-context";
+import { deliveryZoneService } from "@/services/delivery-zone.service";
 import type { HomeSectionKey } from "@/services/home-section.service";
 
 interface QuickShopToggleProps {
@@ -25,6 +28,26 @@ interface QuickShopToggleProps {
  */
 export function QuickShopToggle({ variant = "header", className }: QuickShopToggleProps) {
   const { activeKey, setActiveKey, sections } = useHomeSection();
+  const { location } = useLocation();
+  const [quickAvailable, setQuickAvailable] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!location?.pincode) { setQuickAvailable(false); return; }
+      try {
+        const res = await deliveryZoneService.check(location.pincode);
+        const data = (res?.data || res) as { serviceable?: boolean; quickDelivery?: boolean };
+        const quick = !!data.serviceable && !!data.quickDelivery;
+        if (cancelled) return;
+        setQuickAvailable(quick);
+        if (!quick && activeKey === "QUICK") setActiveKey("SHOP_ALL");
+      } catch {
+        if (!cancelled) setQuickAvailable(true);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [location?.pincode]);
   const router = useRouter();
   const pathname = usePathname();
 
@@ -34,6 +57,7 @@ export function QuickShopToggle({ variant = "header", className }: QuickShopTogg
   ];
 
   const select = (key: HomeSectionKey) => {
+    if (key === "QUICK" && quickAvailable === false) return;
     setActiveKey(key);
     // The header is on every page; the section feed only exists on the home
     // page, so send the shopper there when they pick a tab elsewhere.
@@ -44,6 +68,7 @@ export function QuickShopToggle({ variant = "header", className }: QuickShopTogg
 
   const isUsable = (key: HomeSectionKey) => {
     const meta = sections.find((s) => s.key === key);
+    if (key === "QUICK" && quickAvailable === false) return false;
     return !meta || meta.isActive;
   };
 

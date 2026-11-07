@@ -27,6 +27,7 @@ import { Separator } from "@/components/ui/separator";
 import { formatCurrency, formatDate, getImageUrl } from "@/lib/utils";
 import { cartService } from "@/services/cart.service";
 import { useCartActions } from "@/hooks/use-cart-actions";
+import { useReferral } from "@/lib/referral";
 import { useSettings } from "@/hooks/use-settings";
 import { toast } from "sonner";
 import { CartPageSkeleton } from "@/components/skeletons/cart-skeleton";
@@ -34,6 +35,7 @@ import { CartPageSkeleton } from "@/components/skeletons/cart-skeleton";
 export default function CartPage() {
   const router = useRouter();
   const { settings } = useSettings();
+  const referral = useReferral();
   const [loading, setLoading] = useState(true);
   const [cart, setCart] = useState<any>(null);
   const [couponCode, setCouponCode] = useState("");
@@ -103,7 +105,6 @@ export default function CartPage() {
   const gstRate = (settings?.tax?.gstRate ?? 18) / 100;
   const gstEnabled = settings?.tax?.gstEnabled ?? true;
   const shippingCharge = enableFreeDelivery && subtotal >= deliveryThreshold ? 0 : deliveryChargeAmount;
-  const taxAmount = gstEnabled ? Math.round(subtotal * gstRate) : 0;
 
   // Prefer server-side discount value when available, otherwise calculate from appliedCoupon
   let couponDiscount = 0;
@@ -116,7 +117,19 @@ export default function CartPage() {
         : appliedCoupon.discount;
   }
 
-  const totalAmount = subtotal + shippingCharge + taxAmount - couponDiscount;
+  // Partner referral discount (link-based, 5%). The backend applies it at order
+  // time even when no code was typed at cart, so reflect it in the total here.
+  const referralDiscountAmount =
+    !cart?.referralCode && referral.code && referral.discountPercent
+      ? Math.min(
+          Math.round(((subtotal * referral.discountPercent) / 100) * 100) / 100,
+          subtotal,
+        )
+      : 0;
+  const totalDiscount = couponDiscount + referralDiscountAmount;
+  const taxAmount = gstEnabled ? Math.round((subtotal - totalDiscount) * gstRate) : 0;
+
+  const totalAmount = subtotal + shippingCharge + taxAmount - totalDiscount;
   const freeDeliveryProgress = Math.min((subtotal / deliveryThreshold) * 100, 100);
   const amountForFreeDelivery = Math.max(deliveryThreshold - subtotal, 0);
 
@@ -608,6 +621,12 @@ export default function CartPage() {
                         <span className="font-medium text-emerald-600">-{formatCurrency(couponDiscount)}</span>
                       </div>
                     )}
+                    {referralDiscountAmount > 0 && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Referral Discount</span>
+                        <span className="font-medium text-emerald-600">-{formatCurrency(referralDiscountAmount)}</span>
+                      </div>
+                    )}
                     <Separator />
                     <div className="flex justify-between">
                       <span className="text-base font-semibold text-foreground">Total Amount</span>
@@ -617,7 +636,7 @@ export default function CartPage() {
                     </div>
                     {itemSavings > 0 && (
                       <p className="text-xs font-medium text-emerald-600">
-                        You will save {formatCurrency(itemSavings + couponDiscount)} on this order
+                        You will save {formatCurrency(itemSavings + totalDiscount)} on this order
                       </p>
                     )}
                   </div>

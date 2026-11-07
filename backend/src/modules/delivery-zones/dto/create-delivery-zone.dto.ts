@@ -74,6 +74,11 @@ export class CreateDeliveryZoneDto {
   @Max(1440)
   estimatedMinutes?: number;
 
+  @ApiProperty({ default: false, required: false })
+  @IsOptional()
+  @IsBoolean()
+  quickDelivery?: boolean;
+
   @ApiProperty({ default: 'days', required: false, enum: ['minutes', 'hours', 'days'] })
   @IsOptional()
   @IsString()

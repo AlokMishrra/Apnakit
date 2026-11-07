@@ -421,11 +421,11 @@ export function LocationModal({
             state: res.state,
             days: res.estimatedDays,
             minFree: res.minOrderFreeDelivery,
-            cities: res.cities || [],
+            cities: Array.isArray(res.cities) ? res.cities : [],
             pincode: pin,
           });
           // Populate pincode cities for the city list
-          const cities = res.cities || [];
+          const cities = Array.isArray(res.cities) ? res.cities : [];
           if (cities.length > 0) {
             setPincodeCities(
               cities
@@ -474,11 +474,11 @@ export function LocationModal({
         state: res.state,
         days: res.estimatedDays,
         minFree: res.minOrderFreeDelivery,
-        cities: res.cities || [],
+        cities: Array.isArray(res.cities) ? res.cities : [],
         pincode: pin,
       });
       // Populate pincode cities for the city list
-      const cities = res.cities || [];
+      const cities = Array.isArray(res.cities) ? res.cities : [];
       if (cities.length > 0) {
         setPincodeCities(
           cities
@@ -713,13 +713,14 @@ export function LocationModal({
                       }}
                     >
                       <option value="">-- Select area --</option>
-                      {banner.cities
-                        .filter((c) => c.isActive !== false)
-                        .map((c) => (
-                          <option key={c.name} value={c.name}>
-                            {c.name}
-                          </option>
-                        ))}
+                      {(Array.isArray(banner.cities)
+                        ? banner.cities.filter((c) => c?.isActive !== false)
+                        : []
+                      ).map((c) => (
+                        <option key={c?.name || c} value={c?.name || c}>
+                          {c?.name || c}
+                        </option>
+                      ))}
                     </select>
                   </div>
                 )}

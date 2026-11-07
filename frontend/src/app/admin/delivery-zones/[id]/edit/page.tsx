@@ -45,6 +45,7 @@ export default function EditDeliveryZonePage({
     isActive: true,
     codEnabled: true,
     prepaidOnly: false,
+    quickDelivery: false,
     minOrderFreeDelivery: "" as string | number,
     deliveryTimeUnit: "days" as "minutes" | "hours" | "days",
     estimatedDays: 3,
@@ -68,6 +69,7 @@ export default function EditDeliveryZonePage({
           isActive: zone.isActive ?? true,
           codEnabled: zone.codEnabled ?? true,
           prepaidOnly: zone.prepaidOnly ?? false,
+          quickDelivery: zone.quickDelivery ?? false,
           minOrderFreeDelivery: zone.minOrderFreeDelivery ?? "",
           deliveryTimeUnit: (zone.deliveryTimeUnit as any) || "days",
           estimatedDays: zone.estimatedDays ?? 3,
@@ -141,6 +143,7 @@ export default function EditDeliveryZonePage({
         isActive: form.isActive,
         codEnabled: form.codEnabled,
         prepaidOnly: form.prepaidOnly,
+        quickDelivery: form.quickDelivery,
         deliveryTimeUnit: form.deliveryTimeUnit,
         notes: form.notes.trim() || undefined,
       };
@@ -503,6 +506,27 @@ export default function EditDeliveryZonePage({
                     <span
                       className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
                         form.prepaidOnly ? "translate-x-6" : "translate-x-1"
+                      }`}
+                    />
+                  </button>
+                </div>
+                <div className="flex items-center justify-between rounded-lg bg-violet-50 p-3">
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-violet-900">Quick Delivery</p>
+                    <p className="text-xs text-violet-700">
+                      Enable Quick (within 24h) access for this pincode
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setForm((p) => ({ ...p, quickDelivery: !p.quickDelivery }))}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                      form.quickDelivery ? "bg-violet-500" : "bg-gray-300"
+                    }`}
+                  >
+                    <span
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                        form.quickDelivery ? "translate-x-6" : "translate-x-1"
                       }`}
                     />
                   </button>

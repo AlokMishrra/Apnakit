@@ -1232,6 +1232,7 @@ model DeliveryZone {
   estimatedDays        Int      @default(3)
   estimatedHours       Int?
   estimatedMinutes     Int?
+  quickDelivery        Boolean  @default(false)
   deliveryTimeUnit     String   @default("days")
   cities               Json?
   notes                String?

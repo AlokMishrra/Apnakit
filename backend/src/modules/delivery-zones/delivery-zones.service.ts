@@ -42,6 +42,7 @@ export class DeliveryZonesService {
       estimatedHours: zone.estimatedHours,
       estimatedMinutes: zone.estimatedMinutes,
       deliveryTimeUnit: zone.deliveryTimeUnit,
+      quickDelivery: zone.quickDelivery,
       cities: zone.cities,
       codEnabled: zone.codEnabled,
       prepaidOnly: zone.prepaidOnly,
@@ -106,6 +107,7 @@ export class DeliveryZonesService {
           estimatedDays: dto.estimatedDays ?? 3,
           estimatedHours: dto.estimatedHours,
           estimatedMinutes: dto.estimatedMinutes,
+          quickDelivery: dto.quickDelivery ?? false,
           deliveryTimeUnit: dto.deliveryTimeUnit || 'days',
           cities: dto.cities,
           notes: dto.notes,
@@ -147,6 +149,9 @@ export class DeliveryZonesService {
           }),
           ...(dto.estimatedMinutes !== undefined && {
             estimatedMinutes: dto.estimatedMinutes,
+          }),
+          ...(dto.quickDelivery !== undefined && {
+            quickDelivery: dto.quickDelivery,
           }),
           ...(dto.deliveryTimeUnit !== undefined && {
             deliveryTimeUnit: dto.deliveryTimeUnit,

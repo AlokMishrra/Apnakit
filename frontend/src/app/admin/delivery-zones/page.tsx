@@ -50,6 +50,7 @@ interface DeliveryZone {
   estimatedDays: number;
   estimatedHours: number | null;
   estimatedMinutes: number | null;
+  quickDelivery?: boolean;
   deliveryTimeUnit: string;
   cities: any;
   notes: string | null;
