@@ -19,14 +19,11 @@ const isProd = process.env.NODE_ENV === "production";
 const backendUrl = (
   process.env.BACKEND_URL ||
   process.env.NEXT_PUBLIC_BACKEND_URL ||
-  (isProd ? "" : "http://localhost:3000")
+  (isProd ? "https://apnakit-api.vercel.app" : "http://localhost:3000")
 ).replace(/\/+$/, "");
 
 if (isProd && !backendUrl) {
-  throw new Error(
-    "BACKEND_URL is not set. Add it to the Vercel project environment " +
-      "(e.g. https://apnakit-api.vercel.app) so API traffic can be proxied.",
-  );
+  console.warn("BACKEND_URL is not set; falling back to default backend URL.");
 }
 
 const nextConfig: NextConfig = {
