@@ -24,23 +24,7 @@ export function StoreClosedBanner() {
   if (!storeStatus) return null;
 
   if (storeStatus.isOpen) {
-    return (
-      <div className="bg-gradient-to-r from-emerald-600 to-emerald-700 text-white px-4 py-2.5">
-        <div className="max-w-7xl mx-auto flex items-center justify-center gap-2">
-          <CheckCircle className="h-4 w-4 flex-shrink-0" />
-          <div className="flex items-center gap-1.5 text-center">
-            <p className="text-xs sm:text-sm font-medium">
-              Store is Open
-            </p>
-            <span className="hidden sm:inline text-emerald-200">|</span>
-            <p className="text-xs text-emerald-100">
-              Delivery available until {storeStatus.closeTime} IST
-            </p>
-          </div>
-          <Truck className="h-4 w-4 flex-shrink-0" />
-        </div>
-      </div>
-    );
+    return null;
   }
 
   return (
