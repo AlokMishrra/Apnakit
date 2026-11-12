@@ -114,6 +114,9 @@ function Footer() {
               discounts and daily deals. Founded in 2026 by Anshu Saini and Nishu Saini, ApnaKit is
               committed to delivering convenience, affordability, and trust to every customer.
             </p>
+            <p className="mb-4 text-sm font-semibold text-foreground">
+              --- combo shopping destination
+            </p>
             <div className="space-y-2 text-sm text-muted-foreground">
               <div className="flex items-center gap-2">
                 <MapPin className="h-4 w-4" />
