@@ -107,15 +107,8 @@ function Footer() {
           {/* About */}
           <div className="col-span-2 lg:col-span-1">
             <h4 className="mb-4 text-lg font-bold text-foreground">{STORE_NAME}</h4>
-            <p className="mb-4 text-sm text-muted-foreground">
-              ApnaKit is one of the fastest instant delivery platforms, making everyday shopping
-              easier with quick doorstep delivery of groceries and daily essentials. We offer quality
-              products at competitive prices, often lower than local market rates, along with exclusive
-              discounts and daily deals. Founded in 2026 by Anshu Saini and Nishu Saini, ApnaKit is
-              committed to delivering convenience, affordability, and trust to every customer.
-            </p>
             <p className="mb-4 text-sm font-semibold text-foreground">
-              --- combo shopping destination
+              combo shopping destination
             </p>
             <div className="space-y-2 text-sm text-muted-foreground">
               <div className="flex items-center gap-2">

@@ -10,10 +10,10 @@ interface LogoProps {
   variant?: "color" | "white" | "dark";
 }
 
-// Source logo.jpeg is 527 × 170 — aspect ratio ≈ 3.1 : 1 (wide).
+// Source logo.jpeg is 1126 × 944 — aspect ratio ≈ 1.19 : 1.
 // Sizing is controlled by the parent's className (e.g. h-10, h-12, h-16).
 // The image's intrinsic aspect ratio is preserved via w-auto.
-const ASPECT = 527 / 170;
+const ASPECT = 1126 / 944;
 
 export function Logo({
   href = "/",
